@@ -55,9 +55,11 @@ init_aes_engine:
   .word BASE+0x000232eb @ movs r0, #8 @ bx lr
   .word      0xDEADBEEF @ r3 = dummy
   .word BASE+0x0001b571 @ lsls r2, r0, #5 @ bx lr
+  .word      0xDEADBEEF @ r3 = dummy
+  .word BASE+0x000232f1 @ movs r0, #0x80 @ bx lr
+  .word      0xDEADBEEF @ r3 = dummy
+  .word BASE+0x00000ae1 @ movs r1, r0 @ bx lr
   .word BASE+0x00000347 @ r3 = pop {pc}
-  .word BASE+0x0002328b @ movs r1, r2 @ pop {r4, pc}
-  .word      0xDEADBEEF @ r4 = dummy
   .word BASE+0x000050e9 @ mov r0, r7 @ blx r3
   .word BASE+0x00001411 @ pop {r4, r5, pc}
   .word (ENC_PAYLOAD_SIZE>>2)+0x10 @ r4 = ctx buffer
@@ -70,7 +72,7 @@ init_aes_engine:
   .word BASE+0x0001f2b1 @ eor sb, r0, #0x40 @ pop {r3, pc}
   .word      0xDEADBEEF @ r3 = dummy
   .word BASE+0x0001fdc5 @ mov r3, lr @ blx r4
-  .word BASE+0x0001d8db @ 0xF12B6451_aes_init(r0 = ctx, r1 = 256, r2 = 256, r3 = key) @ pop {r4, pc}
+  .word BASE+0x0001d8db @ 0xF12B6451_aes_init(r0 = ctx, r1 = 128, r2 = 256, r3 = key) @ pop {r4, pc}
   .word      0xDEADBEEF @ r4 = dummy
 
 @ save aes_ctx to r6. we need to undo the XOR
@@ -102,7 +104,7 @@ decrypt_loop_start:
   .word BASE+0x00019399 @ mov r0, sb @ mov r1, r4 @ ldr r2, [sp, #8] @ movs r3, #0 @ blx r5
   .word BASE+0x00000347 @ r3 = pop {pc}
   .word BASE+0x000039eb @ blx r3 @ pop {r3, pc}
-  .word BASE+0x0001a60f @ adds r0, #0x20 @ bx lr
+  .word BASE+0x0001614d @ adds r0, #0x10 ; bx lr
   .word      0xDEADBEEF @ r3 = dummy
   @ store incremented counter (and xor it)
   .word BASE+0x0001f2b1 @ eor sb, r0, #0x40 @ pop {r3, pc}
