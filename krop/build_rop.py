@@ -38,15 +38,15 @@ def chunk(b, size):
     return [b[x * size:(x + 1) * size] for x in range(0, len(b) // size)]
 
 
-def write_c_code(payload, relocs, addr_pos, size_shift_pos, size_xor_pos):
-    output = "unsigned payload[] = {";
-    output += ", ".join(hex(int.from_bytes(x, 'little')) for x in payload)
+def write_c_code(krop, relocs, addr_pos, size_shift_pos, size_xor_pos):
+    output = "unsigned krop[] = {";
+    output += ", ".join(hex(int.from_bytes(x, 'little')) for x in krop)
     output += "};\nunsigned relocs[] = {";
     output += ", ".join(str(x) for x in relocs)
     output += "};\n"
-    output += "payload[{}] = ENC_PAYLOAD_ADDR;\n".format(addr_pos)
-    output += "payload[{}] = (ENC_PAYLOAD_SIZE >> 2) + 0x10;\n".format(size_shift_pos)
-    output += "payload[{}] = ENC_PAYLOAD_SIZE ^ 0x40;\n".format(size_xor_pos)
+    output += "krop[{}] = ENC_PAYLOAD_ADDR;\n".format(addr_pos)
+    output += "krop[{}] = (ENC_PAYLOAD_SIZE >> 2) + 0x10;\n".format(size_shift_pos)
+    output += "krop[{}] = ENC_PAYLOAD_SIZE ^ 0x40;\n".format(size_xor_pos)
     return output
 
 
@@ -68,12 +68,12 @@ def main():
     second = build(tpl.format(**tags).encode("ascii") + code)
 
     if len(first) != len(second):
-        print("wtf? got different payload lengths")
+        print("wtf? got different krop lengths")
         return -2
 
-    # Find differences in payloads, a difference indicates either that this address depends on sysmem base or it's
+    # Find differences in krops, a difference indicates either that this address depends on sysmem base or it's
     # payload addr/size
-    payload = first = chunk(first, 4)
+    krop = first = chunk(first, 4)
     second = chunk(second, 4)
     relocs = [0] * len(first)
     addr_pos = size_shift_pos = size_xor_pos = -1
@@ -90,13 +90,15 @@ def main():
             else:
                 relocs[i] = 1
 
-    if -1 in [addr_pos, size_shift_pos, size_xor_pos]:
+    if -1 in [addr_pos, size_xor_pos]:
         print("unable to resolve positions: addr={}, size_shift={}, size_xor={}".format(
             addr_pos, size_shift_pos, size_xor_pos))
         return -2
 
-    print(write_c_code(payload, relocs, addr_pos, size_shift_pos, size_xor_pos))
-    # write_rop_code(payload, relocs, addr_pos, size_shift_pos, size_xor_pos)
+    print("Kernel rop size: 0x{:x} bytes".format(len(krop) * 4))
+
+    print(write_c_code(krop, relocs, addr_pos, size_shift_pos, size_xor_pos))
+    # write_rop_code(krop, relocs, addr_pos, size_shift_pos, size_xor_pos)
 
 
 if __name__ == "__main__":

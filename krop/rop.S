@@ -233,6 +233,8 @@ mark_executable:
   .word BASE+0x0000a74d @ sysmem_remap(r0 = blk, r1 = 0x1020D005) @ bx lr
   .word      0xDEADBEEF @ r4 = dummy
 
+@ .word BASE+0x19d71 @ infloop
+
 execute_code:
   .word BASE+0x00011c5f @ blx r7
 
