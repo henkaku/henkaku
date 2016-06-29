@@ -1,6 +1,6 @@
 @ these are provided by build_rop.py
 @ .equ ENC_PAYLOAD_ADDR, 0x810D0000
-@ actual size (not including the 0x20 junk at the start). must be 0x20 aligned.
+@ actual size (not including the 0x10 junk at the start). must be 0x10 aligned.
 @ .equ ENC_PAYLOAD_SIZE, 0x00000080
 @ .equ BASE, 0x81002000
 
