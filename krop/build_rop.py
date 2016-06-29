@@ -80,7 +80,6 @@ def main():
     for i, (first_word, second_word) in enumerate(zip(first, second)):
         if first_word != second_word:
             second = int.from_bytes(second_word, "little")
-            relocs.append(0)
             if second == tags["payload_addr"]:
                 addr_pos = i
             elif second == (tags["payload_size"] >> 2) + 0x10:
