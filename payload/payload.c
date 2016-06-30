@@ -19,7 +19,7 @@ do {                                   \
 	);                                 \
 	__asm__ volatile(                  \
 		"mcr p15, 0, %0, c3, c0, 0 \n" \
-		: : "r" (-1)                   \
+		: : "r" (0xFFFF0000)           \
 	);                                 \
 	stmt;                              \
 	__asm__ volatile(                  \
