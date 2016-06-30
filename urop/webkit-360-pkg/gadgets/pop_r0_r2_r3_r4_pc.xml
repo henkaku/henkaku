@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+
+<gadget>
+	<address>0x8f48bd</address>
+	<aslr>SceWebKit</aslr>
+</gadget>
+
+<!--
+  8f48bc:	bd1d      	pop	{r0, r2, r3, r4, pc}
+-->

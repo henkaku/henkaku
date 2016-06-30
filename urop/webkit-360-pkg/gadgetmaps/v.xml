@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+
+<gadgetmap>
+	<regex>.*(\(v{0,1}\))</regex>
+	<stack>
+		<data>GADGET_ADDRESS(pop_r0_r4_pc)</data>
+		<data>ARG0</data> 		         					<!-- R0 -->
+		<data>FUNC_ADDRESS</data> 		         			<!-- R4 -->
+		<data>GADGET_ADDRESS(blx_r4-pop_r4_pc)</data>       <!-- PC -->
+		<data>0</data>                       				<!-- R4 -->
+		<data>RETURN_ADDRESS</data>		 					<!-- PC return -->
+	</stack>
+</gadgetmap>

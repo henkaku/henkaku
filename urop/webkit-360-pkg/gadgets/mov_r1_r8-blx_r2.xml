@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+
+<gadget>
+	<address>0x16571</address>
+	<aslr>SceWebKit</aslr>
+</gadget>
+
+<!--
+   16570:       4641            mov     r1, r8
+   16572:       4790            blx     r2
+-->

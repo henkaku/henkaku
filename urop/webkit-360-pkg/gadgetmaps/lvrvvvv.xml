@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+
+<gadgetmap>
+	<regex>.*(\(lvrv{0,4}\))</regex>
+	<stack>
+		<data>GADGET_ADDRESS(pop_r1_r2_r3_pc)</data>
+		<data>0</data> 											<!-- R1 -->
+		<data>GADGET_ADDRESS(mov_r2_r8-blx_r3)</data>			<!-- R2 -->
+		<data>GADGET_ADDRESS(pop_r0_r1_r3_pc)</data> 			<!-- R3 -->
+		<data>GADGET_ADDRESS(mov_r8_r0-mov_r0_r7-mov_r1_r6-blx_r2)</data> <!-- PC -->
+		<data>ARG0</data>										<!-- R0 -->
+		<data>ARG1</data>										<!-- R1 -->
+		<data>ARG3</data>										<!-- R3 -->
+		<data>GADGET_ADDRESS(ldr_r0_r0-pop_r4_pc)</data>		<!-- PC -->
+		<data>FUNC_ADDRESS</data>								<!-- R4 -->
+		<data>GADGET_ADDRESS(blx_r4-pop_r4_r5_r6_pc)</data>     <!-- PC -->
+		<data>ARG4</data>                       				<!-- R4 -->
+		<data>ARG5</data>                       				<!-- R5 -->
+		<data>ARG6</data>                       				<!-- R6 -->
+		<data>RETURN_ADDRESS</data>		 						<!-- PC return -->
+	</stack>
+</gadgetmap>

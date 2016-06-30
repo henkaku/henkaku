@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+
+<gadget>
+	<address>0xfcdbb</address>
+	<aslr>SceWebKit</aslr>
+</gadget>
+
+<!--
+   fcdba:       47a0            blx     r4
+   fcdbc:       bd10            pop     {r4, pc}
+-->
