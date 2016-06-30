@@ -234,10 +234,19 @@ mark_executable:
   .word BASE+0x000150a3 @ mov r0, r3 @ pop {r3, pc}
   .word      0xDEADBEEF @ r3 = dummy
   .word BASE+0x0000a74d @ sysmem_remap(r0 = blk, r1 = 0x1020D005) @ bx lr
-  .word      0xDEADBEEF @ r4 = dummy
+  .word BASE            @ r4 = sysmem base
 
-@ .word BASE+0x19d71 @ infloop
+flush_caches:
+  .word BASE+0x00000853 @ pop {r0, r1, pc}
+  .word 0xDEAD          @ r0
+  .word 0x400           @ r1
+  .word BASE+0x00001605 @ pop {r3, pc}
+  .word BASE+0x00000347 @ r3 = pop {pc}
+  .word BASE+0x000050e9 @ mov r0, r7 @ blx r3
+  .word BASE+0x00001605 @ pop {r3, pc}
+  .word BASE+0x22FCD    @ r3 = flush called from dacrmemcpy
+  .word BASE+0x000039eb @ blx r3 @ pop {r3, pc}
+  .word 0xDEAD          @ r3
 
 execute_code:
   .word BASE+0x00011c5f @ blx r7
-
