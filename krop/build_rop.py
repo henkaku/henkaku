@@ -7,7 +7,6 @@ import subprocess
 
 tpl = """
 .equ ENC_PAYLOAD_ADDR, {payload_addr}
-@ actual size (not including the 0x20 junk at the start). must be 0x20 aligned.
 .equ ENC_PAYLOAD_SIZE, {payload_size}
 .equ BASE, {sysmem_base}
 """
@@ -38,7 +37,7 @@ def chunk(b, size):
     return [b[x * size:(x + 1) * size] for x in range(0, len(b) // size)]
 
 
-def write_c_code(krop, relocs, addr_pos, size_shift_pos, size_xor_pos):
+def write_c_code(krop, relocs, addr_pos, size_shift_pos, size_xor_pos, size_plain_pos):
     output = "unsigned krop[] = {";
     output += ", ".join(hex(int.from_bytes(x, 'little')) for x in krop)
     output += "};\nunsigned relocs[] = {";
@@ -47,6 +46,7 @@ def write_c_code(krop, relocs, addr_pos, size_shift_pos, size_xor_pos):
     output += "krop[{}] = ENC_PAYLOAD_ADDR;\n".format(addr_pos)
     output += "krop[{}] = (ENC_PAYLOAD_SIZE >> 2) + 0x10;\n".format(size_shift_pos)
     output += "krop[{}] = ENC_PAYLOAD_SIZE ^ 0x40;\n".format(size_xor_pos)
+    output += "krop[{}] = ENC_PAYLOAD_SIZE;\n".format(size_plain_pos)
     return output
 
 
@@ -76,7 +76,7 @@ def main():
     krop = first = chunk(first, 4)
     second = chunk(second, 4)
     relocs = [0] * len(first)
-    addr_pos = size_shift_pos = size_xor_pos = -1
+    addr_pos = size_shift_pos = size_xor_pos = size_plain_pos = -1
     for i, (first_word, second_word) in enumerate(zip(first, second)):
         if first_word != second_word:
             second = int.from_bytes(second_word, "little")
@@ -86,17 +86,19 @@ def main():
                 size_shift_pos = i
             elif second == tags["payload_size"] ^ 0x40:
                 size_xor_pos = i
+            elif second == tags["payload_size"]:
+                size_plain_pos = i
             else:
                 relocs[i] = 1
 
-    if -1 in [addr_pos, size_xor_pos]:
-        print("unable to resolve positions: addr={}, size_shift={}, size_xor={}".format(
-            addr_pos, size_shift_pos, size_xor_pos))
+    if -1 in [addr_pos, size_shift_pos, size_xor_pos, size_plain_pos]:
+        print("unable to resolve positions: addr={}, size_shift={}, size_xor={}, size_plain={}".format(
+            addr_pos, size_shift_pos, size_xor_pos, size_plain_pos))
         return -2
 
     print("Kernel rop size: 0x{:x} bytes".format(len(krop) * 4))
 
-    print(write_c_code(krop, relocs, addr_pos, size_shift_pos, size_xor_pos))
+    print(write_c_code(krop, relocs, addr_pos, size_shift_pos, size_xor_pos, size_plain_pos))
     # write_rop_code(krop, relocs, addr_pos, size_shift_pos, size_xor_pos)
 
 
