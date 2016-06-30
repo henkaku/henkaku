@@ -70,7 +70,8 @@ init_aes_engine:
   .word BASE+0x00000347 @ r4 = pop {pc}
   @ save ctx pointer to sb ^ 0x40
   .word BASE+0x0001f2b1 @ eor sb, r0, #0x40 @ pop {r3, pc}
-  .word      0xDEADBEEF @ r3 = dummy
+  .word BASE+0x00000347 @ r3 = pop {pc}
+  .word BASE+0x000039eb @ blx r3 @ pop {r3, pc}
   .word BASE+0x0001fdc5 @ mov r3, lr @ blx r4
   .word BASE+0x0001d8db @ 0xF12B6451_aes_init(r0 = ctx, r1 = 128, r2 = 256, r3 = key) @ pop {r4, pc}
   .word      0xDEADBEEF @ r4 = dummy
