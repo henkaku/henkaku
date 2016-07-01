@@ -2,6 +2,7 @@
 
 .code 32
 
+.global start
 .section .text.start
 start:
 	add sp, #0x1000
