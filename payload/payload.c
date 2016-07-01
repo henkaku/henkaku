@@ -301,11 +301,3 @@ void payload(uint32_t sysmem_addr) {
 
 	while(1) {}
 }
-
-void __attribute__ ((section (".text.start"), naked)) start(void) {
-	__asm__ (
-		"add sp, #0x1000 \n"
-		"mov r0, r4      \n"
-		"b payload       \n"
-	);
-}

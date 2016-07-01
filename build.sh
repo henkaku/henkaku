@@ -9,12 +9,14 @@ echo "1) Payload"
 
 CC=arm-vita-eabi-gcc
 LD=arm-vita-eabi-gcc
+AS=arm-vita-eabi-as
 OBJCOPY=arm-vita-eabi-objcopy
-CFLAGS=-"fPIE -fno-zero-initialized-in-bss -std=c99 -mcpu=cortex-a9 -Os -marm"
+CFLAGS=-"fPIE -fno-zero-initialized-in-bss -std=c99 -mcpu=cortex-a9 -Os -mthumb"
 LDFLAGS="-T payload/linker.x -nodefaultlibs -nostdlib -pie"
 
 $CC -c -o build/payload.o payload/payload.c $CFLAGS
-$LD -o build/payload.elf build/payload.o $LDFLAGS
+$AS -o build/payload_start.o payload/payload_start.S
+$LD -o build/payload.elf build/payload.o build/payload_start.o $LDFLAGS
 $OBJCOPY -O binary build/payload.elf build/payload.bin
 
 dd if=/dev/zero of=build/pad.bin bs=32 count=1
