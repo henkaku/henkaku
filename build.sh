@@ -11,7 +11,7 @@ CC=arm-vita-eabi-gcc
 LD=arm-vita-eabi-gcc
 AS=arm-vita-eabi-as
 OBJCOPY=arm-vita-eabi-objcopy
-CFLAGS=-"fPIE -fno-zero-initialized-in-bss -std=c99 -mcpu=cortex-a9 -Os -mthumb"
+CFLAGS="-fPIE -fno-zero-initialized-in-bss -std=c99 -mcpu=cortex-a9 -Os -mthumb"
 LDFLAGS="-T payload/linker.x -nodefaultlibs -nostdlib -pie"
 
 $CC -c -o build/payload.o payload/payload.c $CFLAGS
