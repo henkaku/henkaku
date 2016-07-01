@@ -288,9 +288,9 @@ void payload(uint32_t sysmem_addr) {
 		INSTALL_HOOK(hook_sbl_F3411881, (char*)modulemgr_base + 0xb68c); // 3.60
 		INSTALL_HOOK(hook_sbl_89CCDA2C, (char*)modulemgr_base + 0xb64c); // 3.60
 		INSTALL_HOOK(hook_sbl_BC422443, (char*)modulemgr_base + 0xb67c); // 3.60
-
-		SceCpuForDriver_9CB9F0CE_flush_icache((char*)modulemgr_base + 0xb640, 0x80); // should cover all patched exports
 	);
+	SceCpuForDriver_9CB9F0CE_flush_icache((char*)modulemgr_base + 0xb640, 0x80); // should cover all patched exports
+	// end homebrew enable
 
 	LOG("Kill current thread =>");
 	int (*sceKernelExitDeleteThread)() = find_export(threadmgr_info, 0x1D17DECF);
