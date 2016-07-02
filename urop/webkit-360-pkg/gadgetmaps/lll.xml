@@ -21,4 +21,20 @@
 		<data>0</data>                                               <!-- R4 -->
 		<data>RETURN_ADDRESS</data>
 	</stack>
+	<testcase>
+!! execute function !!
+----------------------
+0 = LOAD[ARG0]
+1 = LOAD[ARG1]
+2 = LOAD[ARG2]
+3 = .*
+4 = .*
+5 = .*
+6 = .*
+7 = .*
+8 = .*
+9 = .*
+----------------------
+END; r0 = RETVAL
+	</testcase>
 </gadgetmap>

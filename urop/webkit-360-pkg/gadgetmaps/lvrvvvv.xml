@@ -19,4 +19,20 @@
 		<data>ARG6</data>                       				<!-- R6 -->
 		<data>RETURN_ADDRESS</data>		 						<!-- PC return -->
 	</stack>
+	<testcase>
+!! execute function !!
+----------------------
+0 = LOAD[ARG0]
+1 = ARG1
+2 = RETVAL
+3 = ARG3
+4 = ARG4
+5 = ARG5
+6 = ARG6
+7 = .*
+8 = .*
+9 = .*
+----------------------
+END; r0 = RETVAL
+	</testcase>
 </gadgetmap>
