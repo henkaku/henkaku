@@ -9,7 +9,7 @@
 		<data>0</data>                                          <!-- R6 -->
 		<data>0</data>                                          <!-- R7 -->
 		<data>0</data>                                          <!-- R8 -->
-		<data>GADGET_ADDRESS(ands_r1_r0-pop_r4_r5_r6_r7_r8_sb_sl_pc)</data>  <!-- SB -->
+		<data>GADGET_ADDRESS(ands_r0_r1-pop_r4_r5_r6_r7_r8_sb_sl_pc)</data>  <!-- SB -->
 		<data>GADGET_ADDRESS(pop_r1_r2_pc)</data>
 		<data>ARG1</data> 		         						<!-- R1 -->
 		<data>0</data>                                          <!-- R2 -->
@@ -21,8 +21,9 @@
 		<data>0</data>                       					<!-- R8 -->
 		<data>0</data>                       					<!-- SB -->
 		<data>0</data>                       					<!-- SL -->
-		<data>GADGET_ADDRESS(mov_r0_r1-pop_r4_pc)</data> 		<!-- PC -->
-		<data>0</data>                       					<!-- R4 -->
 		<data>RETURN_ADDRESS</data>		 						<!-- PC return -->
 	</stack>
+	<testcase>
+END; r0 = RETVAL and LOAD[ARG1]
+	</testcase>
 </gadgetmap>

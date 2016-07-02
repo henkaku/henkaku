@@ -11,4 +11,7 @@
 		<data>GADGET_ADDRESS(lsls_r0_r1-blx_r4)</data>			<!-- PC -->
 		<data>RETURN_ADDRESS</data>		 						<!-- PC return -->
 	</stack>
+	<testcase>
+END; r0 = RETVAL lsl ARG1
+	</testcase>
 </gadgetmap>
