@@ -21,9 +21,8 @@ def main():
 	with open(argv[1], "rb") as fin:
 		urop = fin.read()
 
-	if len(urop) % 4 != 0:
-		print("urop % 4 != 0")
-		return -2
+	while len(urop) % 4 != 0:
+		urop += b"\x00"
 
 	header_size = 0x40
 	dsize = u32(urop, 0x10)
@@ -57,6 +56,8 @@ def main():
 		("rop.data", 0): 1,       # dest += rop_data_base
 		("SceWebKit", 0): 2,      # dest += SceWebKit_base
 		("SceLibKernel", 0): 3,   # dest += SceLibKernel_base
+		("SceLibc", 0): 4,        # dest += SceLibc_base
+		("SceLibHttp", 0): 5,     # dest += SceLibHttp_base
 	}
 	relocs = [0] * (len(urop) // 4)
 
@@ -66,6 +67,7 @@ def main():
 		sym_id = u16(urop, reloc_offset + 8 * x + 2)
 		offset = u32(urop, reloc_offset + 8 * x + 4)
 		print_dbg = lambda: print("type {} sym {} offset {}".format(reloc_type, reloc_map[sym_id], offset))
+		print_dbg()
 		if offset % 4 != 0:
 			print_dbg()
 			print("offset % 4 != 0???")
@@ -82,6 +84,9 @@ def main():
 		relocs[offset // 4] = wk_reloc_type
 
 	urop_js = [u32(urop, x) for x in range(0, len(urop), 4)]
+	for x in range(100 * 1024 // 4):
+		urop_js.append(0)
+		relocs.append(0)
 
 	payload = tpl.format(urop_js, relocs)
 	with open(argv[2], "wb") as fout:

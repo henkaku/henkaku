@@ -1,0 +1,74 @@
+function sceClibPrintf = ASLR::SceLibKernel + 0x8A5D;
+function infloop = ASLR::SceWebKit + 0x519;
+
+function sceNetSyscallIoctl = ASLR::SceNet + 0x9F90;
+function sceNetSyscallControl = ASLR::SceNet + 0xA110;
+function sceNetSyscallClose = ASLR::SceNet + 0x9F60;
+
+function sceNetDumpCreate = ASLR::SceNet + 0x28F9;
+function sceNetDumpDestroy = ASLR::SceNet + 0x2909;
+function socket = ASLR::SceNet + 0x27E1;
+function connect = ASLR::SceNet + 0x2801;
+function send = ASLR::SceNet + 0x282D;
+
+function sceIoDevctl = ASLR::SceLibKernel + 0xA55D;
+
+function sceKernelDelayThread = ASLR::SceAppUtil + 0x8020;
+
+function sceKernelAllocMemBlock = ASLR::SceLibc + 0x3C3AC;
+function sceKernelGetMemBlockBase = ASLR::SceLibc + 0x3C39C;
+
+function sceKernelCreateThread = ASLR::SceLibKernel + 0xACC9;
+function sceKernelCreateThreadForUser = ASLR::SceLibKernel + 0x65AC;
+function sceKernelStartThread = ASLR::SceLibKernel + 0xA789;
+function sceKernelGetThreadInfo = ASLR::SceLibKernel + 0xA791;
+
+function sceAppUtilInit = ASLR::SceAppUtil + 0x24AF;
+function sceAppUtilSaveSafeMemory = ASLR::SceAppUtil + 0x2C07;
+function sceAppUtilLoadSafeMemory = ASLR::SceAppUtil + 0x2C25;
+
+function memcpy = ASLR::SceLibc + 0x13F01;
+function memset = ASLR::SceLibc + 0x14011;
+function snprintf = ASLR::SceLibc + 0x65BD;
+function strlen = ASLR::SceLibc + 0x1418D;
+
+function store = ASLR::SceWebKit + 0x00106fc5;
+function add = ASLR::SceWebKit + 0x00130a15;
+function load = ASLR::SceWebKit + 0x0009f613;
+function equals = ASLR::SceWebKit + 0x0071ef11;
+function sub = ASLR::SceWebKit + 0x00003de5;
+function store_byte = ASLR::SceWebKit + 0x00548d27;
+function lsr_8 = ASLR::SceWebKit + 0x0014483b;
+function and_ff_plus_0x20 = ASLR::SceWebKit + 0x0014483b; // TODO
+function xor = ASLR::SceWebKit + 0x004b5efb;
+function and_1 = ASLR::SceWebKit + 0x001363cf;
+function lsl_2 = ASLR::SceWebKit + 0x0015a93d;
+function or = ASLR::SceWebKit + 0x006b30a5;
+function not_xor = ASLR::SceWebKit + 0x005f3899;
+function lsr_16_xor = ASLR::SceWebKit + 0x005f389d;
+
+/*
+    using not_xor and lsr_16_xor, we can get a logical not operation:
+    not(x) = not_xor(0, x), lsr_16_xor(&return)
+    
+    as not_xor: mvns r1, r1 ; adds r0, r0, r1 ; lsrs r1, r0, #0x10 ; eors r0, r1 ; bx lr
+    and lsr_16_xor: lsrs r1, r0, #0x10 ; eors r0, r1 ; bx lr
+    
+    not_xor when r0 = 0 returns: ~x ^ y, where x = ~r1 and y = (~r1 >> 16)
+    when lsr_16_xor is given this value as r0, it undoes the XOR: ~x ^ y ^ y = ~x
+
+    therefore with or and not, we can do this:
+    and(x, y) = not(x), store(ret, temp), not(y), or(RET, [temp]), not(RET)
+*/
+
+function infinite_loop = ASLR::SceWebKit + 0x519;
+function sceSysmoduleLoadModule = 0x81001424;
+function atomic_and = 0xE0002850;
+function vdef = 0x872177A4;
+
+function sceHttpInit = ASLR::SceLibHttp + 0x92FD;
+function sceHttpCreateTemplate = ASLR::SceLibHttp + 0x947B;
+function sceHttpCreateConnectionWithURL = ASLR::SceLibHttp + 0x950B;
+function sceHttpCreateRequestWithURL = ASLR::SceLibHttp + 0x95FF;
+function sceHttpSendRequest = ASLR::SceLibHttp + 0x9935;
+function sceHttpReadData = ASLR::SceLibHttp + 0x9983;
