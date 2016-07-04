@@ -1,0 +1,9 @@
+data
+{
+	#include "functions.rop"
+}
+
+code : entry
+{
+	infloop();
+}

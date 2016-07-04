@@ -84,12 +84,11 @@ def main():
 		relocs[offset // 4] = wk_reloc_type
 
 	urop_js = [u32(urop, x) for x in range(0, len(urop), 4)]
-	for x in range(100 * 1024 // 4):
-		urop_js.append(0)
-		relocs.append(0)
 
 	payload = tpl.format(urop_js, relocs)
 	with open(argv[2], "wb") as fout:
+		if argv[2].endswith("php"):
+			fout.write(b"<?php\n")
 		fout.write(payload.encode("ascii"))
 
 if __name__ == "__main__":
