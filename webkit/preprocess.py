@@ -9,9 +9,14 @@ def u32(data, offset):
 def u16(data, offset):
 	return struct.unpack("<H", data[offset:offset+2])[0]
 
-tpl = """
-payload = {};
-relocs = {};
+tpl_js = """
+payload = [{}];
+relocs = [{}];
+"""
+
+tpl_php = """<?php
+$payload = array({});
+$relocs = array({});
 """
 
 def main():
@@ -85,11 +90,13 @@ def main():
 
 	urop_js = [u32(urop, x) for x in range(0, len(urop), 4)]
 
-	payload = tpl.format(urop_js, relocs)
 	with open(argv[2], "wb") as fout:
 		if argv[2].endswith("php"):
-			fout.write(b"<?php\n")
-		fout.write(payload.encode("ascii"))
+			tpl = tpl_php
+		else:
+			tpl = tpl_js
+
+		fout.write(tpl.format(",".join(str(x) for x in urop_js), ",".join(str(x) for x in relocs)).encode("ascii"))
 
 if __name__ == "__main__":
 	exit(main())

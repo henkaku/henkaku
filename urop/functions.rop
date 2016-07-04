@@ -22,6 +22,7 @@ function sceKernelCreateThread = ASLR::SceLibKernel + 0xACC9;
 function sceKernelCreateThreadForUser = ASLR::SceLibKernel + 0x65AC;
 function sceKernelStartThread = ASLR::SceLibKernel + 0xA789;
 function sceKernelGetThreadInfo = ASLR::SceLibKernel + 0xA791;
+function sceKernelWaitThreadEnd = ASLR::SceLibKernel + 0x16FD;
 
 function sceAppUtilInit = ASLR::SceAppUtil + 0x24AF;
 function sceAppUtilSaveSafeMemory = ASLR::SceAppUtil + 0x2C07;
@@ -31,6 +32,7 @@ function memcpy = ASLR::SceLibc + 0x13F01;
 function memset = ASLR::SceLibc + 0x14011;
 function snprintf = ASLR::SceLibc + 0x65BD;
 function strlen = ASLR::SceLibc + 0x1418D;
+function strcat = ASLR::SceLibc + 0x6775;
 
 function store = ASLR::SceWebKit + 0x00106fc5;
 function add = ASLR::SceWebKit + 0x00130a15;
