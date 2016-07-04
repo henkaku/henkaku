@@ -12,6 +12,9 @@ function connect = ASLR::SceNet + 0x2801;
 function send = ASLR::SceNet + 0x282D;
 
 function sceIoDevctl = ASLR::SceLibKernel + 0xA55D;
+function sceIoOpen = ASLR::SceLibKernel + 0xA4AD;
+function sceIoWrite = ASLR::SceLibKernel + 0x68DC;
+function sceIoClose = ASLR::SceLibKernel + 0x6A0C;
 
 function sceKernelDelayThread = ASLR::SceAppUtil + 0x8020;
 
@@ -23,6 +26,9 @@ function sceKernelCreateThreadForUser = ASLR::SceLibKernel + 0x65AC;
 function sceKernelStartThread = ASLR::SceLibKernel + 0xA789;
 function sceKernelGetThreadInfo = ASLR::SceLibKernel + 0xA791;
 function sceKernelWaitThreadEnd = ASLR::SceLibKernel + 0x16FD;
+
+function sceKernelGetModuleList = ASLR::SceLibKernel + 0x675C;
+function sceKernelGetModuleInfo = ASLR::SceLibKernel + 0x676C;
 
 function sceAppUtilInit = ASLR::SceAppUtil + 0x24AF;
 function sceAppUtilSaveSafeMemory = ASLR::SceAppUtil + 0x2C07;
