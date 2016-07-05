@@ -12,6 +12,7 @@ function connect = ASLR::SceNet + 0x2801;
 function send = ASLR::SceNet + 0x282D;
 
 function sceIoDevctl = ASLR::SceLibKernel + 0xA55D;
+function sceIoDevctl_svc = ASLR::SceLibKernel + 0x690C;
 function sceIoOpen = ASLR::SceLibKernel + 0xA4AD;
 function sceIoWrite = ASLR::SceLibKernel + 0x68DC;
 function sceIoClose = ASLR::SceLibKernel + 0x6A0C;
