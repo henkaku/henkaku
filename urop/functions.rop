@@ -16,7 +16,7 @@ function sceIoOpen = ASLR::SceLibKernel + 0xA4AD;
 function sceIoWrite = ASLR::SceLibKernel + 0x68DC;
 function sceIoClose = ASLR::SceLibKernel + 0x6A0C;
 
-function sceKernelDelayThread = ASLR::SceAppUtil + 0x8020;
+function sceKernelDelayThread = ASLR::SceLibHttp + 0x18544;
 
 function sceKernelAllocMemBlock = ASLR::SceLibc + 0x3C3AC;
 function sceKernelGetMemBlockBase = ASLR::SceLibc + 0x3C39C;
@@ -70,9 +70,11 @@ function lsr_16_xor = ASLR::SceWebKit + 0x005f389d;
 */
 
 function infinite_loop = ASLR::SceWebKit + 0x519;
+#if 0
 function sceSysmoduleLoadModule = 0x81001424;
 function atomic_and = 0xE0002850;
 function vdef = 0x872177A4;
+#endif
 
 function sceHttpInit = ASLR::SceLibHttp + 0x92FD;
 function sceHttpCreateTemplate = ASLR::SceLibHttp + 0x947B;
@@ -80,3 +82,6 @@ function sceHttpCreateConnectionWithURL = ASLR::SceLibHttp + 0x950B;
 function sceHttpCreateRequestWithURL = ASLR::SceLibHttp + 0x95FF;
 function sceHttpSendRequest = ASLR::SceLibHttp + 0x9935;
 function sceHttpReadData = ASLR::SceLibHttp + 0x9983;
+
+symbol ldm_r1_stuff = ASLR::SceWebKit + 0x54c8; //54c8: e891a916 ldm r1, {r1, r2, r4, r8, fp, sp, pc}
+symbol pop_pc = ASLR::SceWebKit + 0xc048b;

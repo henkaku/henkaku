@@ -7,7 +7,7 @@ function array_pack(array $arr) {
 	return call_user_func_array("pack", array_merge(array("L*"), $arr));
 }
 
-foreach (array("a", "b", "c", "d") as $val) {
+foreach (array("a", "b", "c", "d", "e", "f") as $val) {
 	if (!isset($_GET[$val]))
 		die("nope");
 }
@@ -21,6 +21,8 @@ $a = intval($_GET["a"], 16);
 $b = intval($_GET["b"], 16);
 $c = intval($_GET["c"], 16);
 $d = intval($_GET["d"], 16);
+$e = intval($_GET["e"], 16);
+$f = intval($_GET["f"], 16);
 
 $code_base = $a;
 $data_base = $a + $csize;
@@ -40,6 +42,12 @@ for ($i = 0; $i < $len; ++$i) {
 		break;
 	case 4:
 		$add = $d;
+		break;
+	case 5:
+		$add = $e;
+		break;
+	case 6:
+		$add = $f;
 		break;
 	}
 	

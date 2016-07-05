@@ -63,6 +63,7 @@ def main():
 		("SceLibKernel", 0): 3,   # dest += SceLibKernel_base
 		("SceLibc", 0): 4,        # dest += SceLibc_base
 		("SceLibHttp", 0): 5,     # dest += SceLibHttp_base
+		("SceNet", 0): 6,         # dest += SceNet_base
 	}
 	relocs = [0] * (len(urop) // 4)
 

