@@ -34,6 +34,14 @@ openssl enc -aes-128-ecb -in build/payload.bin -out build/payload.enc -K 2975dab
 ./payload/block_check.py build/loader.enc
 ./payload/block_check.py build/payload.enc
 
+# loader must be <=0x100 bytes
+SIZE=$(du -sb build/loader.enc | awk '{ print $1 }')
+if ((SIZE>0x100)); then
+	echo "loader size is $SIZE should be less or equal 0x100 bytes"
+	exit -1
+fi
+echo "loader size is $SIZE"
+
 echo "2) Kernel ROP"
 ./krop/build_rop.py krop/rop.S build/
 
