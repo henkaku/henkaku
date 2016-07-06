@@ -38,14 +38,10 @@ echo "3) User ROP"
 ./urop/make_rop_array.py build/loader.enc kx_loader build/kx_loader.rop
 ./urop/make_rop_array.py build/payload.bin second_payload build/second_payload.rop
 
-$PREPROCESS urop/loader.rop.in -o build/loader.rop
-roptool -s build/loader.rop -t webkit-360-pkg -o build/loader.rop.bin -v >/dev/null
-$PREPROCESS urop/stage2.rop.in -o build/stage2.rop.in
-erb build/stage2.rop.in > build/stage2.rop
-roptool -s build/stage2.rop -t webkit-360-pkg -o build/stage2.rop.bin -v >/dev/null
+$PREPROCESS urop/exploit.rop.in -o build/exploit.rop.in
+erb build/exploit.rop.in > build/exploit.rop
+roptool -s build/exploit.rop -t webkit-360-pkg -o build/exploit.rop.bin -v >/dev/null
 
 echo "4) Webkit"
 cp webkit/exploit.html output/
-./webkit/preprocess.py build/loader.rop.bin output/payload.js
-cp webkit/stage2.php output/
-./webkit/preprocess.py build/stage2.rop.bin output/stage2-payload.php
+./webkit/preprocess.py build/exploit.rop.bin output/payload.js

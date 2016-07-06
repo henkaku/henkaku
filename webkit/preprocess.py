@@ -65,7 +65,10 @@ def main():
 		("SceLibHttp", 0): 5,     # dest += SceLibHttp_base
 		("SceNet", 0): 6,         # dest += SceNet_base
 	}
-	relocs = [0] * (len(urop) // 4)
+
+	# we don't need symtab/strtab/relocs
+	want_len = 0x40 + dsize + csize
+	relocs = [0] * (want_len // 4)
 
 	reloc_n = reloc_size // 8
 	for x in range(reloc_n):
@@ -89,7 +92,7 @@ def main():
 			return -2
 		relocs[offset // 4] = wk_reloc_type
 
-	urop_js = [u32(urop, x) for x in range(0, len(urop), 4)]
+	urop_js = [u32(urop, x) for x in range(0, want_len, 4)]
 
 	with open(argv[2], "wb") as fout:
 		if argv[2].endswith("php"):
