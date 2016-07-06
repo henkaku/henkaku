@@ -49,6 +49,9 @@ data
 	variable kx_loader_addr;
 
 	#include "../build/kx_loader.rop"
+
+	// actual second payload (TODO: encrypt it)
+	buffer second_payload[4] = {0xFE, 0xE7};
 }
 
 code : entry

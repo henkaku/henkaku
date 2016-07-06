@@ -9,6 +9,7 @@ tpl = """
 .equ ENC_PAYLOAD_ADDR, {payload_addr}
 .equ ENC_PAYLOAD_SIZE, {payload_size}
 .equ BASE, {sysmem_base}
+.equ SECOND_PAYLOAD, {second_payload}
 """
 
 prefix = "arm-vita-eabi-"
@@ -37,7 +38,7 @@ def chunk(b, size):
     return [b[x * size:(x + 1) * size] for x in range(0, len(b) // size)]
 
 
-def write_c_code(krop, relocs, addr_pos, size_shift_pos, size_xor_pos, size_plain_pos):
+def write_c_code(krop, relocs, addr_pos, size_shift_pos, size_xor_pos, size_plain_pos, second_payload_pos):
     output = "unsigned krop[] = {"
     output += ", ".join(hex(int.from_bytes(x, 'little')) for x in krop)
     output += "};\nunsigned relocs[] = {"
@@ -47,10 +48,11 @@ def write_c_code(krop, relocs, addr_pos, size_shift_pos, size_xor_pos, size_plai
     output += "krop[{}] = (ENC_PAYLOAD_SIZE >> 2) + 0x10;\n".format(size_shift_pos)
     output += "krop[{}] = ENC_PAYLOAD_SIZE ^ 0x40;\n".format(size_xor_pos)
     output += "krop[{}] = ENC_PAYLOAD_SIZE;\n".format(size_plain_pos)
+    output += "krop[{}] = SECOND_PAYLOAD;\n".format(second_payload_pos)
     return output
 
 
-def write_rop_code(krop, relocs, addr_pos, size_shift_pos, size_xor_pos, size_plain_pos):
+def write_rop_code(krop, relocs, addr_pos, size_shift_pos, size_xor_pos, size_plain_pos, second_payload_pos):
     output = ""
     tpl = "store({}, krop + 0x{:x});\n"
     for x, (addr, reloc) in enumerate(zip(krop, relocs)):
@@ -67,6 +69,7 @@ def write_rop_code(krop, relocs, addr_pos, size_shift_pos, size_xor_pos, size_pl
     output += "store(0x{:x}, krop + 0x{:x});\n".format((payload_size >> 2) + 0x10, size_shift_pos * 4)
     output += "store(0x{:x}, krop + 0x{:x});\n".format(payload_size ^ 0x40, size_xor_pos * 4)
     output += "store(0x{:x}, krop + 0x{:x});\n".format(payload_size, size_plain_pos * 4)
+    output += "store(second_payload, krop + 0x{:x});\n".format(second_payload_pos * 4)
     return output
 
 def main():
@@ -81,9 +84,10 @@ def main():
         "payload_addr": 0xF0F0F0F0,
         "payload_size": 0x0A0A0A00,
         "sysmem_base": 0xB0B00000,
+        "second_payload": 0xC0C0C0C0,
     }
 
-    first = build(tpl.format(payload_addr=0, payload_size=0, sysmem_base=0).encode("ascii") + code)
+    first = build(tpl.format(payload_addr=0, payload_size=0, sysmem_base=0, second_payload=0).encode("ascii") + code)
     second = build(tpl.format(**tags).encode("ascii") + code)
 
     if len(first) != len(second):
@@ -95,7 +99,7 @@ def main():
     krop = first = chunk(first, 4)
     second = chunk(second, 4)
     relocs = [0] * len(first)
-    addr_pos = size_shift_pos = size_xor_pos = size_plain_pos = -1
+    addr_pos = size_shift_pos = size_xor_pos = size_plain_pos = second_payload_pos = -1
     for i, (first_word, second_word) in enumerate(zip(first, second)):
         if first_word != second_word:
             second = int.from_bytes(second_word, "little")
@@ -107,20 +111,22 @@ def main():
                 size_xor_pos = i
             elif second == tags["payload_size"]:
                 size_plain_pos = i
+            elif second == tags["second_payload"]:
+                second_payload_pos = i
             else:
                 relocs[i] = 1
 
-    if -1 in [addr_pos, size_shift_pos, size_xor_pos, size_plain_pos]:
-        print("unable to resolve positions: addr={}, size_shift={}, size_xor={}, size_plain={}".format(
-            addr_pos, size_shift_pos, size_xor_pos, size_plain_pos))
+    if -1 in [addr_pos, size_shift_pos, size_xor_pos, size_plain_pos, second_payload_pos]:
+        print("unable to resolve positions: addr={}, size_shift={}, size_xor={}, size_plain={}, second_payload={}".format(
+            addr_pos, size_shift_pos, size_xor_pos, size_plain_pos, second_payload_pos))
         return -2
 
     print("Kernel rop size: 0x{:x} bytes".format(len(krop) * 4))
 
     with open(os.path.join(argv[2], "krop.c"), "w") as fout:
-        fout.write(write_c_code(krop, relocs, addr_pos, size_shift_pos, size_xor_pos, size_plain_pos))
+        fout.write(write_c_code(krop, relocs, addr_pos, size_shift_pos, size_xor_pos, size_plain_pos, second_payload_pos))
     with open(os.path.join(argv[2], "krop.rop"), "w") as fout:
-        fout.write(write_rop_code(krop, relocs, addr_pos, size_shift_pos, size_xor_pos, size_plain_pos))
+        fout.write(write_rop_code(krop, relocs, addr_pos, size_shift_pos, size_xor_pos, size_plain_pos, second_payload_pos))
 
 
 if __name__ == "__main__":
