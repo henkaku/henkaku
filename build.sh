@@ -31,6 +31,9 @@ cat payload/pad.bin build/loader.bin > build/loader.full
 openssl enc -aes-256-ecb -in build/loader.full -out build/loader.enc -K BD00BF08B543681B6B984708BD00BF0023036018467047D0F8A03043F69D1130
 openssl enc -aes-128-ecb -in build/payload.bin -out build/payload.enc -K 2975dabd59e574ddec2876d65d11089e
 
+./payload/block_check.py build/loader.enc
+./payload/block_check.py build/payload.enc
+
 echo "2) Kernel ROP"
 ./krop/build_rop.py krop/rop.S build/
 
