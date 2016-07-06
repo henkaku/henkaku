@@ -27,7 +27,8 @@ $CC -c -o build/payload.o payload/payload.c $CFLAGS
 $LD -o build/payload.elf build/payload.o $LDFLAGS
 $OBJCOPY -O binary build/payload.elf build/payload.bin
 
-cat payload/pad.bin build/loader.bin > build/loader.full
+dd if=/dev/zero of=build/pad.bin bs=32 count=1
+cat build/pad.bin build/loader.bin > build/loader.full
 openssl enc -aes-256-ecb -in build/loader.full -out build/loader.enc -K BD00BF08B543681B6B984708BD00BF0023036018467047D0F8A03043F69D1130
 openssl enc -aes-128-ecb -in build/payload.bin -out build/payload.enc -K 2975dabd59e574ddec2876d65d11089e
 
