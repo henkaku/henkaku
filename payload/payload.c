@@ -1,6 +1,6 @@
 #include <inttypes.h>
 
-#define DEBUG 0
+#define DEBUG 1
 
 #if DEBUG
 #define LOG debug_print
@@ -215,7 +215,7 @@ unsigned hook_sbl_BC422443(unsigned a1, unsigned a2, unsigned a3) {
 	return hook_resume_sbl_BC422443(a1, a2, a3);
 }
 
-void payload(uint32_t sysmem_addr) {
+void __attribute__ ((section (".text.start"))) payload(uint32_t sysmem_addr) {
 	// find sysmem base, etc
 	uint32_t sysmem_base = sysmem_addr;
 	uint32_t ret;

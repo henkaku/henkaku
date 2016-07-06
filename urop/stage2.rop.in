@@ -48,10 +48,11 @@ data
 	symbol kstack_offset_to_data = 1784;
 	variable kx_loader_addr;
 
+	// first binary payload which is small and loads the second payload
 	#include "../build/kx_loader.rop"
 
 	// actual second payload (TODO: encrypt it)
-	buffer second_payload[4] = {0xFE, 0xE7};
+	#include "../build/second_payload.rop"
 }
 
 code : entry
@@ -334,9 +335,11 @@ code : entry
 	sceKernelDelayThread(1*1000*1000);
 	PRINTF("user thread reports %d\n", [pret]);
 
-	add([pret], 1052); // => should be zero now
+/*
+	add([pret], 1052); // => should be zero now (when using tester func, not actual payload)
 	add(&return, infloop);  // => crash on fail infloop on success
 	call_r0(0);
+*/
 
 	infloop();
 }
