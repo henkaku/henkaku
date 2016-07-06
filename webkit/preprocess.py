@@ -95,12 +95,18 @@ def main():
 	urop_js = [u32(urop, x) for x in range(0, want_len, 4)]
 
 	with open(argv[2], "wb") as fout:
-		if argv[2].endswith("php"):
-			tpl = tpl_php
-		else:
-			tpl = tpl_js
+		fout.write((want_len // 4).to_bytes(4, "little"))
+		for word in urop_js:
+			fout.write(word.to_bytes(4, "little"))
+		for reloc in relocs:
+			fout.write(reloc.to_bytes(1, "little"))
 
-		fout.write(tpl.format(",".join(str(x) for x in urop_js), ",".join(str(x) for x in relocs)).encode("ascii"))
+		# if argv[2].endswith("php"):
+		# 	tpl = tpl_php
+		# else:
+		# 	tpl = tpl_js
+
+		# fout.write(tpl.format(",".join(str(x) for x in urop_js), ",".join(str(x) for x in relocs)).encode("ascii"))
 
 if __name__ == "__main__":
 	exit(main())
