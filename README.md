@@ -18,7 +18,7 @@ Run `./build.sh` to build everything. This script first cleans up all build dire
 It's useful to have everything be automatically rebuilt when a source file changes. To achieve that, install `entr` and execute in a separate termina:
 
 ```
-while sleep 1; do find build.sh krop/ payload/ urop/ webkit/ | entr -d bash -c "./build.sh && cp -r output/ ~/vita-re/wk360/" ; done
+while sleep 1; do find build.sh krop/ payload/ urop/ webkit/ | entr -d ./build.sh ; done
 ```
 
 Then when you change a source file (or add a new one), everything will be automatically rebuilt. Note that if you add a new directory, you will need to update the script.
