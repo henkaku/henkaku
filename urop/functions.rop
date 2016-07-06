@@ -86,3 +86,5 @@ function sceHttpReadData = ASLR::SceLibHttp + 0x9983;
 
 symbol ldm_r1_stuff = ASLR::SceWebKit + 0x54c8; //54c8: e891a916 ldm r1, {r1, r2, r4, r8, fp, sp, pc}
 symbol pop_pc = ASLR::SceWebKit + 0xc048b;
+
+function bx_lr = ASLR::SceWebKit + 0x575;
