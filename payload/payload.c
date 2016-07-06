@@ -256,7 +256,7 @@ void __attribute__ ((section (".text.start"))) payload(uint32_t sysmem_addr) {
 	LOG("sceKernelGetModuleList() returned 0x%x\n", ret);
 	LOG("modlist_records: %d\n", modlist_records);
 	module_info_t *threadmgr_info = 0, *sblauthmgr_info = 0;
-	u32_t scenet_code = 0, scenet_data = 0;
+	u32_t scenet_code = 0, scenet_data = 0, scenpdrm_code = 0;
 	for (int i = 0; i < modlist_records; ++i) {
 		info.size = sizeof(info);
 		ret = sceKernelGetModuleInfoForKernel(0x10005, modlist[i], &info);
@@ -264,6 +264,8 @@ void __attribute__ ((section (".text.start"))) payload(uint32_t sysmem_addr) {
 			threadmgr_info = find_modinfo((u32_t)info.segments[0].vaddr, "SceKernelThreadMgr");
 		if (strcmp(info.name, "SceSblAuthMgr") == 0)
 			sblauthmgr_info = find_modinfo((u32_t)info.segments[0].vaddr, "SceSblAuthMgr");
+		if (strcmp(info.name, "SceNpDrm") == 0)
+			scenpdrm_code = (u32_t)info.segments[0].vaddr;
 		if (strcmp(info.name, "SceNetPs") == 0) {
 			scenet_code = (u32_t)info.segments[0].vaddr;
 			scenet_data = (u32_t)info.segments[1].vaddr;
@@ -271,6 +273,7 @@ void __attribute__ ((section (".text.start"))) payload(uint32_t sysmem_addr) {
 	}
 
 	LOG("threadmgr_info: 0x%08x | sblauthmgr_info: 0x%08x | scenet_code: 0x%08x | scenet_data: 0x%08x\n", threadmgr_info, sblauthmgr_info, scenet_code, scenet_data);
+	LOG("scenpdrm_code: 0x%08x\n", scenpdrm_code);
 
 	LOG("Fixup: unlock SceNetPs global mutex ");
 	// 3.60
@@ -281,6 +284,7 @@ void __attribute__ ((section (".text.start"))) payload(uint32_t sysmem_addr) {
 	LOG("=> ret = 0x%08x\n", ret);
 
 	// homebrew enable
+	uint32_t *patch;
 	DACR_OFF(
 		hook_resume_sbl_F3411881 = find_export(sblauthmgr_info, 0xF3411881);
 		hook_resume_sbl_89CCDA2C = find_export(sblauthmgr_info, 0x89CCDA2C);
@@ -288,8 +292,15 @@ void __attribute__ ((section (".text.start"))) payload(uint32_t sysmem_addr) {
 		INSTALL_HOOK(hook_sbl_F3411881, (char*)modulemgr_base + 0xb68c); // 3.60
 		INSTALL_HOOK(hook_sbl_89CCDA2C, (char*)modulemgr_base + 0xb64c); // 3.60
 		INSTALL_HOOK(hook_sbl_BC422443, (char*)modulemgr_base + 0xb67c); // 3.60
+
+		// patch error code 0x80870003 C0-9249-4
+		patch = (void*)(scenpdrm_code + 0x8068); // 3.60
+		*patch = 0x2500; // mov r5, 0
+		patch = (void*)(scenpdrm_code + 0x9994); // 3.60
+		*patch = 0x2600; // mov r6, 0
 	);
 	SceCpuForDriver_9CB9F0CE_flush_icache((char*)modulemgr_base + 0xb640, 0x80); // should cover all patched exports
+	SceCpuForDriver_9CB9F0CE_flush_icache(scenpdrm_code + 0x8000, 0x2000); // and npdrm patches
 	// end homebrew enable
 
 	LOG("Kill current thread =>");
