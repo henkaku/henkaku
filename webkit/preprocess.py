@@ -76,7 +76,7 @@ def main():
 		sym_id = u16(urop, reloc_offset + 8 * x + 2)
 		offset = u32(urop, reloc_offset + 8 * x + 4)
 		print_dbg = lambda: print("type {} sym {} offset {}".format(reloc_type, reloc_map[sym_id], offset))
-		print_dbg()
+		# print_dbg()
 		if offset % 4 != 0:
 			print_dbg()
 			print("offset % 4 != 0???")
