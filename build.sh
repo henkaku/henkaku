@@ -43,5 +43,9 @@ erb build/exploit.rop.in > build/exploit.rop
 roptool -s build/exploit.rop -t webkit-360-pkg -o build/exploit.rop.bin -v >/dev/null
 
 echo "4) Webkit"
-cp webkit/exploit.html output/
+uglifyjs webkit/exploit.js -m "toplevel" > build/exploit.js
+touch output/exploit.html
+printf "<script src=payload.js></script><script>" >> output/exploit.html
+cat build/exploit.js >> output/exploit.html
+printf "</script>" >> output/exploit.html
 ./webkit/preprocess.py build/exploit.rop.bin output/payload.js
