@@ -51,7 +51,7 @@ echo "3) User ROP"
 
 $PREPROCESS urop/exploit.rop.in -o build/exploit.rop.in
 erb build/exploit.rop.in > build/exploit.rop
-roptool -s build/exploit.rop -t webkit-360-pkg -o build/exploit.rop.bin -v >/dev/null
+roptool -s build/exploit.rop -t webkit-360-pkg -o build/exploit.rop.bin
 
 echo "4) Webkit"
 uglifyjs webkit/exploit.js -m "toplevel" > build/exploit.js

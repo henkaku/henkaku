@@ -256,7 +256,7 @@ void __attribute__ ((section (".text.start"))) payload(uint32_t sysmem_addr) {
 	LOG("sceKernelGetModuleList() returned 0x%x\n", ret);
 	LOG("modlist_records: %d\n", modlist_records);
 	module_info_t *threadmgr_info = 0, *sblauthmgr_info = 0;
-	u32_t scenet_code = 0, scenet_data = 0, scenpdrm_code = 0;
+	u32_t scenet_code = 0, scenet_data = 0, scenpdrm_code = 0, scesblacmgr_code = 0;
 	for (int i = 0; i < modlist_records; ++i) {
 		info.size = sizeof(info);
 		ret = sceKernelGetModuleInfoForKernel(0x10005, modlist[i], &info);
@@ -266,6 +266,8 @@ void __attribute__ ((section (".text.start"))) payload(uint32_t sysmem_addr) {
 			sblauthmgr_info = find_modinfo((u32_t)info.segments[0].vaddr, "SceSblAuthMgr");
 		if (strcmp(info.name, "SceNpDrm") == 0)
 			scenpdrm_code = (u32_t)info.segments[0].vaddr;
+		if (strcmp(info.name, "SceSblACMgr") == 0)
+			scesblacmgr_code = (u32_t)info.segments[0].vaddr;
 		if (strcmp(info.name, "SceNetPs") == 0) {
 			scenet_code = (u32_t)info.segments[0].vaddr;
 			scenet_data = (u32_t)info.segments[1].vaddr;
@@ -298,9 +300,26 @@ void __attribute__ ((section (".text.start"))) payload(uint32_t sysmem_addr) {
 		*patch = 0x2500; // mov r5, 0
 		patch = (void*)(scenpdrm_code + 0x9994); // 3.60
 		*patch = 0x2600; // mov r6, 0
+
+/*
+		patch = (void*)(scenpdrm_code + 0x6ADE);
+		*patch = 0xFFFFFFFF;
+		patch = (void*)(scenpdrm_code + 0x6C94);
+		*patch = 0xFFFFFFFF;
+		patch = (void*)(scenpdrm_code + 0x6D88);
+		*patch = 0xFFFFFFFF;
+
+		patch = (void*)(scesblacmgr_code + 0x1370);
+		*patch = 0xFFFFFFFF;
+		patch = (void*)(scesblacmgr_code + 0x168C);
+		*patch = 0xFFFFFFFF;
+*/
+		patch = (void*)(scesblacmgr_code + 0x700);
+		*patch = 0x47702001; // mov r0, #1 ; bx lr
 	);
 	SceCpuForDriver_9CB9F0CE_flush_icache((char*)modulemgr_base + 0xb640, 0x80); // should cover all patched exports
-	SceCpuForDriver_9CB9F0CE_flush_icache(scenpdrm_code + 0x8000, 0x2000); // and npdrm patches
+	SceCpuForDriver_9CB9F0CE_flush_icache(scenpdrm_code + 0x6000, 0x4000); // and npdrm patches
+	SceCpuForDriver_9CB9F0CE_flush_icache(scesblacmgr_code, 0x2000);
 	// end homebrew enable
 
 	LOG("Kill current thread =>");
