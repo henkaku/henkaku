@@ -64,6 +64,7 @@ def main():
 		("SceLibc", 0): 4,        # dest += SceLibc_base
 		("SceLibHttp", 0): 5,     # dest += SceLibHttp_base
 		("SceNet", 0): 6,         # dest += SceNet_base
+		("SceAppMgr", 0): 7,      # dest += SceAppMgr_base
 	}
 
 	# we don't need symtab/strtab/relocs
@@ -100,6 +101,8 @@ def main():
 			fout.write(word.to_bytes(4, "little"))
 		for reloc in relocs:
 			fout.write(reloc.to_bytes(1, "little"))
+		while fout.tell() % 4 != 0:
+			fout.write(b"\x00")
 
 		# if argv[2].endswith("php"):
 		# 	tpl = tpl_php
