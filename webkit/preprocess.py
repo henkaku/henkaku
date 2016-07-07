@@ -95,14 +95,20 @@ def main():
 
 	urop_js = [u32(urop, x) for x in range(0, want_len, 4)]
 
-	with open(argv[2], "wb") as fout:
-		fout.write((want_len // 4).to_bytes(4, "little"))
-		for word in urop_js:
-			fout.write(word.to_bytes(4, "little"))
-		for reloc in relocs:
-			fout.write(reloc.to_bytes(1, "little"))
-		while fout.tell() % 4 != 0:
-			fout.write(b"\x00")
+	filename = argv[2]
+	if filename.endswith(".js"):
+		with open(filename, "w") as fout:
+			tpl = tpl_js
+			fout.write(tpl.format(",".join(str(x) for x in urop_js), ",".join(str(x) for x in relocs)))
+	else:
+		with open(filename, "wb") as fout:
+			fout.write((want_len // 4).to_bytes(4, "little"))
+			for word in urop_js:
+				fout.write(word.to_bytes(4, "little"))
+			for reloc in relocs:
+				fout.write(reloc.to_bytes(1, "little"))
+			while fout.tell() % 4 != 0:
+				fout.write(b"\x00")
 
 		# if argv[2].endswith("php"):
 		# 	tpl = tpl_php

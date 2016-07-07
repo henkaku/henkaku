@@ -6,6 +6,7 @@ set -ex
 # output: final files only, for distribution
 rm -rf build output
 mkdir build output
+mkdir output/static output/dynamic
 
 echo "1) Payload"
 
@@ -53,11 +54,33 @@ $PREPROCESS urop/exploit.rop.in -o build/exploit.rop.in
 erb build/exploit.rop.in > build/exploit.rop
 roptool -s build/exploit.rop -t webkit-360-pkg -o build/exploit.rop.bin
 
+if [ ! -f urop/config.rop ]; then
+    echo "Please copy urop/config.rop.in to urop/config.rop and configure it"
+    echo "(If you don't need dynamic website support, just copy it without changing anything)"
+    exit 1
+fi
+
+$PREPROCESS urop/loader.rop.in -o build/loader.rop.in
+erb build/loader.rop.in > build/loader.rop
+roptool -s build/loader.rop -t webkit-360-pkg -o build/loader.rop.bin
+
 echo "4) Webkit"
-uglifyjs webkit/exploit.js -m "toplevel" > build/exploit.js
-touch output/exploit.html
-# printf "<script src=payload.js></script><script>" >> output/exploit.html
-printf "<script>" >> output/exploit.html
-cat build/exploit.js >> output/exploit.html
-printf "</script>" >> output/exploit.html
-./webkit/preprocess.py build/exploit.rop.bin output/payload.bin
+# Static website
+$PREPROCESS webkit/exploit.js -DSTATIC=1 -o build/exploit.static.js
+uglifyjs build/exploit.static.js -m "toplevel" > build/exploit.js
+touch output/static/exploit.html
+printf "<script>" >> output/static/exploit.html
+cat build/exploit.js >> output/static/exploit.html
+printf "</script>" >> output/static/exploit.html
+./webkit/preprocess.py build/exploit.rop.bin output/static/payload.bin
+
+# Dynamic website
+$PREPROCESS webkit/exploit.js -DSTATIC=0 -o build/exploit.dynamic.js
+uglifyjs build/exploit.dynamic.js -m "toplevel" > build/exploit.js
+touch output/dynamic/exploit.html
+printf "<script src='payload.js'></script><script>" >> output/dynamic/exploit.html
+cat build/exploit.js >> output/dynamic/exploit.html
+printf "</script>" >> output/dynamic/exploit.html
+cp output/static/payload.bin output/dynamic/stage2.bin
+./webkit/preprocess.py build/loader.rop.bin output/dynamic/payload.js
+cp webkit/stage2.php output/dynamic/stage2.php

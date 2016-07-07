@@ -27,7 +27,11 @@ Then when you change a source file (or add a new one), everything will be automa
 
 Distribute only the files from the `output` directory, don't distribute any other files.
 
-Serve the `output` directory using any web server (e.g. `python3 -m http.server`). The exploit is self contained and doesn't download any files.
+There are two versions of the exploit, located in the `output` directory.
+
+The `static` subdirectory contains a version that does not require any server-side scripting support. You can serve it using any web server (e.g. `python3 -m http.server`). The exploit is self contained and doesn't download any files.
+
+The `dynamic` subdirectory contains a version that has its payload split into two stages. The first stage downloads the second stage from the internet. You need to serve this directory using a server that supports PHP scripting. This version is more stable and is recommended.
 
 # Exploit
 
