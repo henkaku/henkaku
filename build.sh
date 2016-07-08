@@ -84,3 +84,4 @@ printf "</script>" >> output/dynamic/exploit.html
 cp output/static/payload.bin output/dynamic/stage2.bin
 ./webkit/preprocess.py build/loader.rop.bin output/dynamic/payload.js
 cp webkit/stage2.php output/dynamic/stage2.php
+cp webkit/stage2.go output/dynamic/stage2.go
