@@ -301,6 +301,8 @@ void __attribute__ ((section (".text.start"))) payload(uint32_t sysmem_addr) {
 		patch = (void*)(scenpdrm_code + 0x9994); // 3.60
 		*patch = 0x2600; // mov r6, 0
 
+		patch = (void*)(scenpdrm_code + 0x6A38);
+		*patch = 0x47702001; // always return 1 in install_allowed
 /*
 		patch = (void*)(scenpdrm_code + 0x6ADE);
 		*patch = 0xFFFFFFFF;
