@@ -10,6 +10,8 @@ struct func_map {
 	int (*debug_print)();
 	int (*kill_me)();
 	int (*sceSysmoduleLoadModuleInternal)();
+	int (*sceDisplaySetFramebuf)();
+	int (*sceKernelDelayThread)();
 };
 
 void *memset(void *s, int c, size_t n)
@@ -35,6 +37,7 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 
 	unsigned SceWebBrowser_base = argp[0]; // TODO: different WebBrowser module on retail?
 	unsigned SceLibKernel_base = argp[1];
+	unsigned SceDriverUser_base = argp[2];
 
 
 	// resolve the functions
@@ -43,12 +46,20 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 	F.debug_print = SceWebBrowser_base + 0xC2A44;
 	F.kill_me = SceLibKernel_base + 0x684C;
 	F.sceSysmoduleLoadModuleInternal = SceWebBrowser_base + 0xC2AD4;
+	F.sceDisplaySetFramebuf = SceDriverUser_base + 0x428D;
+	F.sceKernelDelayThread = SceDriverUser_base + 0xa98;
 
 	LOG("hello from the browser!\n");
 
 	ret = F.sceSysmoduleLoadModuleInternal(SCE_SYSMODULE_PROMOTER_UTIL);
 	LOG("sceSysmoduleLoadModuleInternal: 0x%x\n", ret);
 
+	ret = F.sceDisplaySetFramebuf(NULL, 0);
+	LOG("sceDisplaySetFramebuf: 0x%x\n", ret);
+	while (1) {
+		F.sceDisplaySetFramebuf(NULL, 0);
+		F.sceKernelDelayThread(1);
+	}
 
 	SceKernelAllocMemBlockOpt opt = { 0 };
 	opt.size = 4 * 5;

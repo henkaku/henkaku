@@ -195,6 +195,7 @@ unsigned scenpdrm_code = 0;
 int pid = 0, ppid = 0;
 unsigned SceWebBrowser_base = 0;
 unsigned SceLibKernel_base = 0;
+unsigned SceDriverUser_base = 0;
 
 // setup file decryption
 unsigned hook_sbl_F3411881(unsigned a1, unsigned a2, unsigned a3, unsigned a4) {
@@ -307,6 +308,8 @@ void thread_main() {
 			DACR_OFF(SceWebBrowser_base = info.segments[0].vaddr);
 		else if (strcmp(info.name, "SceLibKernel") == 0)
 			DACR_OFF(SceLibKernel_base = info.segments[0].vaddr);
+		else if (strcmp(info.name, "SceDriverUser") == 0)
+			DACR_OFF(SceDriverUser_base = info.segments[0].vaddr);
 	}
 }
 
@@ -318,7 +321,7 @@ void takeover_web_browser() {
 	popt[0] = sizeof(popt);
 	popt[2] = 0xA0000000;
 	popt[9] = ppid; // allocate in webbrocess space
-	ret = sceKernelAllocMemBlockForKernel("", 0xC20D050, 0x1000, popt);
+	ret = sceKernelAllocMemBlockForKernel("", 0xC20D050, 0x4000, popt);
 	LOG("alloc memblock ret = 0x%x\n", ret);
 	if (ret & 0x80000000)
 		return;
@@ -327,13 +330,13 @@ void takeover_web_browser() {
 	LOG("getbase ret = 0x%x base = 0x%x\n", ret, base);
 
 	// inject the code
-	unrestricted_memcpy_for_pid(ppid, base, build_user_bin, build_user_bin_len);
+	unrestricted_memcpy_for_pid(ppid, base, build_user_bin, (build_user_bin_len + 0x10) & ~0xF);
 	LOG("code injected\n");
 
 	int thread = sceKernelCreateThreadForPid(ppid, "", base|1, 64, 0x4000, 0x800000, 0, 0);
 	LOG("create thread 0x%x\n", thread);
 
-	unsigned args[] = { SceWebBrowser_base, SceLibKernel_base };
+	unsigned args[] = { SceWebBrowser_base, SceLibKernel_base, SceDriverUser_base };
 	ret = sceKernelStartThread_089(thread, sizeof(args), args);
 	LOG("sceKernelStartThread_089 ret 0x%x\n", ret);
 }
