@@ -194,6 +194,7 @@ unsigned scesblacmgr_code = 0;
 unsigned scenpdrm_code = 0;
 int pid = 0, ppid = 0;
 unsigned SceWebBrowser_base = 0;
+unsigned SceLibKernel_base = 0;
 
 // setup file decryption
 unsigned hook_sbl_F3411881(unsigned a1, unsigned a2, unsigned a3, unsigned a4) {
@@ -304,10 +305,10 @@ void thread_main() {
 	for (int i = 0; i < modlist_records; ++i) {
 		info.size = sizeof(info);
 		ret = sceKernelGetModuleInfoForKernel(ppid, modlist[i], &info);
-		if (strcmp(info.name, "SceWebBrowser") == 0) {
+		if (strcmp(info.name, "SceWebBrowser") == 0)
 			DACR_OFF(SceWebBrowser_base = info.segments[0].vaddr);
-			break;
-		}
+		else if (strcmp(info.name, "SceLibKernel") == 0)
+			DACR_OFF(SceLibKernel_base = info.segments[0].vaddr);
 	}
 }
 
@@ -333,7 +334,7 @@ void takeover_web_browser() {
 	int thread = sceKernelCreateThreadForPid(ppid, "", base|1, 64, 0x4000, 0x800000, 0, 0);
 	LOG("create thread 0x%x\n", thread);
 
-	unsigned args[] = { SceWebBrowser_base };
+	unsigned args[] = { SceWebBrowser_base, SceLibKernel_base };
 	ret = sceKernelStartThread_089(thread, sizeof(args), args);
 	LOG("sceKernelStartThread_089 ret 0x%x\n", ret);
 }
