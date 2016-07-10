@@ -8,8 +8,6 @@ rm -rf build output
 mkdir build output
 mkdir output/static output/dynamic
 
-echo "1) Payload"
-
 CC=arm-vita-eabi-gcc
 LD=arm-vita-eabi-gcc
 AS=arm-vita-eabi-as
@@ -17,6 +15,15 @@ OBJCOPY=arm-vita-eabi-objcopy
 CFLAGS="-fPIE -fno-zero-initialized-in-bss -std=c99 -mcpu=cortex-a9 -Os -mthumb"
 LDFLAGS="-T payload/linker.x -nodefaultlibs -nostdlib -pie"
 PREPROCESS="$CC -E -P -C -w -x c"
+
+echo "0) User payload"
+# user payload is injected into web browser process
+$CC -c -o build/user.o payload/user.c $CFLAGS
+$LD -o build/user.elf build/user.o $LDFLAGS
+$OBJCOPY -O binary build/user.elf build/user.bin
+xxd -i build/user.bin > build/user.h
+
+echo "1) Payload"
 
 # loader decrypts and lods a larger payload
 $CC -c -o build/loader.o payload/loader.c $CFLAGS

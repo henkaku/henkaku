@@ -175,6 +175,23 @@ int (*hook_resume_sbl_F3411881)() = 0;
 int (*hook_resume_sbl_89CCDA2C)() = 0;
 int (*hook_resume_sbl_BC422443)() = 0;
 
+int (*sceKernelGetProcessId)() = 0;
+int (*SceProcessmgrForDriver_0AFF3EAE)() = 0;
+int (*unrestricted_memcpy_for_pid)(int pid, void *dst, void *src, unsigned len) = 0;
+int (*sceKernelMemcpyUserToKernelForPid)(int pid, void *dst, void *src, unsigned len) = 0;
+int (*sceKernelCreateThreadForPid)() = 0;
+int (*sceKernelStartThread_089)() = 0;
+int (*sceKernelAllocMemBlockForKernel)() = 0;
+int (*sceKernelGetMemBlockBaseForKernel)() = 0;
+void (*SceCpuForDriver_9CB9F0CE_flush_icache)(void *addr, uint32_t size) = 0;
+int (*sceKernelCreateThreadForKernel)() = 0;
+int (*sceKernelExitDeleteThread)() = 0;
+
+unsigned modulemgr_base = 0;
+unsigned scesblacmgr_code = 0;
+unsigned scenpdrm_code = 0;
+int pid = 0;
+
 // setup file decryption
 unsigned hook_sbl_F3411881(unsigned a1, unsigned a2, unsigned a3, unsigned a4) {
 	LOG("sbl_F3411881(0x%x, 0x%x, 0x%x, 0x%x)\n", a1, a2, a3, a4);
@@ -215,82 +232,20 @@ unsigned hook_sbl_BC422443(unsigned a1, unsigned a2, unsigned a3) {
 	return hook_resume_sbl_BC422443(a1, a2, a3);
 }
 
-void __attribute__ ((section (".text.start"))) payload(uint32_t sysmem_addr) {
-	// find sysmem base, etc
-	uint32_t sysmem_base = sysmem_addr;
-	uint32_t ret;
-	void (*debug_print_local)(char *s, ...) = (void*)(sysmem_base + 0x1A155); // 3.60
+void print_buffer(unsigned *buffer) {
+	for (int i = 0; i < 0x100; ++i)
+		LOG("0x%x: 0x%x\n", i, buffer[i]);
+}
 
-	module_info_t *sysmem_info = find_modinfo(sysmem_addr, "SceSysmem");
-	void (*SceCpuForDriver_9CB9F0CE_flush_icache)(void *addr, uint32_t size) = find_export(sysmem_info, 0x9CB9F0CE);
+// this is user shellcode
+#include "../build/user.h"
 
-	DACR_OFF(
-		debug_print = debug_print_local;
-	);
-
-	LOG("+++ Entered kernel payload +++\n");
-	
-	// 3.60-specific offsets here, used to find Modulemgr from just sysmem base
-	LOG("sysmem base: 0x%08x\n", sysmem_base);
-	void *sysmem_data = (void*)(*(u32_t*)((u32_t)(sysmem_base) + 0x26a68) - 0xA0);
-	LOG("sysmem data base: 0x%08x\n", sysmem_data);
-	void *modulemgr_base = (void*)(*(u32_t*)((u32_t)(sysmem_data) + 0x438c) - 0x40);
-	LOG("modulemgr base: 0x%08x\n", modulemgr_base);
-	// end of 3.60-specific offsets
-
-	module_info_t *modulemgr_info = find_modinfo((u32_t)modulemgr_base, "SceKernelModulemgr");
-	LOG("modulemgr modinfo: 0x%08x\n", modulemgr_info);
-
-	int (*sceKernelGetModuleListForKernel)() = find_export(modulemgr_info, 0x97CF7B4E);
-	int (*sceKernelGetModuleInfoForKernel)() = find_export(modulemgr_info, 0xD269F915);
-	LOG("sceKernelGetModuleListForKernel: %08x\n", sceKernelGetModuleListForKernel);
-	LOG("sceKernelGetModuleInfoForKernel: %08x\n", sceKernelGetModuleInfoForKernel);
-
-	int *modlist[MOD_LIST_SIZE];
-	int modlist_records;
-	int res;
-	SceModInfo info;
-
-	modlist_records = MOD_LIST_SIZE;
-	ret = sceKernelGetModuleListForKernel(0x10005, 0x7FFFFFFF, 1, modlist, &modlist_records);
-	LOG("sceKernelGetModuleList() returned 0x%x\n", ret);
-	LOG("modlist_records: %d\n", modlist_records);
-	module_info_t *threadmgr_info = 0, *sblauthmgr_info = 0;
-	u32_t scenet_code = 0, scenet_data = 0, scenpdrm_code = 0, scesblacmgr_code = 0;
-	for (int i = 0; i < modlist_records; ++i) {
-		info.size = sizeof(info);
-		ret = sceKernelGetModuleInfoForKernel(0x10005, modlist[i], &info);
-		if (strcmp(info.name, "SceKernelThreadMgr") == 0)
-			threadmgr_info = find_modinfo((u32_t)info.segments[0].vaddr, "SceKernelThreadMgr");
-		if (strcmp(info.name, "SceSblAuthMgr") == 0)
-			sblauthmgr_info = find_modinfo((u32_t)info.segments[0].vaddr, "SceSblAuthMgr");
-		if (strcmp(info.name, "SceNpDrm") == 0)
-			scenpdrm_code = (u32_t)info.segments[0].vaddr;
-		if (strcmp(info.name, "SceSblACMgr") == 0)
-			scesblacmgr_code = (u32_t)info.segments[0].vaddr;
-		if (strcmp(info.name, "SceNetPs") == 0) {
-			scenet_code = (u32_t)info.segments[0].vaddr;
-			scenet_data = (u32_t)info.segments[1].vaddr;
-		}
-	}
-
-	LOG("threadmgr_info: 0x%08x | sblauthmgr_info: 0x%08x | scenet_code: 0x%08x | scenet_data: 0x%08x\n", threadmgr_info, sblauthmgr_info, scenet_code, scenet_data);
-	LOG("scenpdrm_code: 0x%08x\n", scenpdrm_code);
-
-	LOG("Fixup: unlock SceNetPs global mutex ");
-	// 3.60
-	int (*sce_psnet_bnet_mutex_unlock)() = (void*)(scenet_code + 0x2a098|1);
-	void *mutex = (void*)((u32_t)scenet_data + 0x850);
-	// end
-	ret = sce_psnet_bnet_mutex_unlock(mutex);
-	LOG("=> ret = 0x%08x\n", ret);
+void thread_main() {
+	unsigned ret;
 
 	// homebrew enable
 	uint32_t *patch;
 	DACR_OFF(
-		hook_resume_sbl_F3411881 = find_export(sblauthmgr_info, 0xF3411881);
-		hook_resume_sbl_89CCDA2C = find_export(sblauthmgr_info, 0x89CCDA2C);
-		hook_resume_sbl_BC422443 = find_export(sblauthmgr_info, 0xBC422443);
 		INSTALL_HOOK(hook_sbl_F3411881, (char*)modulemgr_base + 0xb68c); // 3.60
 		INSTALL_HOOK(hook_sbl_89CCDA2C, (char*)modulemgr_base + 0xb64c); // 3.60
 		INSTALL_HOOK(hook_sbl_BC422443, (char*)modulemgr_base + 0xb67c); // 3.60
@@ -324,8 +279,161 @@ void __attribute__ ((section (".text.start"))) payload(uint32_t sysmem_addr) {
 	SceCpuForDriver_9CB9F0CE_flush_icache(scesblacmgr_code, 0x2000);
 	// end homebrew enable
 
+	// takeover the web browser
+
+	unsigned data[0xE8/4];
+	data[0] = sizeof(data);
+	SceProcessmgrForDriver_0AFF3EAE(pid, data);
+	int ppid = data[5];
+	LOG("WebBrowser PID: 0x%x\n", ppid);
+	for (int i = 0; i < 0xE8/4; ++i)
+		LOG("%d: 0x%x\n", i, data[i]);
+
+	unsigned popt[0x58/4];
+	for (int i = 0; i < 0x58/4; ++i)
+		popt[i] = 0;
+	popt[0] = sizeof(popt);
+	popt[2] = 0xA0000000;
+	popt[9] = ppid; // allocate in webbrocess space
+	ret = sceKernelAllocMemBlockForKernel("", 0xC20D050, 0x1000, popt);
+	LOG("alloc memblock ret = 0x%x\n", ret);
+	if (ret & 0x80000000)
+		return;
+	unsigned base = 0;
+	ret = sceKernelGetMemBlockBaseForKernel(ret, &base);
+	LOG("getbase ret = 0x%x base = 0x%x\n", ret, base);
+
+	// inject the code
+	unrestricted_memcpy_for_pid(ppid, base, build_user_bin, build_user_bin_len);
+
+	int thread = sceKernelCreateThreadForPid(ppid, "", base|1, 64, 0x4000, 0x800000, 0, 0);
+	LOG("create thread 0x%x\n", thread);
+
+	unsigned args[] = { 0 };
+	ret = sceKernelStartThread_089(thread, sizeof(args), args);
+	LOG("sceKernelStartThread_089 ret 0x%x\n", ret);
+
+	// #define CODE_OFFSET (0x50000) // inject code here
+	// #define JUMP_OFFSET (0x40000) // inject nopsled and end it with a blx
+
+
+	// LOG("wrote user shellcode\n");
+
+	// unsigned userpatch[] = { 0x47804800,  base|1 }; // ldr r0, [pc] ; blx r0
+	// unrestricted_memcpy_for_pid(ppid, browser_addr + JUMP_OFFSET, userpatch, sizeof(userpatch));
+
+	// LOG("wrote jump\n");
+
+	// int nop = 0;
+	// for (int i = JUMP_OFFSET - sizeof(nop); i >= 0; i -= 4) {
+	// 	int ret = unrestricted_memcpy_for_pid(ppid, browser_addr + i, &nop, sizeof(nop));
+	// 	if (i % 0x1000 == 0)
+	// 		LOG("memcpy 0x%x\n", ret);
+	// }
+
+	// end takeover
+}
+
+void resolve_imports(unsigned sysmem_base) {
+	unsigned ret;
+	
+	module_info_t *sysmem_info = find_modinfo(sysmem_base, "SceSysmem");
+
+	// 3.60-specific offsets here, used to find Modulemgr from just sysmem base
+	LOG("sysmem base: 0x%08x\n", sysmem_base);
+	void *sysmem_data = (void*)(*(u32_t*)((u32_t)(sysmem_base) + 0x26a68) - 0xA0);
+	LOG("sysmem data base: 0x%08x\n", sysmem_data);
+	DACR_OFF(modulemgr_base = (void*)(*(u32_t*)((u32_t)(sysmem_data) + 0x438c) - 0x40););
+	LOG("modulemgr base: 0x%08x\n", modulemgr_base);
+	// end of 3.60-specific offsets
+
+	module_info_t *modulemgr_info = find_modinfo((u32_t)modulemgr_base, "SceKernelModulemgr");
+	LOG("modulemgr modinfo: 0x%08x\n", modulemgr_info);
+
+	int (*sceKernelGetModuleListForKernel)() = find_export(modulemgr_info, 0x97CF7B4E);
+	int (*sceKernelGetModuleInfoForKernel)() = find_export(modulemgr_info, 0xD269F915);
+	LOG("sceKernelGetModuleListForKernel: %08x\n", sceKernelGetModuleListForKernel);
+	LOG("sceKernelGetModuleInfoForKernel: %08x\n", sceKernelGetModuleInfoForKernel);
+
+	int *modlist[MOD_LIST_SIZE];
+	int modlist_records;
+	int res;
+	SceModInfo info;
+
+	modlist_records = MOD_LIST_SIZE;
+	ret = sceKernelGetModuleListForKernel(0x10005, 0x7FFFFFFF, 1, modlist, &modlist_records);
+	LOG("sceKernelGetModuleList() returned 0x%x\n", ret);
+	LOG("modlist_records: %d\n", modlist_records);
+	module_info_t *threadmgr_info = 0, *sblauthmgr_info = 0, *processmgr_info;
+	u32_t scenet_code = 0, scenet_data = 0;
+	for (int i = 0; i < modlist_records; ++i) {
+		info.size = sizeof(info);
+		ret = sceKernelGetModuleInfoForKernel(0x10005, modlist[i], &info);
+		if (strcmp(info.name, "SceKernelThreadMgr") == 0)
+			threadmgr_info = find_modinfo((u32_t)info.segments[0].vaddr, "SceKernelThreadMgr");
+		if (strcmp(info.name, "SceSblAuthMgr") == 0)
+			sblauthmgr_info = find_modinfo((u32_t)info.segments[0].vaddr, "SceSblAuthMgr");
+		if (strcmp(info.name, "SceNpDrm") == 0)
+			DACR_OFF(scenpdrm_code = (u32_t)info.segments[0].vaddr;);
+		if (strcmp(info.name, "SceSblACMgr") == 0) {
+			DACR_OFF(scesblacmgr_code = (u32_t)info.segments[0].vaddr;);
+		}
+		if (strcmp(info.name, "SceNetPs") == 0) {
+			scenet_code = (u32_t)info.segments[0].vaddr;
+			scenet_data = (u32_t)info.segments[1].vaddr;
+		}
+		if (strcmp(info.name, "SceProcessmgr") == 0)
+			processmgr_info = find_modinfo((u32_t)info.segments[0].vaddr, "SceProcessmgr");
+	}
+
+	LOG("threadmgr_info: 0x%08x | sblauthmgr_info: 0x%08x | scenet_code: 0x%08x | scenet_data: 0x%08x\n", threadmgr_info, sblauthmgr_info, scenet_code, scenet_data);
+	LOG("scenpdrm_code: 0x%08x\n", scenpdrm_code);
+
+	LOG("Fixup: unlock SceNetPs global mutex ");
+	// 3.60
+	int (*sce_psnet_bnet_mutex_unlock)() = (void*)(scenet_code + 0x2a098|1);
+	void *mutex = (void*)((u32_t)scenet_data + 0x850);
+	// end
+	ret = sce_psnet_bnet_mutex_unlock(mutex);
+	LOG("=> ret = 0x%08x\n", ret);
+
+	DACR_OFF(
+		hook_resume_sbl_F3411881 = find_export(sblauthmgr_info, 0xF3411881);
+		hook_resume_sbl_89CCDA2C = find_export(sblauthmgr_info, 0x89CCDA2C);
+		hook_resume_sbl_BC422443 = find_export(sblauthmgr_info, 0xBC422443);
+
+		sceKernelGetProcessId = find_export(threadmgr_info, 0x9DCB4B7A);
+		pid = sceKernelGetProcessId();
+		SceProcessmgrForDriver_0AFF3EAE = find_export(processmgr_info, 0x0AFF3EAE);
+		unrestricted_memcpy_for_pid = find_export(sysmem_info, 0x30931572);
+		sceKernelMemcpyUserToKernelForPid = find_export(sysmem_info, 0x605275F8);
+		sceKernelCreateThreadForPid = find_export(threadmgr_info, 0xC8E57BB4);
+		sceKernelStartThread_089 = find_export(threadmgr_info, 0x21F5419B);
+		sceKernelAllocMemBlockForKernel = find_export(sysmem_info, 0xC94850C9);
+		sceKernelGetMemBlockBaseForKernel = find_export(sysmem_info, 0xA841EDDA);
+		SceCpuForDriver_9CB9F0CE_flush_icache = find_export(sysmem_info, 0x9CB9F0CE);
+		sceKernelCreateThreadForKernel = find_export(threadmgr_info, 0xC6674E7D);
+		sceKernelExitDeleteThread = find_export(threadmgr_info, 0x1D17DECF);
+	);
+}
+
+void __attribute__ ((section (".text.start"))) payload(uint32_t sysmem_addr) {
+	// find sysmem base, etc
+	uint32_t sysmem_base = sysmem_addr;
+	uint32_t ret;
+	void (*debug_print_local)(char *s, ...) = (void*)(sysmem_base + 0x1A155); // 3.60
+
+	DACR_OFF(
+		debug_print = debug_print_local;
+	);
+
+	LOG("+++ Entered kernel payload +++\n");
+	LOG("sp=0x%x\n", &ret);
+
+	resolve_imports(sysmem_base);
+	thread_main();
+
 	LOG("Kill current thread =>");
-	int (*sceKernelExitDeleteThread)() = find_export(threadmgr_info, 0x1D17DECF);
 	LOG("sceKernelExitDeleteThread at 0x%08x\n", sceKernelExitDeleteThread);
 	ret = sceKernelExitDeleteThread();
 	LOG("??? ret = 0x%08x\n", ret);
