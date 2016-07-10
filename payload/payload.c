@@ -290,8 +290,6 @@ void thread_main() {
 	SceProcessmgrForDriver_0AFF3EAE(pid, data);
 	DACR_OFF(ppid = data[5];);
 	LOG("WebBrowser PID: 0x%x\n", ppid);
-	for (int i = 0; i < 0xE8/4; ++i)
-		LOG("%d: 0x%x\n", i, data[i]);
 
 	int *modlist[MOD_LIST_SIZE];
 	int modlist_records;
@@ -330,6 +328,7 @@ void takeover_web_browser() {
 
 	// inject the code
 	unrestricted_memcpy_for_pid(ppid, base, build_user_bin, build_user_bin_len);
+	LOG("code injected\n");
 
 	int thread = sceKernelCreateThreadForPid(ppid, "", base|1, 64, 0x4000, 0x800000, 0, 0);
 	LOG("create thread 0x%x\n", thread);

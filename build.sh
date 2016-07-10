@@ -18,7 +18,7 @@ PREPROCESS="$CC -E -P -C -w -x c"
 
 echo "0) User payload"
 # user payload is injected into web browser process
-$CC -c -o build/user.o payload/user.c $CFLAGS
+$CC -c -o build/user.o payload/user/user.c $CFLAGS
 $LD -o build/user.elf build/user.o $LDFLAGS
 $OBJCOPY -O binary build/user.elf build/user.bin
 xxd -i build/user.bin > build/user.h
