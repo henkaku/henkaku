@@ -17,6 +17,14 @@ LDFLAGS="-T payload/linker.x -nodefaultlibs -nostdlib -pie"
 PREPROCESS="$CC -E -P -C -w -x c"
 
 echo "0) User payload"
+# generate version stuffs
+BUILD_VERSION=$(git describe --dirty --always --tags)
+BUILD_DATE=$(date)
+BUILD_HOST=$(hostname)
+echo "#define BUILD_VERSION \"$BUILD_VERSION\"" >> build/version.c
+echo "#define BUILD_DATE \"$BUILD_DATE\"" >> build/version.c
+echo "#define BUILD_HOST \"$BUILD_HOST\"" >> build/version.c
+
 # user payload is injected into web browser process
 $CC -c -o build/user.o payload/user/user.c $CFLAGS
 $LD -o build/user.elf build/user.o $LDFLAGS

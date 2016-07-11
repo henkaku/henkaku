@@ -196,6 +196,8 @@ int pid = 0, ppid = 0;
 unsigned SceWebBrowser_base = 0;
 unsigned SceLibKernel_base = 0;
 unsigned SceDriverUser_base = 0;
+unsigned ScePaf_base = 0;
+unsigned ScePaf_data_base = 0;
 
 // setup file decryption
 unsigned hook_sbl_F3411881(unsigned a1, unsigned a2, unsigned a3, unsigned a4) {
@@ -310,24 +312,34 @@ void thread_main() {
 			DACR_OFF(SceLibKernel_base = info.segments[0].vaddr);
 		else if (strcmp(info.name, "SceDriverUser") == 0)
 			DACR_OFF(SceDriverUser_base = info.segments[0].vaddr);
+		else if (strcmp(info.name, "ScePaf") == 0)
+			DACR_OFF(ScePaf_base = info.segments[0].vaddr; ScePaf_data_base = info.segments[1].vaddr;);
 	}
 }
 
 void takeover_web_browser() {
 	unsigned ret;
+	unsigned base = 0;
+	base = SceWebBrowser_base;
+#if 0
 	unsigned popt[0x58/4];
 	for (int i = 0; i < 0x58/4; ++i)
 		popt[i] = 0;
-	popt[0] = sizeof(popt);
-	popt[2] = 0xA0000000;
-	popt[9] = ppid; // allocate in webbrocess space
+	popt[0/4] = 0x58;
+	popt[0x8/4] = 0x50480088;
+	popt[0x18/4] = 0x1000;
+	popt[0x24/4] = ppid;
 	ret = sceKernelAllocMemBlockForKernel("", 0xC20D050, 0x4000, popt);
 	LOG("alloc memblock ret = 0x%x\n", ret);
 	if (ret & 0x80000000)
 		return;
-	unsigned base = 0;
 	ret = sceKernelGetMemBlockBaseForKernel(ret, &base);
 	LOG("getbase ret = 0x%x base = 0x%x\n", ret, base);
+#endif
+
+	// inject infloop
+	// uint16_t infloop = 0xE7FE;
+	// unrestricted_memcpy_for_pid(ppid, ScePaf_base + 0x8f142, &infloop, 2);
 
 	// inject the code
 	unrestricted_memcpy_for_pid(ppid, base, build_user_bin, (build_user_bin_len + 0x10) & ~0xF);
@@ -336,7 +348,7 @@ void takeover_web_browser() {
 	int thread = sceKernelCreateThreadForPid(ppid, "", base|1, 64, 0x4000, 0x800000, 0, 0);
 	LOG("create thread 0x%x\n", thread);
 
-	unsigned args[] = { SceWebBrowser_base, SceLibKernel_base, SceDriverUser_base };
+	unsigned args[] = { SceWebBrowser_base, SceLibKernel_base, SceDriverUser_base, ScePaf_base, ScePaf_data_base };
 	ret = sceKernelStartThread_089(thread, sizeof(args), args);
 	LOG("sceKernelStartThread_089 ret 0x%x\n", ret);
 }
