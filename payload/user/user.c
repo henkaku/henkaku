@@ -13,6 +13,7 @@
 typedef struct func_map {
 	int (*sceKernelAllocMemBlock)();
 	int (*sceKernelGetMemBlockBase)();
+	int (*sceKernelGetMemBlockInfoByAddr)();
 	int (*sceKernelGetThreadInfo)();
 	int (*sceClibPrintf)();
 	int (*kill_me)();
@@ -24,9 +25,12 @@ typedef struct func_map {
 	int (*sceKernelCreateThread)();
 	int (*sceKernelStartThread)();
 	int (*sceClibVsnprintf)();
+	int (*sceKernelFindMemBlockByAddr)();
+	int (*sceKernelFreeMemBlock)();
 } func_map;
 
 #include "../libc.c"
+// #include "memcpy.c"
 
 enum {
 	SCREEN_WIDTH = 960,
@@ -92,8 +96,11 @@ void psvDebugScreenPrintf(func_map *F, uint32_t *g_vram, int *X, int *Y, const c
 }
 // end draw functions
 
+#define LOG F->sceClibPrintf
+
 // args: F, dest (in cdram), src (any)
 int render_thread(int args, unsigned *argp) {
+	int ret;
 	func_map *F = argp[0];
 
 	SceDisplayFrameBuf fb = {0};
@@ -104,11 +111,15 @@ int render_thread(int args, unsigned *argp) {
 	fb.height = SCREEN_HEIGHT;
 	fb.pixelformat = SCE_DISPLAY_PIXELFORMAT_A8B8G8R8;	
 	while (1) {
-		F->sceDisplaySetFramebuf(&fb, 1);
+		ret = F->sceDisplaySetFramebuf(&fb, 1);
+		if (ret < 0)
+			LOG("sceDisplaySetFramebuf: 0x%x\n", ret);
 		memcpy(fb.base, argp[2], fb.pitch * fb.height * 4);
-		F->sceKernelDelayThread(1000);
+		// F->sceKernelDelayThread(1);
 	}
 }
+
+#undef LOG
 
 #define LOG F.sceClibPrintf
 
@@ -116,6 +127,7 @@ void resolve_functions(unsigned *argp, func_map *F) {
 	unsigned SceWebBrowser_base = argp[0]; // TODO: different WebBrowser module on retail?
 	unsigned SceLibKernel_base = argp[1];
 	unsigned SceDriverUser_base = argp[2];
+	unsigned SceGxm_base = argp[5];
 
 	F->sceKernelAllocMemBlock = SceLibKernel_base + 0x610C;
 	F->sceKernelGetMemBlockBase = SceLibKernel_base + 0x60FC;
@@ -130,6 +142,9 @@ void resolve_functions(unsigned *argp, func_map *F) {
 	F->sceKernelCreateThread = SceLibKernel_base + 0xACC9;
 	F->sceKernelStartThread = SceLibKernel_base + 0xA789;
 	F->sceClibVsnprintf = SceLibKernel_base + 0x8A21;
+	F->sceKernelGetMemBlockInfoByAddr = SceGxm_base + 0x79C;
+	F->sceKernelFindMemBlockByAddr = SceLibKernel_base + 0x60DC;
+	F->sceKernelFreeMemBlock = SceLibKernel_base + 0x60EC;
 }
 
 #define PRINTF(fmt, ...) psvDebugScreenPrintf(&F, base, &g_X, &g_Y, fmt, #__VA_ARGS__)
@@ -144,27 +159,57 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 
 	LOG("hello from the browser!\n");
 
+
+#if 0
+	ret = F.sceKernelFindMemBlockByAddr(0x60440000, 0);
+	LOG("got memblock 0x%x\n", ret);
+
+	unsigned ScePaf_base = argp[3], ScePaf_data_base = argp[4];
+	LOG("paf base: 0x%x\n", ScePaf_base);
+	int (*ScePafThread_F9FFA0BE)() = ScePaf_base + 0x54981;
+	unsigned lock = ScePaf_data_base + 0xe428;
+	// try to deadlock the main thread by obtaining a lock and never releasing it
+	// for (int i = 0; i < 0x1000; ++i) {
+	// 	ret = ScePafThread_F9FFA0BE(lock);
+	// 	F.sceKernelDelayThread(1);
+	// 	// LOG("ScePafThread_F9FFA0BE: 0x%x\n", ret);
+	// }
+
+	F.sceKernelDelayThread(1000);
+
+	SceKernelThreadInfo thread_info = { 0 };
+	thread_info.size = sizeof(thread_info);
+	F.sceKernelGetThreadInfo(0x40010003, &thread_info);
+	LOG("stack: 0x%x size: 0x%x\n", thread_info.stack, thread_info.stackSize);
+	for (int j = 0; j < 0x10; ++j) {
+		for (unsigned i = thread_info.stackSize - 0x50; i < thread_info.stackSize - 0x40; ++i) {
+			unsigned *addr = (char*)thread_info.stack + i;
+			*addr = F.sceKernelExitThread;
+		}
+	}
+	// unsigned *addr = (char*)thread_info.stack + 0x3ff30 + 0x4C;
+	// // try to kill the main thread by overwriting its return pointer on stack with sceKernelExitThread
+	// for (int i = 0; i < 0x10000; ++i) {
+	// 	*addr = F.sceKernelExitThread;
+	// 	if (i % 0x100 == 0)
+	// 		F.sceKernelDelayThread(1);
+	// }
+	// hopefully by now the thread's dead or otherwise inactive (not always the case)
+#endif
+
+	// allocate graphics and start render thread
 	int block = F.sceKernelAllocMemBlock("display", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW, FRAMEBUFFER_SIZE, NULL);
 	LOG("block: 0x%x\n", block);
 	unsigned base = 0;
 	ret = F.sceKernelGetMemBlockBase(block, &base);
 	LOG("sceKernelGetMemBlockBase: 0x%x base 0x%x\n", ret, base);
 
-	int thread = F.sceKernelCreateThread("", render_thread, 0x10000100, 0x1000, 0, 0, 0);
+	int thread = F.sceKernelCreateThread("", render_thread, 64, 0x1000, 0, 0, 0);
 	LOG("create thread 0x%x\n", thread);
 
 	unsigned thread_args[] = { &F, 0x60440000, base };
 	memset(base, 0x33, FRAMEBUFFER_SIZE);
 	ret = F.sceKernelStartThread(thread, sizeof(thread_args), thread_args);
-
-	unsigned ScePaf_base = argp[3], ScePaf_data_base = argp[4];
-	LOG("paf base: 0x%x\n", ScePaf_base);
-	int (*ScePafThread_F9FFA0BE)() = ScePaf_base + 0x54981;
-	unsigned lock = ScePaf_data_base + 0xe428;
-	for (int i = 0; i < 0x10; ++i) {
-		ret = ScePafThread_F9FFA0BE(lock);
-		LOG("ScePafThread_F9FFA0BE: 0x%x\n", ret);
-	}
 
 	// done with the bullshit now, let's rock
 	PRINTF("this is HENkaku version " BUILD_VERSION " built at " BUILD_DATE " by " BUILD_HOST "\n");
