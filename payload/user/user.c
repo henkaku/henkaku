@@ -13,6 +13,7 @@
 #include "../../build/version.c"
 
 typedef struct func_map {
+	unsigned *argp;
 	int X, Y;
 	unsigned base;
 
@@ -47,6 +48,12 @@ typedef struct func_map {
 
 	int (*sceKernelGetModuleList)();
 	int (*sceKernelGetModuleInfo)();
+
+	int (*scePromoterUtilityInit)();
+	int (*scePromoterUtilityPromotePkg)();
+	int (*scePromoterUtilityGetState)();
+	int (*scePromoterUtilityGetResult)();
+	int (*scePromoterUtilityExit)();
 } func_map;
 
 #define PKG_URL_PREFIX "http://192.168.140.1:5432/pkg/"
@@ -141,14 +148,15 @@ int render_thread(int args, unsigned *argp) {
 	}
 }
 
-void resolve_functions(unsigned *argp, func_map *F) {
+void resolve_functions(func_map *F) {
 	int ret;
 
-	unsigned SceLibKernel_base = argp[0];
+	unsigned SceLibKernel_base = F->argp[0];
 	unsigned SceWebBrowser_base = 0; // TODO: different WebBrowser module on retail?
 	unsigned SceDriverUser_base = 0;
 	unsigned SceGxm_base = 0;
 	unsigned SceLibHttp_base = 0;
+	unsigned ScePromoterUtil_base = 0;
 
 	F->sceKernelGetModuleList = SceLibKernel_base + 0x675C;
 	F->sceKernelGetModuleInfo = SceLibKernel_base + 0x676C;
@@ -172,6 +180,8 @@ void resolve_functions(unsigned *argp, func_map *F) {
 			SceGxm_base = addr;
 		else if (!strcmp(name, "SceLibHttp"))
 			SceLibHttp_base = addr;
+		else if (!strcmp(name, "ScePromoterUtil"))
+			ScePromoterUtil_base = addr;
 		LOG("Module %s at 0x%x\n", info.module_name, info.segments[0].vaddr);
 	}
 
@@ -202,6 +212,12 @@ void resolve_functions(unsigned *argp, func_map *F) {
 	F->sceIoWrite = SceLibKernel_base + 0x68DC;
 	F->sceIoClose = SceLibKernel_base + 0x6A0C;
 	F->sceIoMkdir = SceLibKernel_base + 0xA4F5;
+
+	F->scePromoterUtilityInit = ScePromoterUtil_base + 0x1;
+	F->scePromoterUtilityExit = ScePromoterUtil_base + 0xF;
+	F->scePromoterUtilityPromotePkg = ScePromoterUtil_base + 0x93;
+	F->scePromoterUtilityGetState = ScePromoterUtil_base + 0x249;
+	F->scePromoterUtilityGetResult = ScePromoterUtil_base + 0x263;
 }
 
 #define PRINTF(fmt, ...) do { /* psvDebugScreenPrintf(F, F->base, &F->X, &F->Y, fmt, #__VA_ARGS__);*/ LOG(fmt, #__VA_ARGS__); } while (0);
@@ -276,13 +292,44 @@ void install_pkg(func_map *F) {
 
 	// done with downloading, let's install it now
 
+	ret = F->sceSysmoduleLoadModuleInternal(SCE_SYSMODULE_PROMOTER_UTIL);
+	LOG("sceSysmoduleLoadModuleInternal: 0x%x\n", ret);
 
+	// re-resolve functions now that we've loaded promoter
+	resolve_functions(F);
+
+	ret = F->scePromoterUtilityInit();
+	LOG("scePromoterUtilityInit: 0x%x\n", ret);
+
+	ret = F->scePromoterUtilityPromotePkg(pkg_path, 0);
+	LOG("scePromoterUtilityPromotePkg: 0x%x\n", ret);
+
+	int state = 1;
+	do
+	{
+		ret = F->scePromoterUtilityGetState(&state);
+		if (ret < 0)
+		{
+			LOG("scePromoterUtilityGetState error 0x%x\n", ret);
+			return;
+		}
+		LOG("scePromoterUtilityGetState status 0x%x\n", ret);
+		F->sceKernelDelayThread(1000000);
+	} while (state);
+
+	int res = 0;
+	ret = F->scePromoterUtilityGetResult(&res);
+	LOG("scePromoterUtilityGetResult: ret=0x%x res=0x%x\n", ret, res);
+
+	ret = F->scePromoterUtilityExit();
+	LOG("scePromoterUtilityExit: 0x%x\n", ret);
 }
 
 void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *argp) {
 	unsigned ret;
 	struct func_map FF = {0};
-	resolve_functions(argp, &FF);
+	FF.argp = argp;
+	resolve_functions(&FF);
 	struct func_map *F = &FF;
 
 	F->sceKernelDelayThread(1000 * 1000);
@@ -348,9 +395,6 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 	LOG("am still running\n");
 
 	install_pkg(F);
-
-	// ret = F.sceSysmoduleLoadModuleInternal(SCE_SYSMODULE_PROMOTER_UTIL);
-	// LOG("sceSysmoduleLoadModuleInternal: 0x%x\n", ret);
 	
 	F->sceKernelDelayThread(5 * 1000 * 1000);
 
