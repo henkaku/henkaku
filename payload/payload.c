@@ -199,6 +199,7 @@ unsigned SceDriverUser_base = 0;
 unsigned ScePaf_base = 0;
 unsigned ScePaf_data_base = 0;
 unsigned SceGxm_base = 0;
+unsigned SceLibHttp_base = 0;
 
 // setup file decryption
 unsigned hook_sbl_F3411881(unsigned a1, unsigned a2, unsigned a3, unsigned a4) {
@@ -307,6 +308,7 @@ void thread_main() {
 	for (int i = 0; i < modlist_records; ++i) {
 		info.size = sizeof(info);
 		ret = sceKernelGetModuleInfoForKernel(ppid, modlist[i], &info);
+		// TODO: don't resolve so much crap in kernel, move most of this stuff to user mode payload
 		if (strcmp(info.name, "SceWebBrowser") == 0)
 			DACR_OFF(SceWebBrowser_base = info.segments[0].vaddr);
 		else if (strcmp(info.name, "SceLibKernel") == 0)
@@ -317,13 +319,15 @@ void thread_main() {
 			DACR_OFF(ScePaf_base = info.segments[0].vaddr; ScePaf_data_base = info.segments[1].vaddr;);
 		else if (strcmp(info.name, "SceGxm") == 0)
 			DACR_OFF(SceGxm_base = info.segments[0].vaddr);
+		else if (strcmp(info.name, "SceLibHttp") == 0)
+			DACR_OFF(SceLibHttp_base = info.segments[0].vaddr);
 	}
 }
 
 void takeover_web_browser() {
 	unsigned ret;
 	unsigned base = 0;
-	base = SceWebBrowser_base;
+	base = SceWebBrowser_base + 0xC6200;
 #if 0
 	unsigned popt[0x58/4];
 	for (int i = 0; i < 0x58/4; ++i)
@@ -351,7 +355,7 @@ void takeover_web_browser() {
 	int thread = sceKernelCreateThreadForPid(ppid, "", base|1, 64, 0x4000, 0x800000, 0, 0);
 	LOG("create thread 0x%x\n", thread);
 
-	unsigned args[] = { SceWebBrowser_base, SceLibKernel_base, SceDriverUser_base, ScePaf_base, ScePaf_data_base, SceGxm_base };
+	unsigned args[] = { SceWebBrowser_base, SceLibKernel_base, SceDriverUser_base, ScePaf_base, ScePaf_data_base, SceGxm_base, SceLibHttp_base };
 	ret = sceKernelStartThread_089(thread, sizeof(args), args);
 	LOG("sceKernelStartThread_089 ret 0x%x\n", ret);
 }

@@ -4,6 +4,7 @@
 #include <psp2/kernel/threadmgr.h>
 #include <psp2/kernel/sysmem.h>
 #include <psp2/display.h>
+#include <psp2/io/fcntl.h>
 
 #include "promoterutil.h"
 #include "sysmodule_internal.h"
@@ -11,6 +12,9 @@
 #include "../../build/version.c"
 
 typedef struct func_map {
+	int X, Y;
+	unsigned base;
+
 	int (*sceKernelAllocMemBlock)();
 	int (*sceKernelGetMemBlockBase)();
 	int (*sceKernelGetMemBlockInfoByAddr)();
@@ -25,9 +29,23 @@ typedef struct func_map {
 	int (*sceKernelCreateThread)();
 	int (*sceKernelStartThread)();
 	int (*sceClibVsnprintf)();
+	int (*sceClibSnprintf)();
 	int (*sceKernelFindMemBlockByAddr)();
 	int (*sceKernelFreeMemBlock)();
+
+	int (*sceHttpCreateTemplate)();
+	int (*sceHttpCreateConnectionWithURL)();
+	int (*sceHttpCreateRequestWithURL)();
+	int (*sceHttpSendRequest)();
+	int (*sceHttpReadData)();
+
+	int (*sceIoOpen)();
+	int (*sceIoWrite)();
+	int (*sceIoClose)();
+	int (*sceIoMkdir)();
 } func_map;
+
+#define PKG_URL_PREFIX "http://192.168.140.1:5432/pkg/"
 
 #include "../libc.c"
 // #include "memcpy.c"
@@ -119,15 +137,12 @@ int render_thread(int args, unsigned *argp) {
 	}
 }
 
-#undef LOG
-
-#define LOG F.sceClibPrintf
-
 void resolve_functions(unsigned *argp, func_map *F) {
 	unsigned SceWebBrowser_base = argp[0]; // TODO: different WebBrowser module on retail?
 	unsigned SceLibKernel_base = argp[1];
 	unsigned SceDriverUser_base = argp[2];
 	unsigned SceGxm_base = argp[5];
+	unsigned SceLibHttp_base = argp[6];
 
 	F->sceKernelAllocMemBlock = SceLibKernel_base + 0x610C;
 	F->sceKernelGetMemBlockBase = SceLibKernel_base + 0x60FC;
@@ -142,20 +157,105 @@ void resolve_functions(unsigned *argp, func_map *F) {
 	F->sceKernelCreateThread = SceLibKernel_base + 0xACC9;
 	F->sceKernelStartThread = SceLibKernel_base + 0xA789;
 	F->sceClibVsnprintf = SceLibKernel_base + 0x8A21;
+	F->sceClibSnprintf = SceLibKernel_base + 0x89D9;
 	F->sceKernelGetMemBlockInfoByAddr = SceGxm_base + 0x79C;
 	F->sceKernelFindMemBlockByAddr = SceLibKernel_base + 0x60DC;
 	F->sceKernelFreeMemBlock = SceLibKernel_base + 0x60EC;
+
+	F->sceHttpCreateTemplate = SceLibHttp_base + 0x947B;
+	F->sceHttpCreateConnectionWithURL = SceLibHttp_base + 0x950B;
+	F->sceHttpCreateRequestWithURL = SceLibHttp_base + 0x95FF;
+	F->sceHttpSendRequest = SceLibHttp_base + 0x9935;
+	F->sceHttpReadData = SceLibHttp_base + 0x9983;
+
+	F->sceIoOpen = SceLibKernel_base + 0xA4AD;
+	F->sceIoWrite = SceLibKernel_base + 0x68DC;
+	F->sceIoClose = SceLibKernel_base + 0x6A0C;
+	F->sceIoMkdir = SceLibKernel_base + 0xA4F5;
 }
 
-#define PRINTF(fmt, ...) psvDebugScreenPrintf(&F, base, &g_X, &g_Y, fmt, #__VA_ARGS__)
+#define PRINTF(fmt, ...) do { /* psvDebugScreenPrintf(F, F->base, &F->X, &F->Y, fmt, #__VA_ARGS__);*/ LOG(fmt, #__VA_ARGS__); } while (0);
+
+// Downloads a file from url src to filesystem dst, if dst already exists, it is overwritten
+void download_file(func_map *F, const char *src, const char *dst) {
+	int ret;
+	LOG("enter download file src=%s dst=%s\n", src, dst);
+	int tpl = F->sceHttpCreateTemplate("henkaku usermode", 2, 1);
+	LOG("create template ok\n");
+	LOG("sceHttpCreateTemplate: 0x%x\n", tpl);
+	int conn = F->sceHttpCreateConnectionWithURL(tpl, src, 0);
+	LOG("sceHttpCreateConnectionWithURL: 0x%x\n", conn);
+	int req = F->sceHttpCreateRequestWithURL(conn, 0, src, 0, 0, 0);
+	LOG("sceHttpCreateRequestWithURL: 0x%x\n", req);
+	ret = F->sceHttpSendRequest(req, NULL, 0);
+	LOG("sceHttpSendRequest: 0x%x\n", ret);
+	unsigned char buf[4096] = {0};
+
+	int fd = F->sceIoOpen(dst, SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC, 7);
+	LOG("sceIoOpen: 0x%x\n", fd);
+	while (1) {
+		int read = F->sceHttpReadData(req, buf, sizeof(buf));
+		if (read < 0) {
+			LOG("sceHttpReadData error! 0x%x\n", read);
+			break;
+		}
+		if (read == 0)
+			break;
+		LOG(".");
+		ret = F->sceIoWrite(fd, buf, read);
+		if (ret < 0 || ret != read) {
+			LOG("sceIoWrite error! 0x%x\n", ret);
+			break;
+		}
+		LOG("+");
+	}
+	LOG("\n");
+	ret = F->sceIoClose(fd);
+	LOG("sceIoClose: 0x%x\n", ret);
+}
+
+void install_pkg(func_map *F) {
+	int ret;
+	char dirname[32];
+	char pkg_path[0x100];
+	char file_name[0x100];
+	// TODO: vitashell should clean up whole data/pk directory on launch
+	F->sceClibSnprintf(pkg_path, sizeof(pkg_path), "ux0:data/pkg/%x/", &install_pkg); // this is to get random directory
+	LOG("package temp directory: %s\n", pkg_path);
+	ret = F->sceIoMkdir("ux0:/data/pkg", 6);
+	LOG("make root pkg dir 0x%x\n", ret);
+	ret = F->sceIoMkdir(pkg_path, 6);
+	LOG("make pkg dir 0x%x\n", ret);
+	// /eboot.bin
+	F->sceClibSnprintf(file_name, sizeof(file_name), "%s/eboot.bin", pkg_path);
+	download_file(F, PKG_URL_PREFIX "/eboot.bin", file_name);
+	// /sce_sys/
+	F->sceClibSnprintf(file_name, sizeof(file_name), "%s/sce_sys", pkg_path);
+	ret = F->sceIoMkdir(file_name, 6);
+	LOG("make sce_sys 0x%x\n", ret);
+	// /sce_sys/param.sfo
+	F->sceClibSnprintf(file_name, sizeof(file_name), "%s/sce_sys/param.sfo", pkg_path);
+	download_file(F, PKG_URL_PREFIX "/param.sfo", file_name);
+	// /sce_sys/package/
+	F->sceClibSnprintf(file_name, sizeof(file_name), "%s/sce_sys/package/", pkg_path);
+	ret = F->sceIoMkdir(file_name, 6);
+	LOG("make sce_sys/package/ 0x%x\n", ret);
+	// /sce_sys/package/head.bin
+	F->sceClibSnprintf(file_name, sizeof(file_name), "%s/sce_sys/package/head.bin", pkg_path);
+	download_file(F, PKG_URL_PREFIX "/head.bin", file_name);
+
+	// done with downloading, let's install it now
+
+
+}
 
 void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *argp) {
 	unsigned ret;
-	int g_X = 0, g_Y = 0;
-	struct func_map F;
-	resolve_functions(argp, &F);
+	struct func_map FF = {0};
+	resolve_functions(argp, &FF);
+	struct func_map *F = &FF;
 
-	F.sceKernelDelayThread(1000 * 1000);
+	F->sceKernelDelayThread(1000 * 1000);
 
 	LOG("hello from the browser!\n");
 
@@ -198,31 +298,34 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 #endif
 
 	// allocate graphics and start render thread
-	int block = F.sceKernelAllocMemBlock("display", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW, FRAMEBUFFER_SIZE, NULL);
+	int block = F->sceKernelAllocMemBlock("display", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW, FRAMEBUFFER_SIZE, NULL);
 	LOG("block: 0x%x\n", block);
-	unsigned base = 0;
-	ret = F.sceKernelGetMemBlockBase(block, &base);
-	LOG("sceKernelGetMemBlockBase: 0x%x base 0x%x\n", ret, base);
+	ret = F->sceKernelGetMemBlockBase(block, &F->base);
+	LOG("sceKernelGetMemBlockBase: 0x%x base 0x%x\n", ret, F->base);
 
-	int thread = F.sceKernelCreateThread("", render_thread, 64, 0x1000, 0, 0, 0);
+	int thread = F->sceKernelCreateThread("", render_thread, 64, 0x1000, 0, 0, 0);
 	LOG("create thread 0x%x\n", thread);
 
-	unsigned thread_args[] = { &F, 0x60440000, base };
-	memset(base, 0x33, FRAMEBUFFER_SIZE);
-	ret = F.sceKernelStartThread(thread, sizeof(thread_args), thread_args);
+	unsigned thread_args[] = { &F, 0x60440000, F->base };
+	memset(F->base, 0x33, FRAMEBUFFER_SIZE);
+	// ret = F->sceKernelStartThread(thread, sizeof(thread_args), thread_args);
 
 	// done with the bullshit now, let's rock
 	PRINTF("this is HENkaku version " BUILD_VERSION " built at " BUILD_DATE " by " BUILD_HOST "\n");
 	PRINTF("...\n");
 
-	F.sceKernelDelayThread(1000 * 1000);
+	// F->sceKernelDelayThread(1000 * 1000);
 	LOG("am still running\n");
+
+	install_pkg(F);
 
 	// ret = F.sceSysmoduleLoadModuleInternal(SCE_SYSMODULE_PROMOTER_UTIL);
 	// LOG("sceSysmoduleLoadModuleInternal: 0x%x\n", ret);
 	
-	F.sceKernelDelayThread(5 * 1000 * 1000);
+	F->sceKernelDelayThread(5 * 1000 * 1000);
 
-	F.kill_me();
-	while (1) {}
+	while (1) {
+		F->kill_me();
+		F->sceKernelDelayThread(100 * 1000);
+	}
 }
