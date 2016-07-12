@@ -17,6 +17,12 @@ LDFLAGS="-T payload/linker.x -nodefaultlibs -nostdlib -pie"
 PREPROCESS="$CC -E -P -C -w -x c"
 
 echo "0) User payload"
+
+if [ ! -f payload/user/config.h ]; then
+    echo "Please copy payload/user/config.h.in to payload/user/config.h and configure it"
+    exit 1
+fi
+
 # generate version stuffs
 BUILD_VERSION=$(git describe --dirty --always --tags)
 BUILD_DATE=$(date)

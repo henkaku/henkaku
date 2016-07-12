@@ -17,13 +17,14 @@ typedef struct func_map {
 	int X, Y;
 	unsigned base;
 
+	unsigned sysmodule_svc_offset;
+
 	int (*sceKernelAllocMemBlock)();
 	int (*sceKernelGetMemBlockBase)();
 	int (*sceKernelGetMemBlockInfoByAddr)();
 	int (*sceKernelGetThreadInfo)();
 	int (*sceClibPrintf)();
 	int (*kill_me)();
-	int (*sceSysmoduleLoadModuleInternal)();
 	int (*sceDisplaySetFramebuf)();
 	int (*sceDisplayGetFramebuf)();
 	int (*sceKernelDelayThread)();
@@ -56,8 +57,7 @@ typedef struct func_map {
 	int (*scePromoterUtilityExit)();
 } func_map;
 
-#define PKG_URL_PREFIX "http://192.168.140.1:5432/pkg/"
-
+#include "config.h"
 #include "../libc.c"
 // #include "memcpy.c"
 
@@ -126,6 +126,7 @@ void psvDebugScreenPrintf(func_map *F, uint32_t *g_vram, int *X, int *Y, const c
 // end draw functions
 
 #define LOG F->sceClibPrintf
+// #define LOG(...) 
 
 // args: F, dest (in cdram), src (any)
 int render_thread(int args, unsigned *argp) {
@@ -152,11 +153,11 @@ void resolve_functions(func_map *F) {
 	int ret;
 
 	unsigned SceLibKernel_base = F->argp[0];
-	unsigned SceWebBrowser_base = 0; // TODO: different WebBrowser module on retail?
 	unsigned SceDriverUser_base = 0;
 	unsigned SceGxm_base = 0;
 	unsigned SceLibHttp_base = 0;
 	unsigned ScePromoterUtil_base = 0;
+	unsigned SceCommonDialog_base = 0;
 
 	F->sceKernelGetModuleList = SceLibKernel_base + 0x675C;
 	F->sceKernelGetModuleInfo = SceLibKernel_base + 0x676C;
@@ -174,14 +175,14 @@ void resolve_functions(func_map *F) {
 		unsigned addr = info.segments[0].vaddr;
 		if (!strcmp(name, "SceDriverUser"))
 			SceDriverUser_base = addr;
-		else if (!strcmp(name, "SceWebBrowser"))
-			SceWebBrowser_base = addr;
 		else if (!strcmp(name, "SceGxm"))
 			SceGxm_base = addr;
 		else if (!strcmp(name, "SceLibHttp"))
 			SceLibHttp_base = addr;
 		else if (!strcmp(name, "ScePromoterUtil"))
 			ScePromoterUtil_base = addr;
+		else if (!strcmp(name, "SceCommonDialog"))
+			SceCommonDialog_base = addr;
 		LOG("Module %s at 0x%x\n", info.module_name, info.segments[0].vaddr);
 	}
 
@@ -189,7 +190,6 @@ void resolve_functions(func_map *F) {
 	F->sceKernelGetMemBlockBase = SceLibKernel_base + 0x60FC;
 	F->sceKernelGetThreadInfo = SceLibKernel_base + 0xA791;
 	F->kill_me = SceLibKernel_base + 0x684C;
-	F->sceSysmoduleLoadModuleInternal = SceWebBrowser_base + 0xC2AD4;
 	F->sceDisplaySetFramebuf = SceDriverUser_base + 0x428D;
 	F->sceDisplayGetFramebuf = SceDriverUser_base + 0x42A9;
 	F->sceKernelDelayThread = SceDriverUser_base + 0xA98;
@@ -218,6 +218,8 @@ void resolve_functions(func_map *F) {
 	F->scePromoterUtilityPromotePkg = ScePromoterUtil_base + 0x93;
 	F->scePromoterUtilityGetState = ScePromoterUtil_base + 0x249;
 	F->scePromoterUtilityGetResult = ScePromoterUtil_base + 0x263;
+
+	F->sysmodule_svc_offset = SceCommonDialog_base + 0xC988;
 }
 
 #define PRINTF(fmt, ...) do { psvDebugScreenPrintf(F, F->base, &F->X, &F->Y, fmt, ##__VA_ARGS__); LOG(fmt, ##__VA_ARGS__); } while (0);
@@ -260,6 +262,15 @@ void download_file(func_map *F, const char *src, const char *dst) {
 	LOG("sceIoClose: 0x%x\n", ret);
 }
 
+unsigned __attribute__((bare, noinline)) call_syscall(unsigned a1, unsigned num) {
+	__asm__ (
+		"mov r12, %0 \n"
+		"svc 0 \n"
+		"bx lr \n"
+		: : "r" (num)
+	);
+}
+
 void install_pkg(func_map *F) {
 	int ret;
 	char dirname[32];
@@ -292,7 +303,11 @@ void install_pkg(func_map *F) {
 
 	// done with downloading, let's install it now
 
-	ret = F->sceSysmoduleLoadModuleInternal(SCE_SYSMODULE_PROMOTER_UTIL);
+	unsigned *addr = F->sysmodule_svc_offset;
+	unsigned syscall_num = (addr[0] & 0xFFF) + 1;
+
+	LOG("syscall number: 0x%x\n", syscall_num);
+	ret = call_syscall(SCE_SYSMODULE_PROMOTER_UTIL, syscall_num);
 	PRINTF("sceSysmoduleLoadModuleInternal: 0x%x\n", ret);
 
 	// re-resolve functions now that we've loaded promoter
