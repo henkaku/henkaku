@@ -1,6 +1,7 @@
 #include <stddef.h>
 #include <stdarg.h>
 
+#include <psp2/kernel/modulemgr.h>
 #include <psp2/kernel/threadmgr.h>
 #include <psp2/kernel/sysmem.h>
 #include <psp2/display.h>
@@ -43,6 +44,9 @@ typedef struct func_map {
 	int (*sceIoWrite)();
 	int (*sceIoClose)();
 	int (*sceIoMkdir)();
+
+	int (*sceKernelGetModuleList)();
+	int (*sceKernelGetModuleInfo)();
 } func_map;
 
 #define PKG_URL_PREFIX "http://192.168.140.1:5432/pkg/"
@@ -138,16 +142,42 @@ int render_thread(int args, unsigned *argp) {
 }
 
 void resolve_functions(unsigned *argp, func_map *F) {
-	unsigned SceWebBrowser_base = argp[0]; // TODO: different WebBrowser module on retail?
-	unsigned SceLibKernel_base = argp[1];
-	unsigned SceDriverUser_base = argp[2];
-	unsigned SceGxm_base = argp[5];
-	unsigned SceLibHttp_base = argp[6];
+	int ret;
+
+	unsigned SceLibKernel_base = argp[0];
+	unsigned SceWebBrowser_base = 0; // TODO: different WebBrowser module on retail?
+	unsigned SceDriverUser_base = 0;
+	unsigned SceGxm_base = 0;
+	unsigned SceLibHttp_base = 0;
+
+	F->sceKernelGetModuleList = SceLibKernel_base + 0x675C;
+	F->sceKernelGetModuleInfo = SceLibKernel_base + 0x676C;
+	F->sceClibPrintf = SceLibKernel_base + 0x8A5D;
+
+	int module_list[0x100];
+	int num_loaded = sizeof(module_list)/sizeof(*module_list);
+	ret = F->sceKernelGetModuleList(0xFF, module_list, &num_loaded);
+	LOG("sceKernelGetModuleList: 0x%x, %d modules\n", ret, num_loaded);
+	for (int i = 0; i < num_loaded; ++i) {
+		SceKernelModuleInfo info = {0};
+		info.size = sizeof(info);
+		F->sceKernelGetModuleInfo(module_list[i], &info);
+		char *name = info.module_name;
+		unsigned addr = info.segments[0].vaddr;
+		if (!strcmp(name, "SceDriverUser"))
+			SceDriverUser_base = addr;
+		else if (!strcmp(name, "SceWebBrowser"))
+			SceWebBrowser_base = addr;
+		else if (!strcmp(name, "SceGxm"))
+			SceGxm_base = addr;
+		else if (!strcmp(name, "SceLibHttp"))
+			SceLibHttp_base = addr;
+		LOG("Module %s at 0x%x\n", info.module_name, info.segments[0].vaddr);
+	}
 
 	F->sceKernelAllocMemBlock = SceLibKernel_base + 0x610C;
 	F->sceKernelGetMemBlockBase = SceLibKernel_base + 0x60FC;
 	F->sceKernelGetThreadInfo = SceLibKernel_base + 0xA791;
-	F->sceClibPrintf = SceLibKernel_base + 0x8A5D;
 	F->kill_me = SceLibKernel_base + 0x684C;
 	F->sceSysmoduleLoadModuleInternal = SceWebBrowser_base + 0xC2AD4;
 	F->sceDisplaySetFramebuf = SceDriverUser_base + 0x428D;
@@ -264,7 +294,7 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 	ret = F.sceKernelFindMemBlockByAddr(0x60440000, 0);
 	LOG("got memblock 0x%x\n", ret);
 
-	unsigned ScePaf_base = argp[3], ScePaf_data_base = argp[4];
+	unsigned ScePaf_base = argp[3], ScePaf_data_base = argp[4]; TODO: don't use argp here
 	LOG("paf base: 0x%x\n", ScePaf_base);
 	int (*ScePafThread_F9FFA0BE)() = ScePaf_base + 0x54981;
 	unsigned lock = ScePaf_data_base + 0xe428;
