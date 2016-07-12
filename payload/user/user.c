@@ -143,8 +143,8 @@ int render_thread(int args, unsigned *argp) {
 		ret = F->sceDisplaySetFramebuf(&fb, 1);
 		if (ret < 0)
 			LOG("sceDisplaySetFramebuf: 0x%x\n", ret);
-		memcpy(fb.base, argp[2], fb.pitch * fb.height * 4);
-		// F->sceKernelDelayThread(1);
+		memcpy(fb.base, F->base, fb.pitch * fb.height * 4);
+		F->sceKernelDelayThread(10 * 1000);
 	}
 }
 
@@ -220,12 +220,12 @@ void resolve_functions(func_map *F) {
 	F->scePromoterUtilityGetResult = ScePromoterUtil_base + 0x263;
 }
 
-#define PRINTF(fmt, ...) do { /* psvDebugScreenPrintf(F, F->base, &F->X, &F->Y, fmt, #__VA_ARGS__);*/ LOG(fmt, #__VA_ARGS__); } while (0);
+#define PRINTF(fmt, ...) do { psvDebugScreenPrintf(F, F->base, &F->X, &F->Y, fmt, ##__VA_ARGS__); LOG(fmt, ##__VA_ARGS__); } while (0);
 
 // Downloads a file from url src to filesystem dst, if dst already exists, it is overwritten
 void download_file(func_map *F, const char *src, const char *dst) {
 	int ret;
-	LOG("enter download file src=%s dst=%s\n", src, dst);
+	PRINTF("enter download file src=%s dst=%s\n", src, dst);
 	int tpl = F->sceHttpCreateTemplate("henkaku usermode", 2, 1);
 	LOG("create template ok\n");
 	LOG("sceHttpCreateTemplate: 0x%x\n", tpl);
@@ -234,28 +234,28 @@ void download_file(func_map *F, const char *src, const char *dst) {
 	int req = F->sceHttpCreateRequestWithURL(conn, 0, src, 0, 0, 0);
 	LOG("sceHttpCreateRequestWithURL: 0x%x\n", req);
 	ret = F->sceHttpSendRequest(req, NULL, 0);
-	LOG("sceHttpSendRequest: 0x%x\n", ret);
+	PRINTF("sceHttpSendRequest: 0x%x\n", ret);
 	unsigned char buf[4096] = {0};
 
 	int fd = F->sceIoOpen(dst, SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC, 7);
-	LOG("sceIoOpen: 0x%x\n", fd);
+	PRINTF("sceIoOpen: 0x%x\n", fd);
 	while (1) {
 		int read = F->sceHttpReadData(req, buf, sizeof(buf));
 		if (read < 0) {
-			LOG("sceHttpReadData error! 0x%x\n", read);
+			PRINTF("sceHttpReadData error! 0x%x\n", read);
 			break;
 		}
 		if (read == 0)
 			break;
-		LOG(".");
+		PRINTF(".");
 		ret = F->sceIoWrite(fd, buf, read);
 		if (ret < 0 || ret != read) {
-			LOG("sceIoWrite error! 0x%x\n", ret);
+			PRINTF("sceIoWrite error! 0x%x\n", ret);
 			break;
 		}
-		LOG("+");
+		PRINTF("+");
 	}
-	LOG("\n");
+	PRINTF("\n");
 	ret = F->sceIoClose(fd);
 	LOG("sceIoClose: 0x%x\n", ret);
 }
@@ -293,16 +293,16 @@ void install_pkg(func_map *F) {
 	// done with downloading, let's install it now
 
 	ret = F->sceSysmoduleLoadModuleInternal(SCE_SYSMODULE_PROMOTER_UTIL);
-	LOG("sceSysmoduleLoadModuleInternal: 0x%x\n", ret);
+	PRINTF("sceSysmoduleLoadModuleInternal: 0x%x\n", ret);
 
 	// re-resolve functions now that we've loaded promoter
 	resolve_functions(F);
 
 	ret = F->scePromoterUtilityInit();
-	LOG("scePromoterUtilityInit: 0x%x\n", ret);
+	PRINTF("scePromoterUtilityInit: 0x%x\n", ret);
 
 	ret = F->scePromoterUtilityPromotePkg(pkg_path, 0);
-	LOG("scePromoterUtilityPromotePkg: 0x%x\n", ret);
+	PRINTF("scePromoterUtilityPromotePkg: 0x%x\n", ret);
 
 	int state = 1;
 	do
@@ -310,19 +310,19 @@ void install_pkg(func_map *F) {
 		ret = F->scePromoterUtilityGetState(&state);
 		if (ret < 0)
 		{
-			LOG("scePromoterUtilityGetState error 0x%x\n", ret);
+			PRINTF("scePromoterUtilityGetState error 0x%x\n", ret);
 			return;
 		}
-		LOG("scePromoterUtilityGetState status 0x%x\n", ret);
+		PRINTF("scePromoterUtilityGetState status 0x%x\n", ret);
 		F->sceKernelDelayThread(1000000);
 	} while (state);
 
 	int res = 0;
 	ret = F->scePromoterUtilityGetResult(&res);
-	LOG("scePromoterUtilityGetResult: ret=0x%x res=0x%x\n", ret, res);
+	PRINTF("scePromoterUtilityGetResult: ret=0x%x res=0x%x\n", ret, res);
 
 	ret = F->scePromoterUtilityExit();
-	LOG("scePromoterUtilityExit: 0x%x\n", ret);
+	PRINTF("scePromoterUtilityExit: 0x%x\n", ret);
 }
 
 void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *argp) {
@@ -383,9 +383,9 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 	int thread = F->sceKernelCreateThread("", render_thread, 64, 0x1000, 0, 0, 0);
 	LOG("create thread 0x%x\n", thread);
 
-	unsigned thread_args[] = { &F, 0x60440000, F->base };
+	unsigned thread_args[] = { F, 0x60440000, F->base };
 	memset(F->base, 0x33, FRAMEBUFFER_SIZE);
-	// ret = F->sceKernelStartThread(thread, sizeof(thread_args), thread_args);
+	ret = F->sceKernelStartThread(thread, sizeof(thread_args), thread_args);
 
 	// done with the bullshit now, let's rock
 	PRINTF("this is HENkaku version " BUILD_VERSION " built at " BUILD_DATE " by " BUILD_HOST "\n");
