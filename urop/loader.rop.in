@@ -23,22 +23,11 @@ data
 
 code : entry
 {
-	// PRINTF("Hello, world! %d  \n", 123);
-
 	store(64, num_loaded);
 	sceKernelGetModuleList(0xFF, module_list, num_loaded);
 	PRINTF("loaded %x\n", [num_loaded]);
 	store(440, module_info);
 	sceKernelGetModuleInfo([module_list+4*21], module_info);
-	// PRINTF("%x\n", [module_info + 348]); // SceWebKitProcess base addr
-
-#if 0
-	// load NGS and get its base
-	add([module_info + 348], 0x12d48); // cal function import from SceWebKitProcess
-	call_r0(0xB); // sceSysmoduleLoadModule
-	PRINTF("ngs %x\n", &return);
-#endif
-
 
 	sceKernelCreateThread("st2", ldm_r1_stuff, 0x10000100, stack_size, 0, 0, 0);
 	store(&return, thread_id);
