@@ -8,7 +8,6 @@ RELEASE=1
 # the directory structure will be created by the exploit
 PKG_URL_PREFIX="http://your_url_here.com/pkg/"
 
-# Copy this file to urop/config.rop and change the URL
 # Args will be appended to the URL, in format "?a1=0x123&a2=0x345"
 # You only need this for the dynamic version of the exploit (which is recommended)
 STAGE2_URL_BASE="http://your_url_here.com/stage2.php"
