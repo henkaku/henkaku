@@ -1,11 +1,9 @@
 #include <inttypes.h>
 
-#define DEBUG 1
-
-#if DEBUG
-#define LOG debug_print
-#else
+#if RELEASE
 #define LOG(fmt, ...)
+#else
+#define LOG debug_print
 #endif
 
 #define NULL ((void*)0)

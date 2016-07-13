@@ -125,8 +125,11 @@ void psvDebugScreenPrintf(func_map *F, uint32_t *g_vram, int *X, int *Y, const c
 }
 // end draw functions
 
+#if RELEASE
+#define LOG(...)
+#else
 #define LOG F->sceClibPrintf
-// #define LOG(...) 
+#endif
 
 // args: F, dest (in cdram), src (any)
 int render_thread(int args, unsigned *argp) {
