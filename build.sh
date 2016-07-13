@@ -12,9 +12,19 @@ CC=arm-vita-eabi-gcc
 LD=arm-vita-eabi-gcc
 AS=arm-vita-eabi-as
 OBJCOPY=arm-vita-eabi-objcopy
-CFLAGS="-fPIE -fno-zero-initialized-in-bss -std=c99 -mcpu=cortex-a9 -Os -mthumb"
 LDFLAGS="-T payload/linker.x -nodefaultlibs -nostdlib -pie"
-PREPROCESS="$CC -E -P -C -w -x c"
+DEFINES=""
+
+if [ "$1" == "release" ]; then
+	echo "Building release mode"
+	DEFINES="-DRELEASE=1"
+else
+	echo "Building DEBUG mode"
+	DEFINES="-DRELEASE=0"
+fi
+
+PREPROCESS="$CC -E -P -C -w -x c $DEFINES"
+CFLAGS="-fPIE -fno-zero-initialized-in-bss -std=c99 -mcpu=cortex-a9 -Os -mthumb $DEFINES"
 
 echo "0) User payload"
 
@@ -73,7 +83,7 @@ echo "3) User ROP"
 
 $PREPROCESS urop/exploit.rop.in -o build/exploit.rop.in
 erb build/exploit.rop.in > build/exploit.rop
-roptool -s build/exploit.rop -t urop/webkit-360-pkg -o build/exploit.rop.bin
+roptool -s build/exploit.rop -t urop/webkit-360-pkg -o build/exploit.rop.bin >/dev/null
 
 if [ ! -f urop/config.rop ]; then
     echo "Please copy urop/config.rop.in to urop/config.rop and configure it"
@@ -83,7 +93,7 @@ fi
 
 $PREPROCESS urop/loader.rop.in -o build/loader.rop.in
 erb build/loader.rop.in > build/loader.rop
-roptool -s build/loader.rop -t urop/webkit-360-pkg -o build/loader.rop.bin
+roptool -s build/loader.rop -t urop/webkit-360-pkg -o build/loader.rop.bin >/dev/null
 
 echo "4) Webkit"
 # Static website

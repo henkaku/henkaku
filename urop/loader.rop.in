@@ -23,7 +23,7 @@ data
 
 code : entry
 {
-	PRINTF("Hello, world! %d  \n", 123);
+	// PRINTF("Hello, world! %d  \n", 123);
 
 	store(64, num_loaded);
 	sceKernelGetModuleList(0xFF, module_list, num_loaded);

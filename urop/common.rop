@@ -1,10 +1,5 @@
-#define RETAIL 0
-
-#if RETAIL
-#define PRINTF(fmt, ...) \
-	snprintf(outbuffer, 256, fmt, __VA_ARGS__); \
-	strlen(outbuffer); \
-	send([g_socket], outbuffer, &return, 0, 0, 0);
+#if RELEASE
+#define PRINTF(...)
 #else
 #define PRINTF sceClibPrintf
 #endif
