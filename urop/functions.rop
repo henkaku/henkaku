@@ -56,6 +56,7 @@ symbol ldm_r1_stuff = ASLR::SceWebKit + 0x54c8; //54c8: e891a916 ldm r1, {r1, r2
 symbol pop_pc = ASLR::SceWebKit + 0xc048b;
 symbol pop_r0_to_r5 = ASLR::SceWebKit + 0x8dd9b5;
 symbol blx_r4_pop_r4 = ASLR::SceWebKit + 0xfcdbb;
+symbol str_r0_r4_pop_r4 =  ASLR::SceWebKit + 0x59a9; // str r0, [r4] ; pop {r4, pc}
 
 function bx_lr = ASLR::SceWebKit + 0x575;
 
