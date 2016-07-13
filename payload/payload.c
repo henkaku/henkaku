@@ -260,7 +260,7 @@ void thread_main() {
 		patch = (void*)(scenpdrm_code + 0x6A38);
 		*patch = 0x47702001; // always return 1 in install_allowed
 	);
-	SceCpuForDriver_9CB9F0CE_flush_icache(scenpdrm_code, 0x12000); // and npdrm patches
+	SceCpuForDriver_9CB9F0CE_flush_icache((void*)scenpdrm_code, 0x12000); // and npdrm patches
 	// end homebrew enable
 
 	// takeover the web browser
@@ -283,10 +283,11 @@ void thread_main() {
 	for (int i = 0; i < modlist_records; ++i) {
 		info.size = sizeof(info);
 		ret = sceKernelGetModuleInfoForKernel(ppid, modlist[i], &info);
+		unsigned addr = (unsigned)info.segments[0].vaddr;
 		if (strcmp(info.name, "SceWebBrowser") == 0)
-			DACR_OFF(SceWebBrowser_base = info.segments[0].vaddr);
+			DACR_OFF(SceWebBrowser_base = addr);
 		else if (strcmp(info.name, "SceLibKernel") == 0)
-			DACR_OFF(SceLibKernel_base = info.segments[0].vaddr);
+			DACR_OFF(SceLibKernel_base = addr);
 	}
 }
 
@@ -310,12 +311,8 @@ void takeover_web_browser() {
 	LOG("getbase ret = 0x%x base = 0x%x\n", ret, base);
 #endif
 
-	// inject infloop
-	// uint16_t infloop = 0xE7FE;
-	// unrestricted_memcpy_for_pid(ppid, ScePaf_base + 0x8f142, &infloop, 2);
-
 	// inject the code
-	unrestricted_memcpy_for_pid(ppid, base, build_user_bin, (build_user_bin_len + 0x10) & ~0xF);
+	unrestricted_memcpy_for_pid(ppid, (void*)base, build_user_bin, (build_user_bin_len + 0x10) & ~0xF);
 	LOG("code injected\n");
 
 	int thread = sceKernelCreateThreadForPid(ppid, "", base|1, 64, 0x4000, 0x800000, 0, 0);
@@ -335,7 +332,7 @@ void resolve_imports(unsigned sysmem_base) {
 	LOG("sysmem base: 0x%08x\n", sysmem_base);
 	void *sysmem_data = (void*)(*(u32_t*)((u32_t)(sysmem_base) + 0x26a68) - 0xA0);
 	LOG("sysmem data base: 0x%08x\n", sysmem_data);
-	DACR_OFF(modulemgr_base = (void*)(*(u32_t*)((u32_t)(sysmem_data) + 0x438c) - 0x40););
+	DACR_OFF(modulemgr_base = (*(u32_t*)((u32_t)(sysmem_data) + 0x438c) - 0x40););
 	LOG("modulemgr base: 0x%08x\n", modulemgr_base);
 	// end of 3.60-specific offsets
 

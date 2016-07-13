@@ -15,7 +15,7 @@
 typedef struct func_map {
 	unsigned *argp;
 	int X, Y;
-	unsigned base;
+	void *base;
 
 	unsigned sysmodule_svc_offset;
 
@@ -134,11 +134,11 @@ void psvDebugScreenPrintf(func_map *F, uint32_t *g_vram, int *X, int *Y, const c
 // args: F, dest (in cdram), src (any)
 int render_thread(int args, unsigned *argp) {
 	int ret;
-	func_map *F = argp[0];
+	func_map *F = (void*)argp[0];
 
 	SceDisplayFrameBuf fb = {0};
 	fb.size = sizeof(SceDisplayFrameBuf);
-	fb.base = argp[1]; // this is SceSharedFb
+	fb.base = (void*)argp[1]; // this is SceSharedFb
 	fb.pitch = SCREEN_WIDTH;
 	fb.width = SCREEN_WIDTH;
 	fb.height = SCREEN_HEIGHT;
@@ -162,9 +162,9 @@ void resolve_functions(func_map *F) {
 	unsigned ScePromoterUtil_base = 0;
 	unsigned SceCommonDialog_base = 0;
 
-	F->sceKernelGetModuleList = SceLibKernel_base + 0x675C;
-	F->sceKernelGetModuleInfo = SceLibKernel_base + 0x676C;
-	F->sceClibPrintf = SceLibKernel_base + 0x8A5D;
+	F->sceKernelGetModuleList = (void*)(SceLibKernel_base + 0x675C);
+	F->sceKernelGetModuleInfo = (void*)(SceLibKernel_base + 0x676C);
+	F->sceClibPrintf = (void*)(SceLibKernel_base + 0x8A5D);
 
 	int module_list[0x100];
 	int num_loaded = sizeof(module_list)/sizeof(*module_list);
@@ -175,7 +175,7 @@ void resolve_functions(func_map *F) {
 		info.size = sizeof(info);
 		F->sceKernelGetModuleInfo(module_list[i], &info);
 		char *name = info.module_name;
-		unsigned addr = info.segments[0].vaddr;
+		unsigned addr = (unsigned)info.segments[0].vaddr;
 		if (!strcmp(name, "SceDriverUser"))
 			SceDriverUser_base = addr;
 		else if (!strcmp(name, "SceGxm"))
@@ -189,38 +189,38 @@ void resolve_functions(func_map *F) {
 		LOG("Module %s at 0x%x\n", info.module_name, info.segments[0].vaddr);
 	}
 
-	F->sceKernelAllocMemBlock = SceLibKernel_base + 0x610C;
-	F->sceKernelGetMemBlockBase = SceLibKernel_base + 0x60FC;
-	F->sceKernelGetThreadInfo = SceLibKernel_base + 0xA791;
-	F->kill_me = SceLibKernel_base + 0x684C;
-	F->sceDisplaySetFramebuf = SceDriverUser_base + 0x428D;
-	F->sceDisplayGetFramebuf = SceDriverUser_base + 0x42A9;
-	F->sceKernelDelayThread = SceDriverUser_base + 0xA98;
-	F->sceKernelExitThread = SceLibKernel_base + 0x61FC;
-	F->sceKernelCreateThread = SceLibKernel_base + 0xACC9;
-	F->sceKernelStartThread = SceLibKernel_base + 0xA789;
-	F->sceClibVsnprintf = SceLibKernel_base + 0x8A21;
-	F->sceClibSnprintf = SceLibKernel_base + 0x89D9;
-	F->sceKernelGetMemBlockInfoByAddr = SceGxm_base + 0x79C;
-	F->sceKernelFindMemBlockByAddr = SceLibKernel_base + 0x60DC;
-	F->sceKernelFreeMemBlock = SceLibKernel_base + 0x60EC;
+	F->sceKernelAllocMemBlock = (void*)(SceLibKernel_base + 0x610C);
+	F->sceKernelGetMemBlockBase = (void*)(SceLibKernel_base + 0x60FC);
+	F->sceKernelGetThreadInfo = (void*)(SceLibKernel_base + 0xA791);
+	F->kill_me = (void*)(SceLibKernel_base + 0x684C);
+	F->sceDisplaySetFramebuf = (void*)(SceDriverUser_base + 0x428D);
+	F->sceDisplayGetFramebuf = (void*)(SceDriverUser_base + 0x42A9);
+	F->sceKernelDelayThread = (void*)(SceDriverUser_base + 0xA98);
+	F->sceKernelExitThread = (void*)(SceLibKernel_base + 0x61FC);
+	F->sceKernelCreateThread = (void*)(SceLibKernel_base + 0xACC9);
+	F->sceKernelStartThread = (void*)(SceLibKernel_base + 0xA789);
+	F->sceClibVsnprintf = (void*)(SceLibKernel_base + 0x8A21);
+	F->sceClibSnprintf = (void*)(SceLibKernel_base + 0x89D9);
+	F->sceKernelGetMemBlockInfoByAddr = (void*)(SceGxm_base + 0x79C);
+	F->sceKernelFindMemBlockByAddr = (void*)(SceLibKernel_base + 0x60DC);
+	F->sceKernelFreeMemBlock = (void*)(SceLibKernel_base + 0x60EC);
 
-	F->sceHttpCreateTemplate = SceLibHttp_base + 0x947B;
-	F->sceHttpCreateConnectionWithURL = SceLibHttp_base + 0x950B;
-	F->sceHttpCreateRequestWithURL = SceLibHttp_base + 0x95FF;
-	F->sceHttpSendRequest = SceLibHttp_base + 0x9935;
-	F->sceHttpReadData = SceLibHttp_base + 0x9983;
+	F->sceHttpCreateTemplate = (void*)(SceLibHttp_base + 0x947B);
+	F->sceHttpCreateConnectionWithURL = (void*)(SceLibHttp_base + 0x950B);
+	F->sceHttpCreateRequestWithURL = (void*)(SceLibHttp_base + 0x95FF);
+	F->sceHttpSendRequest = (void*)(SceLibHttp_base + 0x9935);
+	F->sceHttpReadData = (void*)(SceLibHttp_base + 0x9983);
 
-	F->sceIoOpen = SceLibKernel_base + 0xA4AD;
-	F->sceIoWrite = SceLibKernel_base + 0x68DC;
-	F->sceIoClose = SceLibKernel_base + 0x6A0C;
-	F->sceIoMkdir = SceLibKernel_base + 0xA4F5;
+	F->sceIoOpen = (void*)(SceLibKernel_base + 0xA4AD);
+	F->sceIoWrite = (void*)(SceLibKernel_base + 0x68DC);
+	F->sceIoClose = (void*)(SceLibKernel_base + 0x6A0C);
+	F->sceIoMkdir = (void*)(SceLibKernel_base + 0xA4F5);
 
-	F->scePromoterUtilityInit = ScePromoterUtil_base + 0x1;
-	F->scePromoterUtilityExit = ScePromoterUtil_base + 0xF;
-	F->scePromoterUtilityPromotePkg = ScePromoterUtil_base + 0x93;
-	F->scePromoterUtilityGetState = ScePromoterUtil_base + 0x249;
-	F->scePromoterUtilityGetResult = ScePromoterUtil_base + 0x263;
+	F->scePromoterUtilityInit = (void*)(ScePromoterUtil_base + 0x1);
+	F->scePromoterUtilityExit = (void*)(ScePromoterUtil_base + 0xF);
+	F->scePromoterUtilityPromotePkg = (void*)(ScePromoterUtil_base + 0x93);
+	F->scePromoterUtilityGetState = (void*)(ScePromoterUtil_base + 0x249);
+	F->scePromoterUtilityGetResult = (void*)(ScePromoterUtil_base + 0x263);
 
 	F->sysmodule_svc_offset = SceCommonDialog_base + 0xC988;
 }
@@ -265,7 +265,7 @@ void download_file(func_map *F, const char *src, const char *dst) {
 	LOG("sceIoClose: 0x%x\n", ret);
 }
 
-unsigned __attribute__((bare, noinline)) call_syscall(unsigned a1, unsigned num) {
+unsigned __attribute__((noinline)) call_syscall(unsigned a1, unsigned num) {
 	__asm__ (
 		"mov r12, %0 \n"
 		"svc 0 \n"
@@ -306,7 +306,7 @@ void install_pkg(func_map *F) {
 
 	// done with downloading, let's install it now
 
-	unsigned *addr = F->sysmodule_svc_offset;
+	unsigned *addr = (void*)F->sysmodule_svc_offset;
 	unsigned syscall_num = (addr[0] & 0xFFF) + 1;
 
 	LOG("syscall number: 0x%x\n", syscall_num);
@@ -359,7 +359,7 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 	ret = F.sceKernelFindMemBlockByAddr(0x60440000, 0);
 	LOG("got memblock 0x%x\n", ret);
 
-	unsigned ScePaf_base = argp[3], ScePaf_data_base = argp[4]; TODO: don't use argp here
+	unsigned ScePaf_base = argp[3], ScePaf_data_base = argp[4]; // TODO: don't use argp here
 	LOG("paf base: 0x%x\n", ScePaf_base);
 	int (*ScePafThread_F9FFA0BE)() = ScePaf_base + 0x54981;
 	unsigned lock = ScePaf_data_base + 0xe428;
@@ -401,7 +401,7 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 	int thread = F->sceKernelCreateThread("", render_thread, 64, 0x1000, 0, 0, 0);
 	LOG("create thread 0x%x\n", thread);
 
-	unsigned thread_args[] = { F, 0x60440000, F->base };
+	unsigned thread_args[] = { (unsigned)F, 0x60440000, (unsigned)F->base };
 	memset(F->base, 0x33, FRAMEBUFFER_SIZE);
 	ret = F->sceKernelStartThread(thread, sizeof(thread_args), thread_args);
 
