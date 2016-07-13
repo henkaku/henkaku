@@ -190,7 +190,6 @@ int (*sceKernelGetModuleListForKernel)() = 0;
 int (*sceKernelGetModuleInfoForKernel)() = 0;
 
 unsigned modulemgr_base = 0;
-unsigned scesblacmgr_code = 0;
 unsigned scenpdrm_code = 0;
 int pid = 0, ppid = 0;
 unsigned SceWebBrowser_base = 0;
@@ -262,25 +261,8 @@ void thread_main() {
 
 		patch = (void*)(scenpdrm_code + 0x6A38);
 		*patch = 0x47702001; // always return 1 in install_allowed
-/*
-		patch = (void*)(scenpdrm_code + 0x6ADE);
-		*patch = 0xFFFFFFFF;
-		patch = (void*)(scenpdrm_code + 0x6C94);
-		*patch = 0xFFFFFFFF;
-		patch = (void*)(scenpdrm_code + 0x6D88);
-		*patch = 0xFFFFFFFF;
-
-		patch = (void*)(scesblacmgr_code + 0x1370);
-		*patch = 0xFFFFFFFF;
-		patch = (void*)(scesblacmgr_code + 0x168C);
-		*patch = 0xFFFFFFFF;
-*/
-		patch = (void*)(scesblacmgr_code + 0x700);
-		*patch = 0x47702001; // mov r0, #1 ; bx lr
 	);
-	SceCpuForDriver_9CB9F0CE_flush_icache((char*)modulemgr_base + 0xb640, 0x80); // should cover all patched exports
-	SceCpuForDriver_9CB9F0CE_flush_icache(scenpdrm_code + 0x6000, 0x4000); // and npdrm patches
-	SceCpuForDriver_9CB9F0CE_flush_icache(scesblacmgr_code, 0x2000);
+	SceCpuForDriver_9CB9F0CE_flush_icache(scenpdrm_code, 0x12000); // and npdrm patches
 	// end homebrew enable
 
 	// takeover the web browser
@@ -389,9 +371,6 @@ void resolve_imports(unsigned sysmem_base) {
 			sblauthmgr_info = find_modinfo((u32_t)info.segments[0].vaddr, "SceSblAuthMgr");
 		if (strcmp(info.name, "SceNpDrm") == 0)
 			DACR_OFF(scenpdrm_code = (u32_t)info.segments[0].vaddr;);
-		if (strcmp(info.name, "SceSblACMgr") == 0) {
-			DACR_OFF(scesblacmgr_code = (u32_t)info.segments[0].vaddr;);
-		}
 		if (strcmp(info.name, "SceNetPs") == 0) {
 			scenet_code = (u32_t)info.segments[0].vaddr;
 			scenet_data = (u32_t)info.segments[1].vaddr;
