@@ -1,3 +1,0 @@
-// Copy this file to urop/config.rop and change the URL
-// Args will be appended to the URL, in format "?a1=0x123&a2=0x345"
-symbol stage2_url_base = "http://your_url_here.com/stage2.php";

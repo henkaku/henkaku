@@ -18,7 +18,7 @@ data
 	buffer module_list[0x100];
 	buffer module_info[440];
 
-	#include "config.rop"
+	#include "../build/config.rop"
 }
 
 code : entry

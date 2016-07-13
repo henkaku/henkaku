@@ -57,7 +57,7 @@ typedef struct func_map {
 	int (*scePromoterUtilityExit)();
 } func_map;
 
-#include "config.h"
+#include "../../build/config.h"
 #include "../libc.c"
 // #include "memcpy.c"
 

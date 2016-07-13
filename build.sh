@@ -8,30 +8,26 @@ rm -rf build output
 mkdir build output
 mkdir output/static output/dynamic
 
+
+if [ -z "$1" ]; then
+	echo "Please copy sample.config.in to your.config, configure it, and then launch this script as ./build.sh your.config"
+	exit 1
+fi
+
+source $1
+
 CC=arm-vita-eabi-gcc
 LD=arm-vita-eabi-gcc
 AS=arm-vita-eabi-as
 OBJCOPY=arm-vita-eabi-objcopy
 LDFLAGS="-T payload/linker.x -nodefaultlibs -nostdlib -pie"
-DEFINES=""
-
-if [ "$1" == "release" ]; then
-	echo "Building release mode"
-	DEFINES="-DRELEASE=1"
-else
-	echo "Building DEBUG mode"
-	DEFINES="-DRELEASE=0"
-fi
-
+DEFINES="-DRELEASE=$RELEASE"
 PREPROCESS="$CC -E -P -C -w -x c $DEFINES"
 CFLAGS="-fPIE -fno-zero-initialized-in-bss -std=c99 -mcpu=cortex-a9 -Os -mthumb $DEFINES"
 
 echo "0) User payload"
 
-if [ ! -f payload/user/config.h ]; then
-    echo "Please copy payload/user/config.h.in to payload/user/config.h and configure it"
-    exit 1
-fi
+echo "#define PKG_URL_PREFIX \"$PKG_URL_PREFIX\"" > build/config.h
 
 # generate version stuffs
 BUILD_VERSION=$(git describe --dirty --always --tags)
@@ -78,18 +74,14 @@ echo "2) Kernel ROP"
 ./krop/build_rop.py krop/rop.S build/
 
 echo "3) User ROP"
+echo "symbol stage2_url_base = \"$STAGE2_URL_BASE\";" > build/config.rop
+
 ./urop/make_rop_array.py build/loader.enc kx_loader build/kx_loader.rop
 ./urop/make_rop_array.py build/payload.enc second_payload build/second_payload.rop
 
 $PREPROCESS urop/exploit.rop.in -o build/exploit.rop.in
 erb build/exploit.rop.in > build/exploit.rop
 roptool -s build/exploit.rop -t urop/webkit-360-pkg -o build/exploit.rop.bin >/dev/null
-
-if [ ! -f urop/config.rop ]; then
-    echo "Please copy urop/config.rop.in to urop/config.rop and configure it"
-    echo "(If you don't need dynamic website support, just copy it without changing anything)"
-    exit 1
-fi
 
 $PREPROCESS urop/loader.rop.in -o build/loader.rop.in
 erb build/loader.rop.in > build/loader.rop
