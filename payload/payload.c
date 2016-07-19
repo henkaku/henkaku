@@ -186,12 +186,34 @@ int (*sceKernelCreateThreadForKernel)() = 0;
 int (*sceKernelExitDeleteThread)() = 0;
 int (*sceKernelGetModuleListForKernel)() = 0;
 int (*sceKernelGetModuleInfoForKernel)() = 0;
+void (*SceModulemgrForKernel_0xB427025E_set_syscall)(u32_t num, void *function) = 0;
+int (*sceDisplaySetFrameBufInternal)(int r0, int r1, int r2, int r3) = 0;
+int (*sceDisplayGetFrameBufInternal)(int r0, int r1, int r2, int r3) = 0;
 
 unsigned modulemgr_base = 0;
+unsigned modulemgr_data = 0;
 unsigned scenpdrm_code = 0;
 int pid = 0, ppid = 0;
 unsigned SceWebBrowser_base = 0;
 unsigned SceLibKernel_base = 0;
+
+int sceDisplaySetFrameBufInternalPatched(int r0, int r1, int r2, int r3)
+{
+    while(1);
+    return sceDisplaySetFrameBufInternal(r0, r1, r2, r3);
+}
+
+int sceDisplayGetFrameBufInternalPatched(int r0, int r1, int r2, int r3)
+{
+    while(1);
+    if (sceKernelGetProcessId() == ppid)
+    {
+        sceKernelExitDeleteThread();
+        return 0;
+    }
+
+    return sceDisplayGetFrameBufInternal(r0, r1, r2, r3);
+}
 
 // setup file decryption
 unsigned hook_sbl_F3411881(unsigned a1, unsigned a2, unsigned a3, unsigned a4) {
@@ -238,6 +260,19 @@ void print_buffer(unsigned *buffer) {
 		LOG("0x%x: 0x%x\n", i, buffer[i]);
 }
 
+void patch_syscall(u32_t addr, void *function)
+{
+    u32_t *syscall_table = (u32_t*) (*((u32_t*)(modulemgr_data + 0x334)));
+
+    for (int i = 0; i < 0x1000; ++i)
+    {
+        if (syscall_table[i] == addr)
+        {
+            SceModulemgrForKernel_0xB427025E_set_syscall(i, function);
+        }
+    }
+}
+
 // this is user shellcode
 #include "../build/user.h"
 
@@ -259,6 +294,8 @@ void thread_main() {
 
 		patch = (void*)(scenpdrm_code + 0x6A38);
 		*patch = 0x47702001; // always return 1 in install_allowed
+
+
 	);
 	SceCpuForDriver_9CB9F0CE_flush_icache((void*)scenpdrm_code, 0x12000); // and npdrm patches
 	// end homebrew enable
@@ -310,6 +347,9 @@ void takeover_web_browser() {
 	ret = sceKernelGetMemBlockBaseForKernel(ret, &base);
 	LOG("getbase ret = 0x%x base = 0x%x\n", ret, base);
 #endif
+        // patch setframebufferinternal and getframebufferinternal
+        patch_syscall((u32_t)sceDisplaySetFrameBufInternal, sceDisplaySetFrameBufInternalPatched);
+        patch_syscall((u32_t)sceDisplayGetFrameBufInternal, sceDisplayGetFrameBufInternalPatched);
 
 	// inject the code
 	unrestricted_memcpy_for_pid(ppid, (void*)base, build_user_bin, (build_user_bin_len + 0x10) & ~0xF);
@@ -355,7 +395,7 @@ void resolve_imports(unsigned sysmem_base) {
 	ret = sceKernelGetModuleListForKernel(0x10005, 0x7FFFFFFF, 1, modlist, &modlist_records);
 	LOG("sceKernelGetModuleList() returned 0x%x\n", ret);
 	LOG("modlist_records: %d\n", modlist_records);
-	module_info_t *threadmgr_info = 0, *sblauthmgr_info = 0, *processmgr_info;
+        module_info_t *threadmgr_info = 0, *sblauthmgr_info = 0, *processmgr_info = 0, *display_info = 0;
 	u32_t scenet_code = 0, scenet_data = 0;
 	for (int i = 0; i < modlist_records; ++i) {
 		info.size = sizeof(info);
@@ -370,6 +410,12 @@ void resolve_imports(unsigned sysmem_base) {
 			scenet_code = (u32_t)info.segments[0].vaddr;
 			scenet_data = (u32_t)info.segments[1].vaddr;
 		}
+                if (strcmp(info.name, "SceKernelModulemgr") == 0) {
+                        DACR_OFF(modulemgr_data = (u32_t)info.segments[1].vaddr;);
+                }
+                if (strcmp(info.name, "SceDisplay") == 0) {
+                    display_info = find_modinfo((u32_t)info.segments[0].vaddr, "SceDisplay");
+                }
 		if (strcmp(info.name, "SceProcessmgr") == 0)
 			processmgr_info = find_modinfo((u32_t)info.segments[0].vaddr, "SceProcessmgr");
 	}
@@ -402,6 +448,9 @@ void resolve_imports(unsigned sysmem_base) {
 		SceCpuForDriver_9CB9F0CE_flush_icache = find_export(sysmem_info, 0x9CB9F0CE);
 		sceKernelCreateThreadForKernel = find_export(threadmgr_info, 0xC6674E7D);
 		sceKernelExitDeleteThread = find_export(threadmgr_info, 0x1D17DECF);
+                SceModulemgrForKernel_0xB427025E_set_syscall = find_export(modulemgr_info, 0xB427025E);
+                sceDisplayGetFrameBufInternal = find_export(display_info, 0x86a8e436);
+                sceDisplaySetFrameBufInternal = find_export(display_info, 0x7a8cb78e);
 	);
 }
 
