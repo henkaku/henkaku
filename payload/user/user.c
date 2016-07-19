@@ -138,17 +138,17 @@ int render_thread(int args, unsigned *argp) {
 
 	SceDisplayFrameBuf fb = {0};
 	fb.size = sizeof(SceDisplayFrameBuf);
-	fb.base = (void*)argp[1]; // this is SceSharedFb
+        fb.base = (void*)F->base; // this is SceSharedFb
 	fb.pitch = SCREEN_WIDTH;
 	fb.width = SCREEN_WIDTH;
 	fb.height = SCREEN_HEIGHT;
 	fb.pixelformat = SCE_DISPLAY_PIXELFORMAT_A8B8G8R8;	
 	while (1) {
 		ret = F->sceDisplaySetFramebuf(&fb, 1);
-		if (ret < 0)
-			LOG("sceDisplaySetFramebuf: 0x%x\n", ret);
-		memcpy(fb.base, F->base, fb.pitch * fb.height * 4);
-		F->sceKernelDelayThread(10 * 1000);
+                if (ret < 0)
+                        LOG("sceDisplaySetFramebuf: 0x%x\n", ret);
+                //memcpy(fb.base, F->base, fb.pitch * fb.height * 4);
+                F->sceKernelDelayThread(10 * 1000);
 	}
 }
 
@@ -393,7 +393,7 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 #endif
 
 	// allocate graphics and start render thread
-	int block = F->sceKernelAllocMemBlock("display", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW, FRAMEBUFFER_SIZE, NULL);
+        int block = F->sceKernelAllocMemBlock("display", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, FRAMEBUFFER_SIZE, NULL);
 	LOG("block: 0x%x\n", block);
 	ret = F->sceKernelGetMemBlockBase(block, &F->base);
 	LOG("sceKernelGetMemBlockBase: 0x%x base 0x%x\n", ret, F->base);
@@ -402,19 +402,25 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 	LOG("create thread 0x%x\n", thread);
 
 	unsigned thread_args[] = { (unsigned)F, 0x60440000, (unsigned)F->base };
-	memset(F->base, 0x33, FRAMEBUFFER_SIZE);
+        //memset(F->base, 0x7F, FRAMEBUFFER_SIZE);
+
+        for (int i = 0; i < FRAMEBUFFER_SIZE; i += 4)
+        {
+            ((unsigned int *)F->base)[i/4] = 0xFFFF00FF;
+        }
+
 	ret = F->sceKernelStartThread(thread, sizeof(thread_args), thread_args);
 
 	// done with the bullshit now, let's rock
-	PRINTF("this is HENkaku version " BUILD_VERSION " built at " BUILD_DATE " by " BUILD_HOST "\n");
-	PRINTF("...\n");
+        PRINTF("this is HENkaku version " BUILD_VERSION " built at " BUILD_DATE " by " BUILD_HOST "\n");
+        PRINTF("...\n");
 
-	// F->sceKernelDelayThread(1000 * 1000);
-	LOG("am still running\n");
+         F->sceKernelDelayThread(1000 * 1000);
+        LOG("am still running\n");
 
-	install_pkg(F);
+        install_pkg(F);
 	
-	F->sceKernelDelayThread(5 * 1000 * 1000);
+        F->sceKernelDelayThread(30 * 1000 * 1000);
 
 	while (1) {
 		F->kill_me();

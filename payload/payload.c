@@ -190,6 +190,10 @@ void (*SceModulemgrForKernel_0xB427025E_set_syscall)(u32_t num, void *function) 
 int (*sceDisplaySetFrameBufInternal)(int r0, int r1, int r2, int r3) = 0;
 int (*sceDisplayGetFrameBufInternal)(int r0, int r1, int r2, int r3) = 0;
 int (*sceKernelDelayThread)(int ms) = 0;
+int (* SceThreadmgrForKernel_0xEA7B8AEF_get_thread_list)(int pid, void *buf, int bufsize, int *count) = 0;
+int (* sceKernelChangeThreadCpuAffinityMask)(int thid, int mask) = 0;
+int (* sceKernelChangeThreadPriority)(int thid, int priority) = 0;
+int (*sceKernelWaitThreadEndForKernel)(int thid, int *r1, int *r2) = 0;
 
 unsigned modulemgr_base = 0;
 unsigned modulemgr_data = 0;
@@ -197,23 +201,31 @@ unsigned scenpdrm_code = 0;
 int pid = 0, ppid = 0;
 unsigned SceWebBrowser_base = 0;
 unsigned SceLibKernel_base = 0;
+u32_t sharedfb_update_begin = 0, sharedfb_update_process = 0, sharedfb_update_end = 0;
 
 int sceDisplaySetFrameBufInternalPatched(int r0, int r1, int r2, int r3)
 {
-    while(1) {
-        sceKernelDelayThread(5000);
-    }
-
-    return sceDisplaySetFrameBufInternal(r0, r1, r2, r3);
+    return 0;
 }
 
 int sceDisplayGetFrameBufInternalPatched(int r0, int r1, int r2, int r3)
 {
-    while(1) {
-        sceKernelDelayThread(5000);
-    }
+    return 0;
+}
 
-    return sceDisplayGetFrameBufInternal(r0, r1, r2, r3);
+int hook_sharedfb_update_begin(int r0, int r1, int r2, int r3)
+{
+    return 0;
+}
+
+int hook_sharedfb_update_process(int r0, int r1, int r2, int r3)
+{
+    return 0;
+}
+
+int hook_sharedfb_update_end(int r0, int r1, int r2, int r3)
+{
+    return 0;
 }
 
 // setup file decryption
@@ -348,7 +360,20 @@ void takeover_web_browser() {
 	ret = sceKernelGetMemBlockBaseForKernel(ret, &base);
 	LOG("getbase ret = 0x%x base = 0x%x\n", ret, base);
 #endif
-        // patch setframebufferinternal and getframebufferinternal
+        int thidlist[MOD_LIST_SIZE];
+        int thidlist_records = 0;
+        SceThreadmgrForKernel_0xEA7B8AEF_get_thread_list(ppid, thidlist, sizeof(thidlist), &thidlist_records);
+
+        for (int i = 0; i < thidlist_records; ++i)
+        {
+            sceKernelChangeThreadCpuAffinityMask(thidlist[i], 0x40000000);
+            sceKernelChangeThreadPriority(thidlist[i], 255);
+        }
+
+        // patch
+        patch_syscall(sharedfb_update_begin, hook_sharedfb_update_begin);
+        patch_syscall(sharedfb_update_process, hook_sharedfb_update_process);
+        patch_syscall(sharedfb_update_end, hook_sharedfb_update_end);
         patch_syscall((u32_t)sceDisplaySetFrameBufInternal, sceDisplaySetFrameBufInternalPatched);
         patch_syscall((u32_t)sceDisplayGetFrameBufInternal, sceDisplayGetFrameBufInternalPatched);
 
@@ -362,6 +387,18 @@ void takeover_web_browser() {
 	unsigned args[] = { SceLibKernel_base };
 	ret = sceKernelStartThread_089(thread, sizeof(args), args);
 	LOG("sceKernelStartThread_089 ret 0x%x\n", ret);
+
+        sceKernelDelayThread(5*1000*1000);
+
+        int status = 0, out = 0;
+        sceKernelWaitThreadEndForKernel(thread, &status, &out);
+
+        // undo patches
+        patch_syscall((u32_t)sceDisplaySetFrameBufInternalPatched, sceDisplaySetFrameBufInternal);
+        patch_syscall((u32_t)sceDisplayGetFrameBufInternalPatched, sceDisplayGetFrameBufInternal);
+        patch_syscall((u32_t)hook_sharedfb_update_begin, (void *)sharedfb_update_begin);
+        patch_syscall((u32_t)hook_sharedfb_update_process, (void *)sharedfb_update_process);
+        patch_syscall((u32_t)hook_sharedfb_update_end, (void *)sharedfb_update_end);
 }
 
 void resolve_imports(unsigned sysmem_base) {
@@ -396,7 +433,7 @@ void resolve_imports(unsigned sysmem_base) {
 	ret = sceKernelGetModuleListForKernel(0x10005, 0x7FFFFFFF, 1, modlist, &modlist_records);
 	LOG("sceKernelGetModuleList() returned 0x%x\n", ret);
 	LOG("modlist_records: %d\n", modlist_records);
-        module_info_t *threadmgr_info = 0, *sblauthmgr_info = 0, *processmgr_info = 0, *display_info = 0;
+        module_info_t *threadmgr_info = 0, *sblauthmgr_info = 0, *processmgr_info = 0, *display_info = 0, *appmgr_info = 0;
 	u32_t scenet_code = 0, scenet_data = 0;
 	for (int i = 0; i < modlist_records; ++i) {
 		info.size = sizeof(info);
@@ -417,6 +454,11 @@ void resolve_imports(unsigned sysmem_base) {
                 if (strcmp(info.name, "SceDisplay") == 0) {
                     display_info = find_modinfo((u32_t)info.segments[0].vaddr, "SceDisplay");
                 }
+                if (strcmp(info.name, "SceAppMgr") == 0) {
+                    DACR_OFF(INSTALL_HOOK(hook_sharedfb_update_process, (u32_t)info.segments[0].vaddr+0x2889C););
+                    DACR_OFF(INSTALL_HOOK(hook_sharedfb_update_process, (u32_t)info.segments[0].vaddr+0x2885C););
+                    appmgr_info = find_modinfo((u32_t)info.segments[0].vaddr, "SceAppMgr");
+                }
 		if (strcmp(info.name, "SceProcessmgr") == 0)
 			processmgr_info = find_modinfo((u32_t)info.segments[0].vaddr, "SceProcessmgr");
 	}
@@ -430,7 +472,7 @@ void resolve_imports(unsigned sysmem_base) {
 	void *mutex = (void*)((u32_t)scenet_data + 0x850);
 	// end
 	ret = sce_psnet_bnet_mutex_unlock(mutex);
-	LOG("=> ret = 0x%08x\n", ret);
+        LOG("=> ret = 0x%08x\n", ret);
 
 	DACR_OFF(
 		hook_resume_sbl_F3411881 = find_export(sblauthmgr_info, 0xF3411881);
@@ -453,7 +495,14 @@ void resolve_imports(unsigned sysmem_base) {
                 sceDisplayGetFrameBufInternal = find_export(display_info, 0x86a8e436);
                 sceDisplaySetFrameBufInternal = find_export(display_info, 0x7a8cb78e);
                 sceKernelDelayThread = find_export(threadmgr_info, 0x4b675d05);
-	);
+                SceThreadmgrForKernel_0xEA7B8AEF_get_thread_list = find_export(threadmgr_info, 0xEA7B8AEF);
+                sceKernelChangeThreadCpuAffinityMask = find_export(threadmgr_info, 0x15129174);
+                sceKernelChangeThreadPriority = find_export(threadmgr_info, 0xbd0139f2);
+                sceKernelWaitThreadEndForKernel = find_export(threadmgr_info, 0x3E20216F);
+                sharedfb_update_begin = (u32_t)find_export(appmgr_info, 0xf9754ad9);
+                sharedfb_update_process = (u32_t)find_export(appmgr_info, 0x3889acf8);
+                sharedfb_update_end = (u32_t)find_export(appmgr_info, 0x565a9ab6);
+        );
 }
 
 void __attribute__ ((section (".text.start"))) payload(uint32_t sysmem_addr) {
