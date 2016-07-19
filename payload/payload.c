@@ -189,6 +189,7 @@ int (*sceKernelGetModuleInfoForKernel)() = 0;
 void (*SceModulemgrForKernel_0xB427025E_set_syscall)(u32_t num, void *function) = 0;
 int (*sceDisplaySetFrameBufInternal)(int r0, int r1, int r2, int r3) = 0;
 int (*sceDisplayGetFrameBufInternal)(int r0, int r1, int r2, int r3) = 0;
+int (*sceKernelDelayThread)(int ms) = 0;
 
 unsigned modulemgr_base = 0;
 unsigned modulemgr_data = 0;
@@ -199,17 +200,17 @@ unsigned SceLibKernel_base = 0;
 
 int sceDisplaySetFrameBufInternalPatched(int r0, int r1, int r2, int r3)
 {
-    while(1);
+    while(1) {
+        sceKernelDelayThread(5000);
+    }
+
     return sceDisplaySetFrameBufInternal(r0, r1, r2, r3);
 }
 
 int sceDisplayGetFrameBufInternalPatched(int r0, int r1, int r2, int r3)
 {
-    while(1);
-    if (sceKernelGetProcessId() == ppid)
-    {
-        sceKernelExitDeleteThread();
-        return 0;
+    while(1) {
+        sceKernelDelayThread(5000);
     }
 
     return sceDisplayGetFrameBufInternal(r0, r1, r2, r3);
@@ -451,6 +452,7 @@ void resolve_imports(unsigned sysmem_base) {
                 SceModulemgrForKernel_0xB427025E_set_syscall = find_export(modulemgr_info, 0xB427025E);
                 sceDisplayGetFrameBufInternal = find_export(display_info, 0x86a8e436);
                 sceDisplaySetFrameBufInternal = find_export(display_info, 0x7a8cb78e);
+                sceKernelDelayThread = find_export(threadmgr_info, 0x4b675d05);
 	);
 }
 
