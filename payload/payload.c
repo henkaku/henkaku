@@ -390,8 +390,8 @@ void takeover_web_browser() {
 
         sceKernelDelayThread(5*1000*1000);
 
-        int status = 0, out = 0;
-        sceKernelWaitThreadEndForKernel(thread, &status, &out);
+        int status = 0;
+        sceKernelWaitThreadEndForKernel(thread, &status, NULL);
 
         // undo patches
         patch_syscall((u32_t)sceDisplaySetFrameBufInternalPatched, sceDisplaySetFrameBufInternal);
