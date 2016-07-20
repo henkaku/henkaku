@@ -346,6 +346,7 @@ int install_pkg(func_map *F) {
 
 	GET_FILE("eboot.bin");
 	GET_FILE("sce_sys/param.sfo");
+	GET_FILE("sce_sys/icon0.png");
 	GET_FILE("sce_sys/package/head.bin");
 	GET_FILE("sce_sys/livearea/contents/bg.png");
 	GET_FILE("sce_sys/livearea/contents/install_button.png");
