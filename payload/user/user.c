@@ -241,6 +241,7 @@ void draw_rect(func_map *F, int x, int y, int width, int height) {
 int download_file(func_map *F, const char *src, const char *dst) {
 	int ret;
 	PRINTF("downloading %s\n", src);
+	PRINTF("dst = %s\n", dst);
 	int tpl = F->sceHttpCreateTemplate("henkaku usermode", 2, 1);
 	if (tpl < 0) {
 		PRINTF("sceHttpCreateTemplate: 0x%x\n", tpl);
@@ -266,7 +267,7 @@ int download_file(func_map *F, const char *src, const char *dst) {
 	long long length = 0;
 	ret = F->sceHttpGetResponseContentLength(req, &length);
 
-	int fd = F->sceIoOpen(dst, SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC, 7);
+	int fd = F->sceIoOpen(dst, SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC, 6);
 	int total_read = 0;
 	if (fd < 0) {
 		PRINTF("sceIoOpen: 0x%x\n", fd);
@@ -311,34 +312,46 @@ unsigned __attribute__((noinline)) call_syscall(unsigned a1, unsigned num) {
 	);
 }
 
+static void mkdirs(func_map *F, const char *dir) {
+	char dir_copy[0x400] = {0};
+	F->sceClibSnprintf(dir_copy, sizeof(dir_copy) - 2, "%s", dir);
+	dir_copy[strlen(dir_copy)] = '/';
+	char *c;
+	for (c = dir_copy; *c; ++c) {
+		if (*c == '/') {
+			*c = '\0';
+			int ret = F->sceIoMkdir(dir_copy, 0777);
+			PRINTF("mkdir %s ret 0x%x\n", dir_copy, ret);
+			*c = '/';
+		}
+	}
+}
+
+#define GET_FILE(name) do { \
+	F->sceClibSnprintf(file_name, sizeof(file_name), "%s/" name, pkg_path); \
+	download_file(F, PKG_URL_PREFIX "/" name, file_name); \
+} while(0);
+
 int install_pkg(func_map *F) {
 	int ret;
-	char dirname[32];
-	char pkg_path[0x100];
-	char file_name[0x100];
-	F->sceClibSnprintf(pkg_path, sizeof(pkg_path), "ux0:data/package_temp/%x/", &install_pkg); // this is to get random directory
+	char pkg_path[0x400] = {0};
+	char file_name[0x400] = {0};
+	F->sceClibSnprintf(pkg_path, sizeof(pkg_path), "ux0:data/package_temp/%x", &install_pkg); // this is to get random directory
 	LOG("package temp directory: %s\n", pkg_path);
-	ret = F->sceIoMkdir("ux0:/data/package_temp", 6);
-	LOG("make root pkg dir 0x%x\n", ret);
-	ret = F->sceIoMkdir(pkg_path, 6);
-	LOG("make pkg dir 0x%x\n", ret);
-	// /eboot.bin
-	F->sceClibSnprintf(file_name, sizeof(file_name), "%s/eboot.bin", pkg_path);
-	download_file(F, PKG_URL_PREFIX "/eboot.bin", file_name);
-	// /sce_sys/
-	F->sceClibSnprintf(file_name, sizeof(file_name), "%s/sce_sys", pkg_path);
-	ret = F->sceIoMkdir(file_name, 6);
-	LOG("make sce_sys 0x%x\n", ret);
-	// /sce_sys/param.sfo
-	F->sceClibSnprintf(file_name, sizeof(file_name), "%s/sce_sys/param.sfo", pkg_path);
-	download_file(F, PKG_URL_PREFIX "/param.sfo", file_name);
-	// /sce_sys/package/
+
+	// create directory structure
 	F->sceClibSnprintf(file_name, sizeof(file_name), "%s/sce_sys/package/", pkg_path);
-	ret = F->sceIoMkdir(file_name, 6);
-	LOG("make sce_sys/package/ 0x%x\n", ret);
-	// /sce_sys/package/head.bin
-	F->sceClibSnprintf(file_name, sizeof(file_name), "%s/sce_sys/package/head.bin", pkg_path);
-	download_file(F, PKG_URL_PREFIX "/head.bin", file_name);
+	mkdirs(F, file_name);
+	F->sceClibSnprintf(file_name, sizeof(file_name), "%s/sce_sys/livearea/contents/", pkg_path);
+	mkdirs(F, file_name);
+
+	GET_FILE("eboot.bin");
+	GET_FILE("sce_sys/param.sfo");
+	GET_FILE("sce_sys/package/head.bin");
+	GET_FILE("sce_sys/livearea/contents/bg.png");
+	GET_FILE("sce_sys/livearea/contents/install_button.png");
+	GET_FILE("sce_sys/livearea/contents/startup.png");
+	GET_FILE("sce_sys/livearea/contents/template.xml");
 
 	// done with downloading, let's install it now
 	PRINTF("\n\ninstalling the package\n");
@@ -375,7 +388,7 @@ int install_pkg(func_map *F) {
 		if (ret < 0)
 		{
 			PRINTF("scePromoterUtilityGetState error 0x%x\n", ret);
-			return;
+			return ret;
 		}
 		PRINTF(".");
 		F->sceKernelDelayThread(300000);
