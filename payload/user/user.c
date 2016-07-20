@@ -353,46 +353,8 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 
 	LOG("hello from the browser!\n");
 
-
-#if 0
-	ret = F.sceKernelFindMemBlockByAddr(0x60440000, 0);
-	LOG("got memblock 0x%x\n", ret);
-
-	unsigned ScePaf_base = argp[3], ScePaf_data_base = argp[4]; // TODO: don't use argp here
-	LOG("paf base: 0x%x\n", ScePaf_base);
-	int (*ScePafThread_F9FFA0BE)() = ScePaf_base + 0x54981;
-	unsigned lock = ScePaf_data_base + 0xe428;
-	// try to deadlock the main thread by obtaining a lock and never releasing it
-	// for (int i = 0; i < 0x1000; ++i) {
-	// 	ret = ScePafThread_F9FFA0BE(lock);
-	// 	F.sceKernelDelayThread(1);
-	// 	// LOG("ScePafThread_F9FFA0BE: 0x%x\n", ret);
-	// }
-
-	F.sceKernelDelayThread(1000);
-
-	SceKernelThreadInfo thread_info = { 0 };
-	thread_info.size = sizeof(thread_info);
-	F.sceKernelGetThreadInfo(0x40010003, &thread_info);
-	LOG("stack: 0x%x size: 0x%x\n", thread_info.stack, thread_info.stackSize);
-	for (int j = 0; j < 0x10; ++j) {
-		for (unsigned i = thread_info.stackSize - 0x50; i < thread_info.stackSize - 0x40; ++i) {
-			unsigned *addr = (char*)thread_info.stack + i;
-			*addr = F.sceKernelExitThread;
-		}
-	}
-	// unsigned *addr = (char*)thread_info.stack + 0x3ff30 + 0x4C;
-	// // try to kill the main thread by overwriting its return pointer on stack with sceKernelExitThread
-	// for (int i = 0; i < 0x10000; ++i) {
-	// 	*addr = F.sceKernelExitThread;
-	// 	if (i % 0x100 == 0)
-	// 		F.sceKernelDelayThread(1);
-	// }
-	// hopefully by now the thread's dead or otherwise inactive (not always the case)
-#endif
-
 	// allocate graphics and start render thread
-		int block = F->sceKernelAllocMemBlock("display", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, FRAMEBUFFER_SIZE, NULL);
+	int block = F->sceKernelAllocMemBlock("display", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, FRAMEBUFFER_SIZE, NULL);
 	LOG("block: 0x%x\n", block);
 	ret = F->sceKernelGetMemBlockBase(block, &F->base);
 	LOG("sceKernelGetMemBlockBase: 0x%x base 0x%x\n", ret, F->base);
