@@ -15,6 +15,7 @@
 typedef struct func_map {
 	unsigned *argp;
 	int X, Y;
+	unsigned fg_color;
 	void *base;
 
 	unsigned sysmodule_svc_offset;
@@ -72,7 +73,7 @@ enum {
 // Draw functions
 #include "font.c"
 
-static void printTextScreen(const char * text, uint32_t *g_vram, int *X, int *Y)
+static void printTextScreen(func_map *F, const char * text, uint32_t *g_vram, int *X, int *Y)
 {
 	int c, i, j, l;
 	unsigned char *font;
@@ -104,7 +105,7 @@ static void printTextScreen(const char * text, uint32_t *g_vram, int *X, int *Y)
 		for (i = l = 0; i < 8; i++, l += 8, font++) {
 			vram_ptr  = vram;
 			for (j = 0; j < 8; j++) {
-				if ((*font & (128 >> j))) *vram_ptr = 0xFFFFFFFF;
+				if ((*font & (128 >> j))) *vram_ptr = F->fg_color;
 				else *vram_ptr = 0;
 				vram_ptr++;
 			}
@@ -120,7 +121,7 @@ void psvDebugScreenPrintf(func_map *F, uint32_t *g_vram, int *X, int *Y, const c
 	va_list opt;
 	va_start(opt, format);
 	F->sceClibVsnprintf(buf, sizeof(buf), format, opt);
-	printTextScreen(buf, g_vram, X, Y);
+	printTextScreen(F, buf, g_vram, X, Y);
 	va_end(opt);
 }
 // end draw functions
@@ -229,7 +230,7 @@ void resolve_functions(func_map *F) {
 // Downloads a file from url src to filesystem dst, if dst already exists, it is overwritten
 void download_file(func_map *F, const char *src, const char *dst) {
 	int ret;
-	PRINTF("enter download file src=%s dst=%s\n", src, dst);
+	PRINTF("downloading %s\n", src);
 	int tpl = F->sceHttpCreateTemplate("henkaku usermode", 2, 1);
 	LOG("create template ok\n");
 	LOG("sceHttpCreateTemplate: 0x%x\n", tpl);
@@ -273,7 +274,7 @@ unsigned __attribute__((noinline)) call_syscall(unsigned a1, unsigned num) {
 	);
 }
 
-void install_pkg(func_map *F) {
+int install_pkg(func_map *F) {
 	int ret;
 	char dirname[32];
 	char pkg_path[0x100];
@@ -304,6 +305,7 @@ void install_pkg(func_map *F) {
 	download_file(F, PKG_URL_PREFIX "/head.bin", file_name);
 
 	// done with downloading, let's install it now
+	PRINTF("\n\ninstalling the package\n");
 
 	unsigned *addr = (void*)F->sysmodule_svc_offset;
 	unsigned syscall_num = (addr[0] & 0xFFF) + 1;
@@ -340,6 +342,10 @@ void install_pkg(func_map *F) {
 
 	ret = F->scePromoterUtilityExit();
 	PRINTF("scePromoterUtilityExit: 0x%x\n", ret);
+
+	if (res < 0)
+		return res;
+	return ret;
 }
 
 void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *argp) {
@@ -349,6 +355,7 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 	resolve_functions(&FF);
 	struct func_map *F = &FF;
 
+	F->fg_color = 0xFFFFFFFF;
 	F->Y = 32; // make sure text starts below the status bar
 	F->sceKernelDelayThread(1000 * 1000);
 
@@ -367,7 +374,7 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 
 	for (int i = 0; i < FRAMEBUFFER_SIZE; i += 4)
 	{
-		((unsigned int *)F->base)[i/4] = 0xFFFF00FF;
+		((unsigned int *)F->base)[i/4] = 0xFF000000;
 	}
 
 	ret = F->sceKernelStartThread(thread, sizeof(thread_args), thread_args);
@@ -376,10 +383,22 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 	PRINTF("this is HENkaku version " BUILD_VERSION " built at " BUILD_DATE " by " BUILD_HOST "\n");
 	PRINTF("...\n");
 
-	 F->sceKernelDelayThread(1000 * 1000);
+	F->sceKernelDelayThread(1000 * 1000);
 	LOG("am still running\n");
 
-	install_pkg(F);
+	ret = install_pkg(F);
+
+	PRINTF("\n\n");
+	if (ret < 0) {
+		F->fg_color = 0xFFFF0000;
+		PRINTF("HENkaku failed to install the pkg: error code 0x%x\n", ret);
+	} else {
+		F->fg_color = 0xFF00FF00;
+		PRINTF("HENkaku was successfully installed\n");
+	}
+	F->fg_color = 0xFFFFFFFF;
+	PRINTF("(the browser will close in 3s)\n");
+	F->sceKernelDelayThread(3 * 1000 * 1000);
 
 	while (1) {
 		F->kill_me();
