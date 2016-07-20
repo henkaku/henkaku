@@ -238,27 +238,40 @@ void draw_rect(func_map *F, int x, int y, int width, int height) {
 }
 
 // Downloads a file from url src to filesystem dst, if dst already exists, it is overwritten
-void download_file(func_map *F, const char *src, const char *dst) {
+int download_file(func_map *F, const char *src, const char *dst) {
 	int ret;
 	PRINTF("downloading %s\n", src);
 	int tpl = F->sceHttpCreateTemplate("henkaku usermode", 2, 1);
-	LOG("create template ok\n");
-	LOG("sceHttpCreateTemplate: 0x%x\n", tpl);
+	if (tpl < 0) {
+		PRINTF("sceHttpCreateTemplate: 0x%x\n", tpl);
+		return tpl;
+	}
 	int conn = F->sceHttpCreateConnectionWithURL(tpl, src, 0);
-	LOG("sceHttpCreateConnectionWithURL: 0x%x\n", conn);
+	if (conn < 0) {
+		PRINTF("sceHttpCreateConnectionWithURL: 0x%x\n", conn);
+		return conn;
+	}
 	int req = F->sceHttpCreateRequestWithURL(conn, 0, src, 0, 0, 0);
-	LOG("sceHttpCreateRequestWithURL: 0x%x\n", req);
+	if (req < 0) {
+		PRINTF("sceHttpCreateRequestWithURL: 0x%x\n", req);
+		return req;
+	}
 	ret = F->sceHttpSendRequest(req, NULL, 0);
-	PRINTF("sceHttpSendRequest: 0x%x\n", ret);
+	if (ret < 0) {
+		PRINTF("sceHttpSendRequest: 0x%x\n", ret);
+		return ret;
+	}
 	unsigned char buf[4096] = {0};
 
 	long long length = 0;
 	ret = F->sceHttpGetResponseContentLength(req, &length);
-	// PRINTF("sceHttpGetResponseContentLength: 0x%x length=0x%x\n", ret, (int)length);
 
 	int fd = F->sceIoOpen(dst, SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC, 7);
 	int total_read = 0;
-	PRINTF("sceIoOpen: 0x%x\n", fd);
+	if (fd < 0) {
+		PRINTF("sceIoOpen: 0x%x\n", fd);
+		return fd;
+	}
 	// draw progress bar background
 	F->fg_color = 0xFF666666;
 	draw_rect(F, F->X, F->Y, PROGRESS_BAR_WIDTH, PROGRESS_BAR_HEIGHT);
@@ -267,21 +280,26 @@ void download_file(func_map *F, const char *src, const char *dst) {
 		int read = F->sceHttpReadData(req, buf, sizeof(buf));
 		if (read < 0) {
 			PRINTF("sceHttpReadData error! 0x%x\n", read);
-			break;
+			return read;
 		}
 		if (read == 0)
 			break;
 		ret = F->sceIoWrite(fd, buf, read);
 		if (ret < 0 || ret != read) {
 			PRINTF("sceIoWrite error! 0x%x\n", ret);
-			break;
+			if (ret < 0)
+				return ret;
+			return -1;
 		}
 		total_read += read;
 		draw_rect(F, F->X + 1, F->Y + 1, (PROGRESS_BAR_WIDTH - 2) * total_read / length, PROGRESS_BAR_HEIGHT - 2);
 	}
 	PRINTF("\n\n");
 	ret = F->sceIoClose(fd);
-	LOG("sceIoClose: 0x%x\n", ret);
+	if (ret < 0)
+		PRINTF("sceIoClose: 0x%x\n", ret);
+
+	return 0;
 }
 
 unsigned __attribute__((noinline)) call_syscall(unsigned a1, unsigned num) {
@@ -331,16 +349,25 @@ int install_pkg(func_map *F) {
 
 	LOG("syscall number: 0x%x\n", syscall_num);
 	ret = call_syscall(SCE_SYSMODULE_PROMOTER_UTIL, syscall_num);
-	PRINTF("sceSysmoduleLoadModuleInternal: 0x%x\n", ret);
+	if (ret < 0) {
+		PRINTF("sceSysmoduleLoadModuleInternal: 0x%x\n", ret);
+		return ret;
+	}
 
 	// re-resolve functions now that we've loaded promoter
 	resolve_functions(F);
 
 	ret = F->scePromoterUtilityInit();
-	PRINTF("scePromoterUtilityInit: 0x%x\n", ret);
+	if (ret < 0) {
+		PRINTF("scePromoterUtilityInit: 0x%x\n", ret);
+		return ret;
+	}
 
 	ret = F->scePromoterUtilityPromotePkg(pkg_path, 0);
-	PRINTF("scePromoterUtilityPromotePkg: 0x%x\n", ret);
+	if (ret < 0) {
+		PRINTF("scePromoterUtilityPromotePkg: 0x%x\n", ret);
+		return ret;
+	}
 
 	int state = 1;
 	do
@@ -351,16 +378,19 @@ int install_pkg(func_map *F) {
 			PRINTF("scePromoterUtilityGetState error 0x%x\n", ret);
 			return;
 		}
-		PRINTF("scePromoterUtilityGetState status 0x%x\n", ret);
-		F->sceKernelDelayThread(1000000);
+		PRINTF(".");
+		F->sceKernelDelayThread(300000);
 	} while (state);
+	PRINTF("\n");
 
 	int res = 0;
 	ret = F->scePromoterUtilityGetResult(&res);
-	PRINTF("scePromoterUtilityGetResult: ret=0x%x res=0x%x\n", ret, res);
+	if (ret < 0 || res < 0)
+		PRINTF("scePromoterUtilityGetResult: ret=0x%x res=0x%x\n", ret, res);
 
 	ret = F->scePromoterUtilityExit();
-	PRINTF("scePromoterUtilityExit: 0x%x\n", ret);
+	if (ret < 0)
+		PRINTF("scePromoterUtilityExit: 0x%x\n", ret);
 
 	if (res < 0)
 		return res;
