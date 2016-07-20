@@ -316,7 +316,6 @@ int install_pkg(func_map *F) {
 	char dirname[32];
 	char pkg_path[0x100];
 	char file_name[0x100];
-	// TODO: vitashell should clean up whole data/pk directory on launch
 	F->sceClibSnprintf(pkg_path, sizeof(pkg_path), "ux0:data/package_temp/%x/", &install_pkg); // this is to get random directory
 	LOG("package temp directory: %s\n", pkg_path);
 	ret = F->sceIoMkdir("ux0:/data/package_temp", 6);
