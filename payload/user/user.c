@@ -349,6 +349,7 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 	resolve_functions(&FF);
 	struct func_map *F = &FF;
 
+	F->Y = 32; // make sure text starts below the status bar
 	F->sceKernelDelayThread(1000 * 1000);
 
 	LOG("hello from the browser!\n");
