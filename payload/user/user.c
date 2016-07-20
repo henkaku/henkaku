@@ -131,14 +131,14 @@ void psvDebugScreenPrintf(func_map *F, uint32_t *g_vram, int *X, int *Y, const c
 #define LOG F->sceClibPrintf
 #endif
 
-// args: F, dest (in cdram), src (any)
+// args: F
 int render_thread(int args, unsigned *argp) {
 	int ret;
 	func_map *F = (void*)argp[0];
 
 	SceDisplayFrameBuf fb = {0};
 	fb.size = sizeof(SceDisplayFrameBuf);
-		fb.base = (void*)F->base;
+	fb.base = (void*)F->base;
 	fb.pitch = SCREEN_WIDTH;
 	fb.width = SCREEN_WIDTH;
 	fb.height = SCREEN_HEIGHT;
@@ -146,7 +146,7 @@ int render_thread(int args, unsigned *argp) {
 	while (1) {
 		ret = F->sceDisplaySetFramebuf(&fb, 1);
 		if (ret < 0)
-				LOG("sceDisplaySetFramebuf: 0x%x\n", ret);
+			LOG("sceDisplaySetFramebuf: 0x%x\n", ret);
 		F->sceKernelDelayThread(10 * 1000);
 	}
 }
@@ -362,7 +362,7 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 	int thread = F->sceKernelCreateThread("", render_thread, 64, 0x1000, 0, 0, 0);
 	LOG("create thread 0x%x\n", thread);
 
-	unsigned thread_args[] = { (unsigned)F, 0x60440000, (unsigned)F->base };
+	unsigned thread_args[] = { (unsigned)F };
 
 	for (int i = 0; i < FRAMEBUFFER_SIZE; i += 4)
 	{
