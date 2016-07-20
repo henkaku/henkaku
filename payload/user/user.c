@@ -42,6 +42,7 @@ typedef struct func_map {
 	int (*sceHttpCreateRequestWithURL)();
 	int (*sceHttpSendRequest)();
 	int (*sceHttpReadData)();
+	int (*sceHttpGetResponseContentLength)();
 
 	int (*sceIoOpen)();
 	int (*sceIoWrite)();
@@ -67,7 +68,9 @@ enum {
 	SCREEN_HEIGHT = 544,
 	LINE_SIZE = 960,
 	FRAMEBUFFER_SIZE = 2 * 1024 * 1024,
-	FRAMEBUFFER_ALIGNMENT = 256 * 1024
+	FRAMEBUFFER_ALIGNMENT = 256 * 1024,
+	PROGRESS_BAR_WIDTH = 400,
+	PROGRESS_BAR_HEIGHT = 10,
 };
 
 // Draw functions
@@ -210,6 +213,7 @@ void resolve_functions(func_map *F) {
 	F->sceHttpCreateRequestWithURL = (void*)(SceLibHttp_base + 0x95FF);
 	F->sceHttpSendRequest = (void*)(SceLibHttp_base + 0x9935);
 	F->sceHttpReadData = (void*)(SceLibHttp_base + 0x9983);
+	F->sceHttpGetResponseContentLength = (void*)(SceLibHttp_base + 0x99D7);
 
 	F->sceIoOpen = (void*)(SceLibKernel_base + 0xA4AD);
 	F->sceIoWrite = (void*)(SceLibKernel_base + 0x68DC);
@@ -227,6 +231,12 @@ void resolve_functions(func_map *F) {
 
 #define PRINTF(fmt, ...) do { psvDebugScreenPrintf(F, F->base, &F->X, &F->Y, fmt, ##__VA_ARGS__); LOG(fmt, ##__VA_ARGS__); } while (0);
 
+void draw_rect(func_map *F, int x, int y, int width, int height) {
+	for (int j = y; j < y + height; ++j)
+		for (int i = x; i < x + width; ++i)
+			((unsigned*)F->base)[j * LINE_SIZE + i] = F->fg_color;
+}
+
 // Downloads a file from url src to filesystem dst, if dst already exists, it is overwritten
 void download_file(func_map *F, const char *src, const char *dst) {
 	int ret;
@@ -242,8 +252,17 @@ void download_file(func_map *F, const char *src, const char *dst) {
 	PRINTF("sceHttpSendRequest: 0x%x\n", ret);
 	unsigned char buf[4096] = {0};
 
+	long long length = 0;
+	ret = F->sceHttpGetResponseContentLength(req, &length);
+	// PRINTF("sceHttpGetResponseContentLength: 0x%x length=0x%x\n", ret, (int)length);
+
 	int fd = F->sceIoOpen(dst, SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC, 7);
+	int total_read = 0;
 	PRINTF("sceIoOpen: 0x%x\n", fd);
+	// draw progress bar background
+	F->fg_color = 0xFF666666;
+	draw_rect(F, F->X, F->Y, PROGRESS_BAR_WIDTH, PROGRESS_BAR_HEIGHT);
+	F->fg_color = 0xFFFFFFFF;
 	while (1) {
 		int read = F->sceHttpReadData(req, buf, sizeof(buf));
 		if (read < 0) {
@@ -252,15 +271,15 @@ void download_file(func_map *F, const char *src, const char *dst) {
 		}
 		if (read == 0)
 			break;
-		PRINTF(".");
 		ret = F->sceIoWrite(fd, buf, read);
 		if (ret < 0 || ret != read) {
 			PRINTF("sceIoWrite error! 0x%x\n", ret);
 			break;
 		}
-		PRINTF("+");
+		total_read += read;
+		draw_rect(F, F->X + 1, F->Y + 1, (PROGRESS_BAR_WIDTH - 2) * total_read / length, PROGRESS_BAR_HEIGHT - 2);
 	}
-	PRINTF("\n");
+	PRINTF("\n\n");
 	ret = F->sceIoClose(fd);
 	LOG("sceIoClose: 0x%x\n", ret);
 }
@@ -397,8 +416,8 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 		PRINTF("HENkaku was successfully installed\n");
 	}
 	F->fg_color = 0xFFFFFFFF;
-	PRINTF("(the browser will close in 3s)\n");
-	F->sceKernelDelayThread(3 * 1000 * 1000);
+	PRINTF("(the browser will close in 6s)\n");
+	F->sceKernelDelayThread(6 * 1000 * 1000);
 
 	while (1) {
 		F->kill_me();

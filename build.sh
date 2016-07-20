@@ -39,7 +39,7 @@ echo "#define BUILD_HOST \"$BUILD_HOST\"" >> build/version.c
 
 # user payload is injected into web browser process
 $CC -c -o build/user.o payload/user/user.c $CFLAGS
-$LD -o build/user.elf build/user.o $LDFLAGS
+$LD -o build/user.elf build/user.o -lgcc $LDFLAGS
 $OBJCOPY -O binary build/user.elf build/user.bin
 xxd -i build/user.bin > build/user.h
 
