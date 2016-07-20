@@ -241,7 +241,6 @@ void draw_rect(func_map *F, int x, int y, int width, int height) {
 int download_file(func_map *F, const char *src, const char *dst) {
 	int ret;
 	PRINTF("downloading %s\n", src);
-	PRINTF("dst = %s\n", dst);
 	int tpl = F->sceHttpCreateTemplate("henkaku usermode", 2, 1);
 	if (tpl < 0) {
 		PRINTF("sceHttpCreateTemplate: 0x%x\n", tpl);
@@ -320,8 +319,7 @@ static void mkdirs(func_map *F, const char *dir) {
 	for (c = dir_copy; *c; ++c) {
 		if (*c == '/') {
 			*c = '\0';
-			int ret = F->sceIoMkdir(dir_copy, 0777);
-			PRINTF("mkdir %s ret 0x%x\n", dir_copy, ret);
+			F->sceIoMkdir(dir_copy, 0777);
 			*c = '/';
 		}
 	}
@@ -336,13 +334,14 @@ int install_pkg(func_map *F) {
 	int ret;
 	char pkg_path[0x400] = {0};
 	char file_name[0x400] = {0};
-	F->sceClibSnprintf(pkg_path, sizeof(pkg_path), "ux0:data/package_temp/%x", &install_pkg); // this is to get random directory
+	// this is to get random directory
+	F->sceClibSnprintf(pkg_path, sizeof(pkg_path), "ux0:ptmp/%x", (((unsigned)&install_pkg) >> 4) * 12347);
 	LOG("package temp directory: %s\n", pkg_path);
 
 	// create directory structure
-	F->sceClibSnprintf(file_name, sizeof(file_name), "%s/sce_sys/package/", pkg_path);
+	F->sceClibSnprintf(file_name, sizeof(file_name), "%s/sce_sys/package", pkg_path);
 	mkdirs(F, file_name);
-	F->sceClibSnprintf(file_name, sizeof(file_name), "%s/sce_sys/livearea/contents/", pkg_path);
+	F->sceClibSnprintf(file_name, sizeof(file_name), "%s/sce_sys/livearea/contents", pkg_path);
 	mkdirs(F, file_name);
 
 	GET_FILE("eboot.bin");
