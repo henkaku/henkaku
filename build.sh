@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -ex
-
 # build: tmp build files
 # output: final files only, for distribution
 rm -rf build output
@@ -15,6 +13,15 @@ if [ -z "$1" ]; then
 fi
 
 source $1
+
+if [ -z "$RELEASE" ] || [ -z "$PKG_URL_PREFIX" ] || [ -z "$STAGE2_URL_BASE" ] || [ -z "$VERSION" ]; then
+	echo "Please make sure all of the following variables are defined in your config file:"
+	echo "RELEASE, PKG_URL_PREFIX, STAGE2_URL_BASE, VERSION"
+	echo "(see sample.config.in for an example)"
+	exit 2
+fi
+
+set -ex
 
 CC=arm-vita-eabi-gcc
 LD=arm-vita-eabi-gcc
@@ -36,6 +43,7 @@ BUILD_HOST=$(hostname)
 echo "#define BUILD_VERSION \"$BUILD_VERSION\"" >> build/version.c
 echo "#define BUILD_DATE \"$BUILD_DATE\"" >> build/version.c
 echo "#define BUILD_HOST \"$BUILD_HOST\"" >> build/version.c
+echo "#define VERSION $VERSION" >> build/version.c
 
 # user payload is injected into web browser process
 $CC -c -o build/user.o payload/user/user.c $CFLAGS

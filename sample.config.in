@@ -11,3 +11,9 @@ PKG_URL_PREFIX="http://your_url_here.com/pkg/"
 # Args will be appended to the URL, in format "?a1=0x123&a2=0x345"
 # You only need this for the dynamic version of the exploit (which is recommended)
 STAGE2_URL_BASE="http://your_url_here.com/stage2.php"
+
+# Version of bundled vitashell pkg
+# When repeatedly executing the exploit, vitashell is only downloaded and installed when VERSION is bigger than previous VERSION
+# the exploit was run with
+# If VERSION is 0, this is ignored and vitashell is always downloaded and installed
+VERSION=0

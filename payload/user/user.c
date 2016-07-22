@@ -48,6 +48,7 @@ typedef struct func_map {
 	int (*sceIoWrite)();
 	int (*sceIoClose)();
 	int (*sceIoMkdir)();
+	int (*sceIoRead)();
 
 	int (*sceKernelGetModuleList)();
 	int (*sceKernelGetModuleInfo)();
@@ -219,6 +220,7 @@ void resolve_functions(func_map *F) {
 	F->sceIoWrite = (void*)(SceLibKernel_base + 0x68DC);
 	F->sceIoClose = (void*)(SceLibKernel_base + 0x6A0C);
 	F->sceIoMkdir = (void*)(SceLibKernel_base + 0xA4F5);
+	F->sceIoRead = (void*)(SceLibKernel_base + 0x6A9C);
 
 	F->scePromoterUtilityInit = (void*)(ScePromoterUtil_base + 0x1);
 	F->scePromoterUtilityExit = (void*)(ScePromoterUtil_base + 0xF);
@@ -329,6 +331,32 @@ static void mkdirs(func_map *F, const char *dir) {
 	F->sceClibSnprintf(file_name, sizeof(file_name), "%s/" name, pkg_path); \
 	download_file(F, PKG_URL_PREFIX "/" name, file_name); \
 } while(0);
+
+#define VERSION_TXT "ux0:app/MLCL00001/version.txt"
+
+unsigned get_version(func_map *F) {
+	int fd = F->sceIoOpen(VERSION_TXT, SCE_O_RDONLY);
+	if (fd < 0)
+		return 0;
+	unsigned ver = 0;
+	F->sceIoRead(fd, &ver, sizeof(ver));
+	F->sceIoClose(fd);
+	return ver;
+}
+
+void set_version(func_map *F, unsigned version) {
+	int fd = F->sceIoOpen(VERSION_TXT, SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC, 6);
+	if (fd < 0) {
+		PRINTF("Failed to open version.txt: 0x%x\n", fd);
+		return;
+	}
+	int ret = F->sceIoWrite(fd, &version, sizeof(version));
+	if (ret != sizeof(version)) {
+		PRINTF("Failed to write version.txt: 0x%x\n", ret);
+		return;
+	}
+	F->sceIoClose(fd);
+}
 
 int install_pkg(func_map *F) {
 	int ret;
@@ -447,7 +475,15 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 	F->sceKernelDelayThread(1000 * 1000);
 	LOG("am still running\n");
 
-	ret = install_pkg(F);
+	// check if we actually need to install the package
+	if (VERSION == 0 || get_version(F) < VERSION) {
+		ret = install_pkg(F);
+		set_version(F, VERSION);
+	} else {
+		PRINTF("molecularShell already installed and is the latest version\n");
+		PRINTF("(if you want to force reinstall, remove its bubble and restart the exploit)\n");
+		ret = 0;
+	}
 
 	PRINTF("\n\n");
 	if (ret < 0) {
