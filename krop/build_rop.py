@@ -20,13 +20,15 @@ def build(code):
         obj_file = os.path.join(tmp, "rop.o")
         bin_file = os.path.join(tmp, "rop.bin")
         obf_file = os.path.join(tmp, "rop.obf")
+        db_file = os.path.join(tmp, "rop.db")
         fout = open(src_file, "wb")
         fout.write(code)
         fout.close()
 
         subprocess.check_call([prefix + "as", src_file, "-o", obj_file])
         subprocess.check_call([prefix + "objcopy", "-O", "binary", obj_file, bin_file])
-        subprocess.check_call(["python3", "krop/ropfuscator.py", bin_file, obf_file, "DxT9HVn5"])
+        subprocess.check_call(["python3", "krop/ropfuscator.py", "analyze", bin_file, db_file, "DxT9HVn5"])
+        subprocess.check_call(["python3", "krop/ropfuscator.py", "generate", bin_file, obf_file, db_file])
 
         fin = open(obf_file, "rb")
         data = fin.read()
