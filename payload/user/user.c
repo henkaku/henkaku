@@ -9,6 +9,8 @@
 
 #include "promoterutil.h"
 #include "sysmodule_internal.h"
+#include "compress.h"
+#include "molecule_logo.h"
 
 #include "../../build/version.c"
 
@@ -445,7 +447,8 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 	struct func_map *F = &FF;
 
 	F->fg_color = 0xFFFFFFFF;
-	F->Y = 32; // make sure text starts below the status bar
+	F->Y = 36; // make sure text starts below the status bar
+	F->X = 191;
 	F->sceKernelDelayThread(1000 * 1000);
 
 	LOG("hello from the browser!\n");
@@ -456,9 +459,6 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 	ret = F->sceKernelGetMemBlockBase(block, &F->base);
 	LOG("sceKernelGetMemBlockBase: 0x%x base 0x%x\n", ret, F->base);
 
-	int thread = F->sceKernelCreateThread("", render_thread, 64, 0x1000, 0, 0, 0);
-	LOG("create thread 0x%x\n", thread);
-
 	unsigned thread_args[] = { (unsigned)F };
 
 	for (int i = 0; i < FRAMEBUFFER_SIZE; i += 4)
@@ -466,7 +466,41 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 		((unsigned int *)F->base)[i/4] = 0xFF000000;
 	}
 
+	// draw logo
+	uint32_t *fb = (uint32_t *)F->base;
+	decompress(molecule_logo.data, F->base, sizeof(molecule_logo.data), molecule_logo.size);
+	uint16_t *logo = (uint16_t *)(F->base);
+
+	F->Y = SCREEN_HEIGHT-molecule_logo.height;
+	F->X = SCREEN_WIDTH-molecule_logo.width;
+
+	for (int y = 0; y < molecule_logo.height; ++y)
+	{
+		for (int x = 0; x < molecule_logo.width; ++x)
+		{
+			uint16_t rgb = logo[x+y*molecule_logo.width];
+
+			uint8_t r = ((((rgb >> 11) & 0x1F) * 527) + 23) >> 6;
+			uint8_t g = ((((rgb >> 5) & 0x3F) * 259) + 33) >> 6;
+			uint8_t b = (((rgb & 0x1F) * 527) + 23) >> 6;
+
+			uint32_t *fb_ptr = fb + (F->X + x) + (F->Y + y)*LINE_SIZE;
+			*fb_ptr = 0xFF000000 | (b << 16) | (g << 8) | r;
+		}
+	}
+
+	// clear uncompressed data
+	memset(F->base, 0, molecule_logo.size);
+
+	int thread = F->sceKernelCreateThread("", render_thread, 64, 0x1000, 0, 0, 0);
+	LOG("create thread 0x%x\n", thread);
+
+
+
 	ret = F->sceKernelStartThread(thread, sizeof(thread_args), thread_args);
+
+	F->Y = 32;
+	F->X = 0;
 
 	// done with the bullshit now, let's rock
 	PRINTF("this is HENkaku version " BUILD_VERSION " built at " BUILD_DATE " by " BUILD_HOST "\n");

@@ -47,7 +47,8 @@ echo "#define VERSION $VERSION" >> build/version.c
 
 # user payload is injected into web browser process
 $CC -c -o build/user.o payload/user/user.c $CFLAGS
-$LD -o build/user.elf build/user.o -lgcc $LDFLAGS
+$CC -c -o build/compress.o payload/user/compress.c $CFLAGS
+$LD -o build/user.elf build/user.o build/compress.o -lgcc $LDFLAGS
 $OBJCOPY -O binary build/user.elf build/user.bin
 xxd -i build/user.bin > build/user.h
 
