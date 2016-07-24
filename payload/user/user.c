@@ -440,7 +440,7 @@ int install_pkg(func_map *F) {
 }
 
 void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *argp) {
-	unsigned ret;
+	int ret;
 	struct func_map FF = {0};
 	FF.argp = argp;
 	resolve_functions(&FF);
@@ -495,8 +495,6 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 	int thread = F->sceKernelCreateThread("", render_thread, 64, 0x1000, 0, 0, 0);
 	LOG("create thread 0x%x\n", thread);
 
-
-
 	ret = F->sceKernelStartThread(thread, sizeof(thread_args), thread_args);
 
 	F->Y = 32;
@@ -521,7 +519,7 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 
 	PRINTF("\n\n");
 	if (ret < 0) {
-		F->fg_color = 0xFFFF0000;
+		F->fg_color = 0xFF0000FF;
 		PRINTF("HENkaku failed to install the pkg: error code 0x%x\n", ret);
 	} else {
 		F->fg_color = 0xFF00FF00;
