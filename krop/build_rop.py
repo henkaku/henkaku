@@ -26,11 +26,12 @@ def build(tmp, code):
     subprocess.check_call([prefix + "objcopy", "-O", "binary", obj_file, bin_file])
     return bin_file
 
-def analyze(bin_file, db_file):
+def analyze(tmp, bin_file):
+    db_file = os.path.join(tmp, "rop.db")
     subprocess.check_call(["python3", "krop/ropfuscator.py", "analyze", bin_file, db_file, "DxT9HVn5"])
     return db_file
 
-def obfuscate(tmp, bin_file):
+def obfuscate(tmp, bin_file, db_file):
     obf_file = os.path.join(tmp, "rop.obf")
     subprocess.check_call(["python3", "krop/ropfuscator.py", "generate", bin_file, obf_file, db_file])
 
@@ -96,7 +97,7 @@ def main():
 
     with tempfile.TemporaryDirectory() as tmp:
         first_bin = build(tmp, tpl.format(payload_addr=0, payload_size=0, sysmem_base=0, second_payload=0).encode("ascii") + code)
-        db_file = analyze(first_bin)
+        db_file = analyze(tmp, first_bin)
         first = obfuscate(tmp, first_bin, db_file)
         second_bin = build(tmp, tpl.format(**tags).encode("ascii") + code)
         second = obfuscate(tmp, second_bin, db_file)
