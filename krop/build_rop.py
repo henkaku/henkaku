@@ -14,27 +14,30 @@ tpl = """
 
 prefix = "arm-vita-eabi-"
 
-def build(code):
-    with tempfile.TemporaryDirectory() as tmp:
-        src_file = os.path.join(tmp, "rop.S")
-        obj_file = os.path.join(tmp, "rop.o")
-        bin_file = os.path.join(tmp, "rop.bin")
-        obf_file = os.path.join(tmp, "rop.obf")
-        db_file = os.path.join(tmp, "rop.db")
-        fout = open(src_file, "wb")
-        fout.write(code)
-        fout.close()
+def build(tmp, code):
+    src_file = os.path.join(tmp, "rop.S")
+    obj_file = os.path.join(tmp, "rop.o")
+    bin_file = os.path.join(tmp, "rop.bin")
+    fout = open(src_file, "wb")
+    fout.write(code)
+    fout.close()
 
-        subprocess.check_call([prefix + "as", src_file, "-o", obj_file])
-        subprocess.check_call([prefix + "objcopy", "-O", "binary", obj_file, bin_file])
-        subprocess.check_call(["python3", "krop/ropfuscator.py", "analyze", bin_file, db_file, "DxT9HVn5"])
-        subprocess.check_call(["python3", "krop/ropfuscator.py", "generate", bin_file, obf_file, db_file])
+    subprocess.check_call([prefix + "as", src_file, "-o", obj_file])
+    subprocess.check_call([prefix + "objcopy", "-O", "binary", obj_file, bin_file])
+    return bin_file
 
-        fin = open(obf_file, "rb")
-        data = fin.read()
-        fin.close()
-        return data
+def analyze(bin_file, db_file):
+    subprocess.check_call(["python3", "krop/ropfuscator.py", "analyze", bin_file, db_file, "DxT9HVn5"])
+    return db_file
 
+def obfuscate(tmp, bin_file):
+    obf_file = os.path.join(tmp, "rop.obf")
+    subprocess.check_call(["python3", "krop/ropfuscator.py", "generate", bin_file, obf_file, db_file])
+
+    fin = open(obf_file, "rb")
+    data = fin.read()
+    fin.close()
+    return data
 
 def chunk(b, size):
     if len(b) % size != 0:
@@ -91,8 +94,12 @@ def main():
         "second_payload": 0xC0C0C0C0,
     }
 
-    first = build(tpl.format(payload_addr=0, payload_size=0, sysmem_base=0, second_payload=0).encode("ascii") + code)
-    second = build(tpl.format(**tags).encode("ascii") + code)
+    with tempfile.TemporaryDirectory() as tmp:
+        first_bin = build(tmp, tpl.format(payload_addr=0, payload_size=0, sysmem_base=0, second_payload=0).encode("ascii") + code)
+        db_file = analyze(first_bin)
+        first = obfuscate(tmp, first_bin, db_file)
+        second_bin = build(tmp, tpl.format(**tags).encode("ascii") + code)
+        second = obfuscate(tmp, second_bin, db_file)
 
     if len(first) != len(second):
         print("wtf? got different krop lengths")
