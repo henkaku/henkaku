@@ -35,6 +35,13 @@ do {                                               \
 	*target = (unsigned)func;                      \
 } while (0)
 
+#define INSTALL_RET_THUMB(addr, ret) \
+do {                                            \
+	unsigned *target;                             \
+	target = (unsigned*)(addr);                   \
+	*target = 0x47702000 | ret; /* movs r0, #ret; bx lr */ \
+} while (0)
+
 typedef uint32_t u32_t;
 typedef uint16_t u16_t;
 typedef uint8_t u8_t;
@@ -298,6 +305,10 @@ void thread_main() {
 		INSTALL_HOOK(hook_sbl_F3411881, (char*)modulemgr_base + 0xb68c); // 3.60
 		INSTALL_HOOK(hook_sbl_89CCDA2C, (char*)modulemgr_base + 0xb64c); // 3.60
 		INSTALL_HOOK(hook_sbl_BC422443, (char*)modulemgr_base + 0xb67c); // 3.60
+
+		// patch vm code alloc checks
+		INSTALL_RET_THUMB((char *)modulemgr_base + 0x1fa8c, 1); // 3.60
+		INSTALL_RET_THUMB((char *)modulemgr_base + 0x8c00, 0); // 3.60
 
 		// patch error code 0x80870003 C0-9249-4
 		patch = (void*)(scenpdrm_code + 0x8068); // 3.60
