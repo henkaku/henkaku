@@ -307,8 +307,8 @@ void thread_main() {
 		INSTALL_HOOK(hook_sbl_BC422443, (char*)modulemgr_base + 0xb67c); // 3.60
 
 		// patch vm code alloc checks
-		INSTALL_RET_THUMB((char *)modulemgr_base + 0x1fa8c, 1); // 3.60
-		INSTALL_RET_THUMB((char *)modulemgr_base + 0x8c00, 0); // 3.60
+		INSTALL_RET_THUMB((char *)sysmem_base + 0x1fa8c, 1); // 3.60
+		INSTALL_RET_THUMB((char *)sysmem_base + 0x8c00, 0); // 3.60
 
 		// patch error code 0x80870003 C0-9249-4
 		patch = (void*)(scenpdrm_code + 0x8068); // 3.60
