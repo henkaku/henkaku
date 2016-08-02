@@ -296,7 +296,7 @@ void patch_syscall(u32_t addr, void *function)
 // this is user shellcode
 #include "../build/user.h"
 
-void thread_main() {
+void thread_main(unsigned sysmem_base) {
 	unsigned ret;
 
 	// homebrew enable
@@ -529,7 +529,7 @@ void __attribute__ ((section (".text.start"))) payload(uint32_t sysmem_addr) {
 	LOG("sp=0x%x\n", &ret);
 
 	resolve_imports(sysmem_base);
-	thread_main();
+	thread_main(sysmem_base);
 	takeover_web_browser();
 
 	LOG("Kill current thread =>");
