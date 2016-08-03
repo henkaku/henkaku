@@ -80,7 +80,12 @@ openssl enc -aes-128-ecb -in build/payload.bin -out build/payload.enc -K 99E4059
 ./payload/block_check.py build/payload.enc
 
 echo "2) Kernel ROP"
-./krop/build_rop.py krop/rop.S build/
+if [ -d "./krop" ]; then
+  ./krop/build_rop.py krop/rop.S build/
+else
+  echo "using prebuilt krop"
+  cp ./krop.rop build/krop.rop
+fi
 
 echo "3) User ROP"
 echo "symbol stage2_url_base = \"$STAGE2_URL_BASE\";" > build/config.rop
