@@ -9,5 +9,6 @@ SECTIONS
   .rodata   : { *(.rodata .rodata.* .gnu.linkonce.r.*) }
   .data     : { *(.data   .data.*   .gnu.linkonce.d.*) }
   .bss      : { *(.bss    .bss.*    .gnu.linkonce.b.*) *(COMMON) }
+  .last     : {  *(.pkgurl) }
   /DISCARD/ : { *(.interp) *(.dynsym) *(.dynstr) *(.hash) *(.dynamic) *(.comment) }
 }

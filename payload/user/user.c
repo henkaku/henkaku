@@ -13,9 +13,10 @@
 #include "molecule_logo.h"
 
 #include "../../build/version.c"
+#include "../args.h"
 
 typedef struct func_map {
-	unsigned *argp;
+	struct args *args;
 	int X, Y;
 	unsigned fg_color;
 	void *base;
@@ -62,7 +63,6 @@ typedef struct func_map {
 	int (*scePromoterUtilityExit)();
 } func_map;
 
-#include "../../build/config.h"
 #include "../libc.c"
 // #include "memcpy.c"
 
@@ -161,7 +161,7 @@ int render_thread(int args, unsigned *argp) {
 void resolve_functions(func_map *F) {
 	int ret;
 
-	unsigned SceLibKernel_base = F->argp[0];
+	unsigned SceLibKernel_base = F->args->libbase;
 	unsigned SceDriverUser_base = 0;
 	unsigned SceGxm_base = 0;
 	unsigned SceLibHttp_base = 0;
@@ -331,7 +331,8 @@ static void mkdirs(func_map *F, const char *dir) {
 
 #define GET_FILE(name) do { \
 	F->sceClibSnprintf(file_name, sizeof(file_name), "%s/" name, pkg_path); \
-	download_file(F, PKG_URL_PREFIX "/" name, file_name); \
+	F->sceClibSnprintf(url, sizeof(url), "%s/" name, pkg_url_prefix); \
+	download_file(F, url, file_name); \
 } while(0);
 
 #define VERSION_TXT "ux0:app/MLCL00001/version.txt"
@@ -362,8 +363,14 @@ void set_version(func_map *F, unsigned version) {
 
 int install_pkg(func_map *F) {
 	int ret;
+	const char *pkg_url_prefix;
 	char pkg_path[0x400] = {0};
 	char file_name[0x400] = {0};
+	char url[0x400] = {0};
+
+	pkg_url_prefix = F->args->pkg_url_prefix;
+	LOG("package url prefix: %x\n", pkg_url_prefix);
+
 	// this is to get random directory
 	F->sceClibSnprintf(pkg_path, sizeof(pkg_path), "ux0:ptmp/%x", (((unsigned)&install_pkg) >> 4) * 12347);
 	LOG("package temp directory: %s\n", pkg_path);
@@ -442,7 +449,7 @@ int install_pkg(func_map *F) {
 void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *argp) {
 	int ret;
 	struct func_map FF = {0};
-	FF.argp = argp;
+	FF.args = (struct args *)argp;
 	resolve_functions(&FF);
 	struct func_map *F = &FF;
 

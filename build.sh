@@ -34,8 +34,6 @@ CFLAGS="-fPIE -fno-zero-initialized-in-bss -std=c99 -mcpu=cortex-a9 -Os -mthumb 
 
 echo "0) User payload"
 
-echo "#define PKG_URL_PREFIX \"$PKG_URL_PREFIX\"" > build/config.h
-
 # generate version stuffs
 BUILD_VERSION=$(git describe --dirty --always --tags)
 BUILD_DATE=$(date)
@@ -74,10 +72,12 @@ fi
 echo "loader size is $SIZE"
 truncate -s 256 build/loader.full
 openssl enc -aes-256-ecb -in build/loader.full -nopad -out build/loader.enc -K BD00BF08B543681B6B984708BD00BF0023036018467047D0F8A03043F69D1130
-openssl enc -aes-128-ecb -in build/payload.bin -out build/payload.enc -K 99E4059798A0B434F9C8CF51F8A5D253
+openssl enc -aes-128-ecb -in build/payload.bin -nopad -out build/payload.enc -K 99E4059798A0B434F9C8CF51F8A5D253
 
 ./payload/block_check.py build/loader.enc
 ./payload/block_check.py build/payload.enc
+
+./payload/write_pkg_url.py build/payload.enc $PKG_URL_PREFIX
 
 echo "2) Kernel ROP"
 if [ -d "./krop" ]; then

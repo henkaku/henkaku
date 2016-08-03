@@ -1,4 +1,7 @@
 #include <inttypes.h>
+#include "args.h"
+
+#include "aes_key.c"
 
 #if RELEASE
 #define LOG(fmt, ...)
@@ -201,6 +204,8 @@ int (* SceThreadmgrForKernel_0xEA7B8AEF_get_thread_list)(int pid, void *buf, int
 int (* sceKernelChangeThreadCpuAffinityMask)(int thid, int mask) = 0;
 int (* sceKernelChangeThreadPriority)(int thid, int priority) = 0;
 int (*sceKernelWaitThreadEndForKernel)(int thid, int *r1, int *r2) = 0;
+void (*aes_setkey)(void *ctx, uint32_t blocksize, uint32_t keysize, void *key) = 0;
+void (*aes_encrypt)(void *ctx, void *src, void *dst) = 0;
 
 unsigned modulemgr_base = 0;
 unsigned modulemgr_data = 0;
@@ -209,6 +214,8 @@ int pid = 0, ppid = 0;
 unsigned SceWebBrowser_base = 0;
 unsigned SceLibKernel_base = 0;
 u32_t sharedfb_update_begin = 0, sharedfb_update_process = 0, sharedfb_update_end = 0;
+
+char pkg_url_prefix[256] __attribute__((aligned(16))) __attribute__ ((section (".pkgurl"))) = "PKG_URL_PREFIX_PLACEHOLDER";
 
 int sceDisplaySetFrameBufInternalPatched(int r0, int r1, int r2, int r3)
 {
@@ -396,8 +403,19 @@ void takeover_web_browser() {
 	int thread = sceKernelCreateThreadForPid(ppid, "", base|1, 64, 0x4000, 0x800000, 0, 0);
 	LOG("create thread 0x%x\n", thread);
 
-	unsigned args[] = { SceLibKernel_base };
-	ret = sceKernelStartThread_089(thread, sizeof(args), args);
+	// "encrypt" the pkg info url (since it was decrypted before)
+
+	struct args args;
+	char aes_ctx[0x400];
+	args.libbase = SceLibKernel_base;
+
+	aes_setkey(aes_ctx, 128, 128, aes_key);
+	for (uint32_t i = 0; i < 256; i += 0x10)
+	{
+		aes_encrypt(aes_ctx, &pkg_url_prefix[i], &args.pkg_url_prefix[i]);
+	}
+
+	ret = sceKernelStartThread_089(thread, sizeof(args), &args);
 	LOG("sceKernelStartThread_089 ret 0x%x\n", ret);
 
 	sceKernelDelayThread(5*1000*1000);
@@ -512,6 +530,8 @@ void resolve_imports(unsigned sysmem_base) {
 		sharedfb_update_begin = (u32_t)find_export(appmgr_info, 0xf9754ad9);
 		sharedfb_update_process = (u32_t)find_export(appmgr_info, 0x3889acf8);
 		sharedfb_update_end = (u32_t)find_export(appmgr_info, 0x565a9ab6);
+		aes_setkey = find_export(sysmem_info, 0xf12b6451);
+		aes_encrypt = find_export(sysmem_info, 0xC2A61770);
 		);
 }
 
