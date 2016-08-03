@@ -80,11 +80,11 @@ openssl enc -aes-128-ecb -in build/payload.bin -nopad -out build/payload.enc -K 
 ./payload/write_pkg_url.py build/payload.enc $PKG_URL_PREFIX
 
 echo "2) Kernel ROP"
-if [ -d "./krop" ]; then
+if [ "x$KROP_PREBUILT" == "x" ]; then
   ./krop/build_rop.py krop/rop.S build/
 else
   echo "using prebuilt krop"
-  cp ./krop.rop build/krop.rop
+  cp $KROP_PREBUILT build/krop.rop
 fi
 
 echo "3) User ROP"
