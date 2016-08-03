@@ -508,8 +508,9 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 	F->X = 0;
 
 	// done with the bullshit now, let's rock
-	PRINTF("this is HENkaku version " BUILD_VERSION " built at " BUILD_DATE " by " BUILD_HOST "\n");
-	PRINTF("...\n");
+	PRINTF("HENkaku version " BUILD_VERSION " built at " BUILD_DATE " by " BUILD_HOST "\n");
+	PRINTF("Please demand a refund if you paid for this free software either on its own or as part of a bundle!\n\n");
+	PRINTF("installing...\n")
 
 	F->sceKernelDelayThread(1000 * 1000);
 	LOG("am still running\n");
