@@ -72,7 +72,7 @@ fi
 echo "loader size is $SIZE"
 truncate -s 256 build/loader.full
 openssl enc -aes-256-ecb -in build/loader.full -nopad -out build/loader.enc -K BD00BF08B543681B6B984708BD00BF0023036018467047D0F8A03043F69D1130
-openssl enc -aes-128-ecb -in build/payload.bin -nopad -out build/payload.enc -K 278BA22DB12A199083B8B183AAEB2048
+openssl enc -aes-128-ecb -in build/payload.bin -nopad -out build/payload.enc -K 99E4059798A0B434F9C8CF51F8A5D253
 
 ./payload/block_check.py build/loader.enc
 ./payload/block_check.py build/payload.enc
