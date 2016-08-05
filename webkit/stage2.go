@@ -3,6 +3,7 @@ package main
 import (
     "bytes"
     "encoding/binary"
+    "flag"
     "fmt"
     "net/http"
     "os"
@@ -39,7 +40,11 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-    f, err := os.Open("stage2.bin")
+    var stage2 = flag.String("payload", "stage2.bin", "path to payload")
+    var port = flag.Int("port", 4000, "run server on port")
+    flag.Parse()
+
+    f, err := os.Open(*stage2)
     if err != nil {
         panic(err)
     }
@@ -59,5 +64,5 @@ func main() {
     binary.Read(p, binary.LittleEndian, relocs)
 
     http.HandleFunc("/", handler)
-    http.ListenAndServe(":4000", nil)
+    http.ListenAndServe(fmt.Sprintf(":%d", *port), nil)
 }
