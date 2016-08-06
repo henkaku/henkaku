@@ -2,9 +2,6 @@
 
 from sys import argv, exit
 
-# Checks that all 16-byte blocks in the file are different
-# This hides the fact the we use AES in ECB mode
-
 def main():
   if len(argv) != 3:
     print("Usage: write_url.py filename url")
