@@ -10,7 +10,7 @@ You need to host two things: the first stage ROP and the second stage dynamic RO
 
 ## Building
 
-`YOUR_STAGE_2_URL` will point to where you are hosting stage 2 (must end with a /) and `YOUR_PKG_PREFIX_URL` will point to where you host the molecularShell package (we put it on the same static server as the first stage exploit files). Both URLs have a 255 character limit. Then call
+`YOUR_STAGE_2_URL` will point to where you are hosting stage 2 (must end with a / if you're using the Go server and must point to stage2.php if you're using PHP) and `YOUR_PKG_PREFIX_URL` will point to where you host the molecularShell package (we put it on the same static server as the first stage exploit files). Both URLs have a 255 character limit. Then call
 
 ```shell
 ./build.sh YOUR_STAGE_2_URL YOUR_PKG_PREFIX_URL
