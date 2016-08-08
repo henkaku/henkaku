@@ -122,3 +122,24 @@ cp output/static/payload.bin output/dynamic/stage2.bin
 ./webkit/preprocess.py build/loader.rop.bin output/dynamic/payload.js
 cp webkit/stage2.php output/dynamic/stage2.php
 cp webkit/stage2.go output/dynamic/stage2.go
+
+echo "5) Offline"
+mkdir -p build/offline
+# offline loader
+$PREPROCESS urop/offline_loader.rop.in -o build/offline/loader.rop.in
+erb build/offline/loader.rop.in > build/offline/loader.rop
+roptool -s build/offline/loader.rop -t urop/webkit-360-pkg -o build/offline/loader.rop.bin >/dev/null
+
+./webkit/preprocess.py build/offline/loader.rop.bin build/offline/loader.js
+
+# offline exploit (has -DOFFLINE to disable alerts)
+$PREPROCESS webkit/exploit.js -DSTATIC=0 -DOFFLINE=1 -o build/offline/exploit.js
+uglifyjs build/offline/exploit.js -m "toplevel" > build/offline/exploit.min.js
+
+# offline stage1 exploit and payload in a single html to load from email app
+mkdir -p output/offline
+touch output/offline/exploit.html
+printf "<html><body><script>" >> output/offline/exploit.html
+cat build/offline/loader.js >> output/offline/exploit.html
+cat build/offline/exploit.min.js >> output/offline/exploit.html
+printf "</script></body></html>" >> output/offline/exploit.html
