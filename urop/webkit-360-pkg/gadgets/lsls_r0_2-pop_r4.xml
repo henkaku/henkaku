@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+
+<gadget>
+	<address>0x004523cd</address>
+	<aslr>SceWebKit</aslr>
+</gadget>
+
+<!--
+	0x004523cc : lsls r0, r0, #2 ; pop {r4, pc}
+-->

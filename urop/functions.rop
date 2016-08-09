@@ -15,6 +15,7 @@ function sceIoDevctl = ASLR::SceLibKernel + 0xA55D;
 function sceIoDevctl_svc = ASLR::SceLibKernel + 0x690C;
 function sceIoOpen = ASLR::SceLibKernel + 0xA4AD;
 function sceIoWrite = ASLR::SceLibKernel + 0x68DC;
+function sceIoRead = ASLR::SceLibKernel + 0x6A9C;
 function sceIoClose = ASLR::SceLibKernel + 0x6A0C;
 
 function sceKernelDelayThread = ASLR::SceLibHttp + 0x18544;
@@ -61,3 +62,5 @@ symbol str_r0_r4_pop_r4 =  ASLR::SceWebKit + 0x59a9; // str r0, [r4] ; pop {r4, 
 function bx_lr = ASLR::SceWebKit + 0x575;
 
 function sceAppMgrLaunchAppByName = ASLR::SceAppMgr + 0x4819;
+
+function SceAppMgrUser_291AFBDC_mount = ASLR::SceAppMgr + 0x45CD; // mount something?

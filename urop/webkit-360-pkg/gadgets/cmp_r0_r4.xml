@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+
+<gadget>
+	<address>0x840b7d</address>
+	<aslr>SceWebKit</aslr>
+</gadget>
+
+<!--
+ROM:82340F8C                 CMP             R0, R4
+ROM:82340F8E                 BNE             loc_82340F94
+ROM:82340F90                 MOVS            R0, #1
+ROM:82340F92                 B               locret_82340F96
+ROM:82340F94 loc_82340F94
+ROM:82340F94                 MOVS            R0, #0
+ROM:82340F96 locret_82340F96 
+ROM:82340F96                 POP             {R4-R6,PC}
+-->
