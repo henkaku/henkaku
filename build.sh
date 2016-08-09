@@ -43,6 +43,8 @@ echo "#define BUILD_DATE \"$BUILD_DATE\"" >> build/version.c
 echo "#define BUILD_HOST \"$BUILD_HOST\"" >> build/version.c
 echo "#define VERSION $VERSION" >> build/version.c
 
+PAYLOAD_KEY=99E4059798A0B434F9C8CF51F8A5D253
+
 # user payload is injected into web browser process
 $CC -c -o build/user.o payload/user/user.c $CFLAGS
 $CC -c -o build/compress.o payload/user/compress.c $CFLAGS
@@ -72,7 +74,7 @@ fi
 echo "loader size is $SIZE"
 truncate -s 256 build/loader.full
 openssl enc -aes-256-ecb -in build/loader.full -nopad -out build/loader.enc -K BD00BF08B543681B6B984708BD00BF0023036018467047D0F8A03043F69D1130
-openssl enc -aes-128-ecb -in build/payload.bin -nopad -out build/payload.enc -K 99E4059798A0B434F9C8CF51F8A5D253
+openssl enc -aes-128-ecb -in build/payload.bin -nopad -out build/payload.enc -K $PAYLOAD_KEY
 
 ./payload/block_check.py build/loader.enc
 ./payload/block_check.py build/payload.enc
@@ -125,11 +127,31 @@ cp webkit/stage2.go output/dynamic/stage2.go
 
 echo "5) Offline"
 mkdir -p build/offline output/offline
+
+# offline user-mode is different
+$CC -c -o build/offline/user.o payload/user/user.c $CFLAGS -DOFFLINE=1
+$LD -o build/offline/user.elf build/offline/user.o build/compress.o -lgcc $LDFLAGS
+$OBJCOPY -O binary build/offline/user.elf build/offline/user.bin
+xxd -i build/offline/user.bin > build/offline/user.h
+
+# offline kernel payload is different
+$CC -c -o build/offline/payload.o payload/payload.c $CFLAGS -DOFFLINE=1
+$LD -o build/offline/payload.elf build/offline/payload.o $LDFLAGS
+$OBJCOPY -O binary build/offline/payload.elf build/offline/payload.bin
+openssl enc -aes-128-ecb -in build/offline/payload.bin -nopad -out build/offline/payload.enc -K $PAYLOAD_KEY
+./urop/make_rop_array.py build/offline/payload.enc second_payload build/offline/second_payload.rop
+
+# as a result, offline urop exploit is different as well
 # prepare offline stage2
-./urop/offline_stage2.py output/dynamic/stage2.bin build/offline/henkaku.bin build/offline/size.rop
+$PREPROCESS urop/exploit.rop.in -o build/offline/exploit.rop.in -DOFFLINE=1
+erb build/offline/exploit.rop.in > build/offline/exploit.rop
+roptool -s build/offline/exploit.rop -t urop/webkit-360-pkg -o build/offline/exploit.rop.bin >/dev/null
+./webkit/preprocess.py build/offline/exploit.rop.bin build/offline/stage2.bin
+
+./urop/offline_stage2.py build/offline/stage2.bin build/offline/henkaku.bin build/offline/size.rop
 cp build/offline/henkaku.bin output/offline/
 
-# offline loader
+# offline rop loader
 $PREPROCESS urop/offline_loader.rop.in -o build/offline/loader.rop.in
 erb build/offline/loader.rop.in > build/offline/loader.rop
 roptool -s build/offline/loader.rop -t urop/webkit-360-pkg -o build/offline/loader.rop.bin -v

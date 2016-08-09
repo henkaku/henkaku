@@ -213,6 +213,7 @@ unsigned scenpdrm_code = 0;
 int pid = 0, ppid = 0;
 unsigned SceWebBrowser_base = 0;
 unsigned SceLibKernel_base = 0;
+unsigned SceEmailEngine_base = 0;
 u32_t sharedfb_update_begin = 0, sharedfb_update_process = 0, sharedfb_update_end = 0;
 
 char pkg_url_prefix[256] __attribute__((aligned(16))) __attribute__ ((section (".pkgurl"))) = "PKG_URL_PREFIX_PLACEHOLDER";
@@ -301,7 +302,13 @@ void patch_syscall(u32_t addr, void *function)
 }
 
 // this is user shellcode
+#ifdef OFFLINE
+#define build_offline_user_bin build_user_bin
+#define build_offline_user_bin_len build_user_bin_len
+#include "../build/offline/user.h"
+#else
 #include "../build/user.h"
+#endif
 
 void thread_main(unsigned sysmem_base) {
 	unsigned ret;
@@ -331,13 +338,13 @@ void thread_main(unsigned sysmem_base) {
 	SceCpuForDriver_9CB9F0CE_flush_icache((void*)scenpdrm_code, 0x12000); // and npdrm patches
 	// end homebrew enable
 
-	// takeover the web browser
+	// takeover the web browser or email if offline
 
 	unsigned data[0xE8/4];
 	data[0] = sizeof(data);
 	SceProcessmgrForDriver_0AFF3EAE(pid, data);
 	DACR_OFF(ppid = data[5];);
-	LOG("WebBrowser PID: 0x%x\n", ppid);
+	LOG("Target PID: 0x%x\n", ppid);
 
 	int *modlist[MOD_LIST_SIZE];
 	int modlist_records;
@@ -354,6 +361,8 @@ void thread_main(unsigned sysmem_base) {
 		unsigned addr = (unsigned)info.segments[0].vaddr;
 		if (strcmp(info.name, "SceWebBrowser") == 0)
 			DACR_OFF(SceWebBrowser_base = addr);
+		else if (strcmp(info.name, "SceEmailEngine") == 0)
+			DACR_OFF(SceEmailEngine_base = addr);
 		else if (strcmp(info.name, "SceLibKernel") == 0)
 			DACR_OFF(SceLibKernel_base = addr);
 	}
@@ -362,7 +371,11 @@ void thread_main(unsigned sysmem_base) {
 void takeover_web_browser() {
 	unsigned ret;
 	unsigned base = 0;
+#ifdef OFFLINE
+	base = SceEmailEngine_base + 0xE6F70;
+#else
 	base = SceWebBrowser_base + 0xC6200;
+#endif
 #if 0
 	unsigned popt[0x58/4];
 	for (int i = 0; i < 0x58/4; ++i)
@@ -383,6 +396,8 @@ void takeover_web_browser() {
 	int thidlist_records = 0;
 	SceThreadmgrForKernel_0xEA7B8AEF_get_thread_list(ppid, thidlist, sizeof(thidlist), &thidlist_records);
 
+	LOG("got %d threads\n", thidlist_records);
+
 	for (int i = 0; i < thidlist_records; ++i)
 	{
 		sceKernelChangeThreadCpuAffinityMask(thidlist[i], 0x40000000);
@@ -390,6 +405,7 @@ void takeover_web_browser() {
 	}
 
 	// patch
+	LOG("patching syscalls\n");
 	patch_syscall(sharedfb_update_begin, hook_sharedfb_update_begin);
 	patch_syscall(sharedfb_update_process, hook_sharedfb_update_process);
 	patch_syscall(sharedfb_update_end, hook_sharedfb_update_end);
@@ -397,6 +413,7 @@ void takeover_web_browser() {
 	patch_syscall((u32_t)sceDisplayGetFrameBufInternal, sceDisplayGetFrameBufInternalPatched);
 
 	// inject the code
+	LOG("injecting code to pid 0x%x at 0x%x\n", ppid, base);
 	unrestricted_memcpy_for_pid(ppid, (void*)base, build_user_bin, (build_user_bin_len + 0x10) & ~0xF);
 	LOG("code injected\n");
 
@@ -547,6 +564,10 @@ void __attribute__ ((section (".text.start"))) payload(uint32_t sysmem_addr) {
 
 	LOG("+++ Entered kernel payload +++\n");
 	LOG("sp=0x%x\n", &ret);
+
+	#ifdef OFFLINE
+	LOG("(offline version)\n");
+	#endif
 
 	resolve_imports(sysmem_base);
 	thread_main(sysmem_base);

@@ -513,8 +513,15 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 	PRINTF("installing...\n")
 
 	F->sceKernelDelayThread(1000 * 1000);
+
 	LOG("am still running\n");
 
+	#ifdef OFFLINE
+	PRINTF("\n");
+	PRINTF("This is the offline version of the exploit.\n");
+	PRINTF("Please make sure to keep it up to date by running offlineInstaller when you are online.\n");
+	ret = 0;
+	#else
 	// check if we actually need to install the package
 	if (VERSION == 0 || get_version(F) < VERSION) {
 		ret = install_pkg(F);
@@ -524,6 +531,7 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 		PRINTF("(if you want to force reinstall, remove its bubble and restart the exploit)\n");
 		ret = 0;
 	}
+	#endif
 
 	PRINTF("\n\n");
 	if (ret < 0) {
@@ -534,7 +542,7 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 		PRINTF("HENkaku was successfully installed\n");
 	}
 	F->fg_color = 0xFFFFFFFF;
-	PRINTF("(the browser will close in 6s)\n");
+	PRINTF("(the application will close automatically in 6s)\n");
 	F->sceKernelDelayThread(6 * 1000 * 1000);
 
 	while (1) {
