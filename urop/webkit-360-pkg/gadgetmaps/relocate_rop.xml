@@ -43,8 +43,10 @@ arguments:
 		<data>GADGET_ADDRESS(blx_r4-pop_r4_pc)</data>       <!-- PC -->
 		<data>0</data>                                      <!-- R4 -->
 
-		<!-- r0 = ldrb[r0] -->
+		<!-- r0 = ldrb[r0] * 4 -->
 		<data>GADGET_ADDRESS(ldrb_r0_r0_pop_r4)</data>      <!-- PC -->
+		<data>0</data>                                      <!-- R4 -->
+		<data>GADGET_ADDRESS(lsls_r0_2-pop_r4)</data>       <!-- PC -->
 		<data>0</data>                                      <!-- R4 -->
 
 		<!-- r0 += bases_base -->
