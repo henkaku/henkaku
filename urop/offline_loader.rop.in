@@ -21,7 +21,7 @@ data
 
 	// for rop relocation
 	variable index = 0;
-	variable stored = 0;
+	variable stored = -1;
 
 	variable memblock = 0;
 	variable memblock_base = 0;
@@ -88,6 +88,8 @@ code : entry
 	PRINTF("relocating\n");
 	relocate_rop(index, 4 * rop_size_words, memblock_base, bases, stored, rop_size_words);
 	PRINTF("done relocating\n");
+
+	PRINTF("stored: 0x%x\n", [stored]);
 
 	// copy relocated rop chain in place, first code then data
 	PRINTF("copy code\n");
