@@ -15,4 +15,4 @@ PKG_URL_PREFIX="http://go.henkaku.xyz/pkg"
 # You only need this for the dynamic version of the exploit (which is recommended)
 STAGE2_URL_BASE="http://go.henkaku.xyz/x"
 
-VERSION=4
+VERSION=6
