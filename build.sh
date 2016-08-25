@@ -43,7 +43,7 @@ echo "#define BUILD_DATE \"$BUILD_DATE\"" >> build/version.c
 echo "#define BUILD_HOST \"$BUILD_HOST\"" >> build/version.c
 echo "#define VERSION $VERSION" >> build/version.c
 
-PAYLOAD_KEY=73188352E45AD4494B487ADC08D89F2B
+PAYLOAD_KEY=44df3e299a49618dc04d19b928dc79e2
 
 # user payload is injected into web browser process
 $CC -c -o build/user.o payload/user/user.c $CFLAGS

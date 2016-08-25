@@ -338,6 +338,14 @@ void thread_main(unsigned sysmem_base) {
 	SceCpuForDriver_9CB9F0CE_flush_icache((void*)scenpdrm_code, 0x12000); // and npdrm patches
 	// end homebrew enable
 
+	// patch version information
+	*(unsigned *)(modulemgr_data + 0x34) = 1;
+	*(unsigned *)(modulemgr_data + 0x2d0) = 0x28; // size
+	*(unsigned *)(modulemgr_data + 0x2d4) = 0x31362e33; // "3.61"
+	*(unsigned *)(modulemgr_data + 0x2d8) = 0; // "\0"
+	*(unsigned *)(modulemgr_data + 0x2f0) = 0x3610000; // version
+	// end patch version information
+
 	// takeover the web browser or email if offline
 
 	unsigned data[0xE8/4];
