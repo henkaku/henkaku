@@ -38,6 +38,15 @@ do {                                               \
 	*target = (unsigned)func;                      \
 } while (0)
 
+#define INSTALL_HOOK_THUMB(func, addr) \
+do {                                                \
+	unsigned *target;                                 \
+	target = (unsigned*)(addr);                       \
+	*target++ = 0xC004F8DF; /* ldr.w	ip, [pc, #4] */ \
+	*target++ = 0xBF004760; /* bx ip; nop */          \
+	*target = (unsigned)func;                         \
+} while (0)
+
 #define INSTALL_RET_THUMB(addr, ret) \
 do {                                            \
 	unsigned *target;                             \
@@ -215,6 +224,7 @@ unsigned SceWebBrowser_base = 0;
 unsigned SceLibKernel_base = 0;
 unsigned SceEmailEngine_base = 0;
 u32_t sharedfb_update_begin = 0, sharedfb_update_process = 0, sharedfb_update_end = 0;
+unsigned updatemgr_base = 0;
 
 char pkg_url_prefix[256] __attribute__((aligned(16))) __attribute__ ((section (".pkgurl"))) = "PKG_URL_PREFIX_PLACEHOLDER";
 
@@ -301,6 +311,32 @@ void patch_syscall(u32_t addr, void *function)
 	}
 }
 
+int __attribute__((naked)) hook_get_sw_info(int id, u32_t *buf)
+{
+	switch (id)
+	{
+		case 1:
+		case 9:
+		case 10:
+		case 21:
+		case 22:
+			buf[0] = 16;
+			buf[1] = 0x3610000; // ver 3.61
+			buf[2] = 0;
+			buf[3] = 0;
+			__asm__ ("mov r0, #0\t\n"
+							 "bx lr");
+			break;
+		default:
+			__asm__ ("push {r4-r8,lr}\t\n"
+							 "mov r4, %0\t\n"
+							 "mov r12, %1\t\n"
+							 "bx r12\t\n" :: "r" (updatemgr_base), "r" ((updatemgr_base + 0x82b4 + 12) + 1));
+			break;
+	}
+	// should not reach here
+}
+
 // this is user shellcode
 #ifdef OFFLINE
 #define build_offline_user_bin build_user_bin
@@ -339,11 +375,18 @@ void thread_main(unsigned sysmem_base) {
 	// end homebrew enable
 
 	// patch version information
+
 	*(unsigned *)(modulemgr_data + 0x34) = 1;
 	*(unsigned *)(modulemgr_data + 0x2d0) = 0x28; // size
 	*(unsigned *)(modulemgr_data + 0x2d4) = 0x31362e33; // "3.61"
 	*(unsigned *)(modulemgr_data + 0x2d8) = 0; // "\0"
 	*(unsigned *)(modulemgr_data + 0x2f0) = 0x3610000; // version
+
+	DACR_OFF(
+		INSTALL_HOOK_THUMB(hook_get_sw_info, (char*)updatemgr_base + 0x82b4);
+	);
+	SceCpuForDriver_9CB9F0CE_flush_icache((void*)updatemgr_base, 0xF000);
+
 	// end patch version information
 
 	// takeover the web browser or email if offline
@@ -512,8 +555,13 @@ void resolve_imports(unsigned sysmem_base) {
 		if (strcmp(info.name, "SceAppMgr") == 0) {
 			appmgr_info = find_modinfo((u32_t)info.segments[0].vaddr, "SceAppMgr");
 		}
-		if (strcmp(info.name, "SceProcessmgr") == 0)
+		if (strcmp(info.name, "SceProcessmgr") == 0) {
 			processmgr_info = find_modinfo((u32_t)info.segments[0].vaddr, "SceProcessmgr");
+		}
+		if (strcmp(info.name, "SceSblUpdateMgr") == 0) {
+			// no need for exports, just get an offset
+			DACR_OFF(updatemgr_base = (u32_t)info.segments[0].vaddr);
+		}
 	}
 
 	LOG("threadmgr_info: 0x%08x | sblauthmgr_info: 0x%08x | scenet_code: 0x%08x | scenet_data: 0x%08x\n", threadmgr_info, sblauthmgr_info, scenet_code, scenet_data);
