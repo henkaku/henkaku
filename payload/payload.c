@@ -224,7 +224,7 @@ unsigned SceWebBrowser_base = 0;
 unsigned SceLibKernel_base = 0;
 unsigned SceEmailEngine_base = 0;
 u32_t sharedfb_update_begin = 0, sharedfb_update_process = 0, sharedfb_update_end = 0;
-unsigned updatemgr_base = 0;
+unsigned vshbridge_base = 0;
 
 char pkg_url_prefix[256] __attribute__((aligned(16))) __attribute__ ((section (".pkgurl"))) = "PKG_URL_PREFIX_PLACEHOLDER";
 
@@ -311,32 +311,6 @@ void patch_syscall(u32_t addr, void *function)
 	}
 }
 
-int __attribute__((naked)) hook_get_sw_info(int id, u32_t *buf)
-{
-	switch (id)
-	{
-		case 1:
-		case 9:
-		case 10:
-		case 21:
-		case 22:
-			buf[0] = 16;
-			buf[1] = 0x3610000; // ver 3.61
-			buf[2] = 0;
-			buf[3] = 0;
-			__asm__ ("mov r0, #0\t\n"
-							 "bx lr");
-			break;
-		default:
-			__asm__ ("push {r4-r8,lr}\t\n"
-							 "mov r4, %0\t\n"
-							 "mov r12, %1\t\n"
-							 "bx r12\t\n" :: "r" (updatemgr_base), "r" ((updatemgr_base + 0x82b4 + 12) + 1));
-			break;
-	}
-	// should not reach here
-}
-
 // this is user shellcode
 #ifdef OFFLINE
 #define build_offline_user_bin build_user_bin
@@ -383,9 +357,9 @@ void thread_main(unsigned sysmem_base) {
 	*(unsigned *)(modulemgr_data + 0x2f0) = 0x3610000; // version
 
 	DACR_OFF(
-		INSTALL_HOOK_THUMB(hook_get_sw_info, (char*)updatemgr_base + 0x82b4);
+		INSTALL_RET_THUMB((char *)vshbridge_base + 0x16f4, 0);
 	);
-	SceCpuForDriver_9CB9F0CE_flush_icache((void*)updatemgr_base, 0xF000);
+	SceCpuForDriver_9CB9F0CE_flush_icache((void*)vshbridge_base, 0x9A00);
 
 	// end patch version information
 
@@ -558,9 +532,11 @@ void resolve_imports(unsigned sysmem_base) {
 		if (strcmp(info.name, "SceProcessmgr") == 0) {
 			processmgr_info = find_modinfo((u32_t)info.segments[0].vaddr, "SceProcessmgr");
 		}
-		if (strcmp(info.name, "SceSblUpdateMgr") == 0) {
+		if (strcmp(info.name, "SceVshBridge") == 0) {
 			// no need for exports, just get an offset
-			DACR_OFF(updatemgr_base = (u32_t)info.segments[0].vaddr);
+			DACR_OFF(
+				vshbridge_base = (u32_t)info.segments[0].vaddr;
+			);
 		}
 	}
 
