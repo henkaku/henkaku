@@ -54,6 +54,7 @@ do {                                            \
 	*target = 0x47702000 | ret; /* movs r0, #ret; bx lr */ \
 } while (0)
 
+typedef uint64_t u64_t;
 typedef uint32_t u32_t;
 typedef uint16_t u16_t;
 typedef uint8_t u8_t;
@@ -259,6 +260,7 @@ unsigned hook_sbl_F3411881(unsigned a1, unsigned a2, unsigned a3, unsigned a4) {
 
 	unsigned res = hook_resume_sbl_F3411881(a1, a2, a3, a4);
 	unsigned *somebuf = (unsigned*)a4;
+	u64_t authid;
 
 	if (res == 0x800f0624 || res == 0x800f0616 || res == 0x800f0024) {
 		DACR_OFF(
@@ -266,7 +268,13 @@ unsigned hook_sbl_F3411881(unsigned a1, unsigned a2, unsigned a3, unsigned a4) {
 		);
 
 		// patch somebuf so our module actually runs
-		somebuf[42] = 0x40;
+		authid = *(u64_t *)(a2+0x80);
+		LOG("authid: 0x%llx\n", authid);
+		if ((authid & 0xFFFFFFFFFFFFFFFDLL) == 0x2F00000000000001LL) {
+			somebuf[42] = 0x40;
+		} else {
+			somebuf[42] = 0x20;
+		}
 
 		return 0;
 	} else {
@@ -352,8 +360,10 @@ void thread_main(unsigned sysmem_base) {
 
 	*(unsigned *)(modulemgr_data + 0x34) = 1;
 	*(unsigned *)(modulemgr_data + 0x2d0) = 0x28; // size
-	*(unsigned *)(modulemgr_data + 0x2d4) = 0x31362e33; // "3.61"
-	*(unsigned *)(modulemgr_data + 0x2d8) = 0; // "\0"
+	*(unsigned *)(modulemgr_data + 0x2d4) = 0x30362e33; // "3.60"
+	*(unsigned *)(modulemgr_data + 0x2d8) = 0x89a4e520; // " ..."
+	*(unsigned *)(modulemgr_data + 0x2dc) = 0x2da99de9; // "...."
+	*(unsigned *)(modulemgr_data + 0x2e0) = 0x00000033; // ".\0"
 	*(unsigned *)(modulemgr_data + 0x2f0) = 0x3610000; // version
 
 	DACR_OFF(
