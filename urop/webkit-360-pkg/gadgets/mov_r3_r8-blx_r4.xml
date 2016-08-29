@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+
+<gadget>
+	<address>0xcf481</address>
+	<aslr>SceWebKit</aslr>
+</gadget>
+
+<!--
+   cf480:       4643            mov     r3, r8
+   cf482:       47a0            blx     r4
+-->

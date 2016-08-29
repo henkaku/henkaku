@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+
+<gadgetmap>
+	<function>and</function>
+	<regex>and(\(rv\))</regex>
+	<stack>
+		<data>GADGET_ADDRESS(pop_r1_pc)</data>
+		<data>ARG1</data> 		         						<!-- R1 -->
+		<data>GADGET_ADDRESS(ands_r0_r1-pop_r4_r5_r6_r7_r8_sb_sl_pc)</data> <!-- PC -->
+		<data>0</data>                       					<!-- R4 -->
+		<data>0</data>                       					<!-- R5 -->
+		<data>0</data>                       					<!-- R6 -->
+		<data>0</data>                       					<!-- R7 -->
+		<data>0</data>                       					<!-- R8 -->
+		<data>0</data>                       					<!-- SB -->
+		<data>0</data>                       					<!-- SL -->
+		<data>RETURN_ADDRESS</data>		 						<!-- PC return -->
+	</stack>
+	<testcase>
+END; r0 = RETVAL and ARG1
+	</testcase>
+</gadgetmap>

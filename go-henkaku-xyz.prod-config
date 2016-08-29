@@ -1,0 +1,18 @@
+# use bash syntax
+
+# whether we're building in debug or release mode, debug has a lot of sceClibPrintf logging, release has none of it
+RELEASE=1
+
+# if specified, use the prebuilt krop.rop instead of building it from source
+KROP_PREBUILT=./krop.rop
+
+# package files will be downloaded from here
+# place these files in the `pkg` directory: eboot.bin, head.bin, param.sfo
+# the directory structure will be created by the exploit
+PKG_URL_PREFIX="http://go.henkaku.xyz/pkg"
+
+# Args will be appended to the URL, in format "?a1=0x123&a2=0x345"
+# You only need this for the dynamic version of the exploit (which is recommended)
+STAGE2_URL_BASE="http://go.henkaku.xyz/x"
+
+VERSION=7

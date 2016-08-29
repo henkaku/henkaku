@@ -1,0 +1,5 @@
+#if RELEASE
+#define PRINTF(...)
+#else
+#define PRINTF sceClibPrintf
+#endif

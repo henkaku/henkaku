@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+
+<gadget>
+	<address>0x877235</address>
+	<aslr>SceWebKit</aslr>
+</gadget>
+
+<!--
+  877234:	bd02      	pop	{r1, pc}
+-->

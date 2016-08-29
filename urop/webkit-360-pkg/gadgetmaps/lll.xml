@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+
+<gadgetmap>
+	<regex>.*(\(lll\))</regex>
+	<stack>
+		<data>GADGET_ADDRESS(pop_r0_pc)</data>
+		<data>ARG1</data>                                            <!-- R0 -->
+		<data>GADGET_ADDRESS(ldr_r1_r0-mov_r0_r1-pop_r4_pc)</data>
+		<data>0</data>                                               <!-- R4 -->
+		<data>GADGET_ADDRESS(pop_r0_pc)</data>
+		<data>ARG2</data>                                            <!-- R0 -->
+		<data>GADGET_ADDRESS(ldr_r0_r0-pop_r4_pc)</data>
+		<data>0</data>                                               <!-- R4 -->
+		<data>GADGET_ADDRESS(mov_r2_r0-mov_r0_r2-pop_r4_pc)</data>
+		<data>0</data>                                               <!-- R4 -->
+		<data>GADGET_ADDRESS(pop_r0_pc)</data>
+		<data>ARG0</data>                                            <!-- R0 -->
+		<data>GADGET_ADDRESS(ldr_r0_r0-pop_r4_pc)</data>
+		<data>FUNC_ADDRESS</data>                                    <!-- R4 -->
+		<data>GADGET_ADDRESS(blx_r4-pop_r4_pc)</data>
+		<data>0</data>                                               <!-- R4 -->
+		<data>RETURN_ADDRESS</data>
+	</stack>
+	<testcase>
+!! execute function !!
+----------------------
+0 = LOAD[ARG0]
+1 = LOAD[ARG1]
+2 = LOAD[ARG2]
+3 = .*
+4 = .*
+5 = .*
+6 = .*
+7 = .*
+8 = .*
+9 = .*
+----------------------
+END; r0 = RETVAL
+	</testcase>
+</gadgetmap>

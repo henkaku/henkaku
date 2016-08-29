@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+
+<gadget>
+	<address>0</address>
+	<aslr>SceAppMgr</aslr>
+</gadget>

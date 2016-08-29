@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+
+<gadget>
+	<address>0x00000809</address>
+	<aslr>SceLibKernel</aslr>
+</gadget>
+
+<!-- 0x00000808 : mov ip, r0 ; bx lr -->

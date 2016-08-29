@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+
+<gadget>
+	<address>0x123</address>
+	<aslr>SceWebKit</aslr>
+</gadget>
+
+<!--
+     122:	bd10      	pop	{r4, pc}
+-->
