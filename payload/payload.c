@@ -2,6 +2,7 @@
 #include "args.h"
 
 #include "aes_key.c"
+#include "../build/version.c"
 
 #if RELEASE
 #define LOG(fmt, ...)
@@ -361,9 +362,9 @@ void thread_main(unsigned sysmem_base) {
 	*(unsigned *)(modulemgr_data + 0x34) = 1;
 	*(unsigned *)(modulemgr_data + 0x2d0) = 0x28; // size
 	*(unsigned *)(modulemgr_data + 0x2d4) = 0x30362e33; // "3.60"
-	*(unsigned *)(modulemgr_data + 0x2d8) = 0x89a4e520; // " ..."
-	*(unsigned *)(modulemgr_data + 0x2dc) = 0x2da99de9; // "...."
-	*(unsigned *)(modulemgr_data + 0x2e0) = 0x00000033; // ".\0"
+	*(unsigned *)(modulemgr_data + 0x2d8) = 0xa4e52829; // ")(.."
+	*(unsigned *)(modulemgr_data + 0x2dc) = 0xa99de989; // "...."
+	*(unsigned *)(modulemgr_data + 0x2e0) = 0x0000002d | ((u32_t)HEN_VERSION << 8); // "-V\0"
 	*(unsigned *)(modulemgr_data + 0x2f0) = 0x3610000; // version
 
 	DACR_OFF(

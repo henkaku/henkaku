@@ -510,7 +510,8 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 	// done with the bullshit now, let's rock
 	PRINTF("HENkaku version " BUILD_VERSION " built at " BUILD_DATE " by " BUILD_HOST "\n");
 	PRINTF("Please demand a refund if you paid for this free software either on its own or as part of a bundle!\n\n");
-	PRINTF("installing...\n")
+	PRINTF("!!! DO NOT PRESS THE PS BUTTON !!!\n");
+	PRINTF("installing...\n");
 
 	F->sceKernelDelayThread(1000 * 1000);
 
@@ -523,9 +524,9 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 	ret = 0;
 	#else
 	// check if we actually need to install the package
-	if (VERSION == 0 || get_version(F) < VERSION) {
+	if (SHELL_VERSION == 0 || get_version(F) < SHELL_VERSION) {
 		ret = install_pkg(F);
-		set_version(F, VERSION);
+		set_version(F, SHELL_VERSION);
 	} else {
 		PRINTF("molecularShell already installed and is the latest version\n");
 		PRINTF("(if you want to force reinstall, remove its bubble and restart the exploit)\n");
@@ -543,6 +544,7 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 	}
 	F->fg_color = 0xFFFFFFFF;
 	PRINTF("(the application will close automatically in 6s)\n");
+	PRINTF("!!! DO NOT PRESS THE PS BUTTON !!!\n");
 	F->sceKernelDelayThread(6 * 1000 * 1000);
 
 	while (1) {

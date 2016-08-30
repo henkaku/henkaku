@@ -16,7 +16,10 @@ PKG_URL_PREFIX="http://your_url_here.com/pkg/"
 STAGE2_URL_BASE="http://your_url_here.com/stage2.php"
 
 # Version of bundled vitashell pkg
-# When repeatedly executing the exploit, vitashell is only downloaded and installed when VERSION is bigger than previous VERSION
+# When repeatedly executing the exploit, vitashell is only downloaded and installed when SHELL_VERSION is bigger than previous SHELL_VERSION
 # the exploit was run with
 # If VERSION is 0, this is ignored and vitashell is always downloaded and installed
-VERSION=0
+SHELL_VERSION=0
+
+# Version of HENkaku to display in settings
+HEN_VERSION=4

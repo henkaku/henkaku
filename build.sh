@@ -14,9 +14,9 @@ fi
 
 source $1
 
-if [ -z "$RELEASE" ] || [ -z "$PKG_URL_PREFIX" ] || [ -z "$STAGE2_URL_BASE" ] || [ -z "$VERSION" ]; then
+if [ -z "$RELEASE" ] || [ -z "$PKG_URL_PREFIX" ] || [ -z "$STAGE2_URL_BASE" ] || [ -z "$SHELL_VERSION" ]  || [ -z "$HEN_VERSION" ]; then
 	echo "Please make sure all of the following variables are defined in your config file:"
-	echo "RELEASE, PKG_URL_PREFIX, STAGE2_URL_BASE, VERSION"
+	echo "RELEASE, PKG_URL_PREFIX, STAGE2_URL_BASE, SHELL_VERSION, HEN_VERSION"
 	echo "(see sample.config.in for an example)"
 	exit 2
 fi
@@ -41,7 +41,8 @@ BUILD_HOST=$(hostname)
 echo "#define BUILD_VERSION \"$BUILD_VERSION\"" >> build/version.c
 echo "#define BUILD_DATE \"$BUILD_DATE\"" >> build/version.c
 echo "#define BUILD_HOST \"$BUILD_HOST\"" >> build/version.c
-echo "#define VERSION $VERSION" >> build/version.c
+echo "#define SHELL_VERSION $SHELL_VERSION" >> build/version.c
+echo "#define HEN_VERSION '$HEN_VERSION'" >> build/version.c
 
 PAYLOAD_KEY=118db7c29929cdf6fe85abaa0684f54b
 
