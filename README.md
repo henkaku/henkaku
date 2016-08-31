@@ -17,7 +17,7 @@ Run `./build.sh` to build everything. This script first cleans up all build dire
 
 # Develop
 
-It's useful to have everything be automatically rebuilt when a source file changes. To achieve that, install `entr` and execute in a separate termina:
+It's useful to have everything be automatically rebuilt when a source file changes. To achieve that, install `entr` and execute in a separate terminal:
 
 ```
 while sleep 1; do find build.sh urop/ webkit/ | entr -d ./build.sh ; done
