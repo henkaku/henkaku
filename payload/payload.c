@@ -215,18 +215,19 @@ int (* SceThreadmgrForKernel_0xEA7B8AEF_get_thread_list)(int pid, void *buf, int
 int (* sceKernelChangeThreadCpuAffinityMask)(int thid, int mask) = 0;
 int (* sceKernelChangeThreadPriority)(int thid, int priority) = 0;
 int (*sceKernelWaitThreadEndForKernel)(int thid, int *r1, int *r2) = 0;
+int (*sblAimgrIsCEX)(void) = 0;
 void (*aes_setkey)(void *ctx, uint32_t blocksize, uint32_t keysize, void *key) = 0;
 void (*aes_encrypt)(void *ctx, void *src, void *dst) = 0;
 
 unsigned modulemgr_base = 0;
 unsigned modulemgr_data = 0;
 unsigned scenpdrm_code = 0;
-int pid = 0, ppid = 0;
+int pid = 0, ppid = 0, shell_pid = 0;
 unsigned SceWebBrowser_base = 0;
 unsigned SceLibKernel_base = 0;
 unsigned SceEmailEngine_base = 0;
+unsigned SceShell_base = 0, SceShell_size = 0;
 u32_t sharedfb_update_begin = 0, sharedfb_update_process = 0, sharedfb_update_end = 0;
-unsigned vshbridge_base = 0;
 
 char pkg_url_prefix[256] __attribute__((aligned(16))) __attribute__ ((section (".pkgurl"))) = "PKG_URL_PREFIX_PLACEHOLDER";
 
@@ -367,10 +368,13 @@ void thread_main(unsigned sysmem_base) {
 	*(unsigned *)(modulemgr_data + 0x2e0) = 0x0000002d | ((u32_t)HEN_VERSION << 8); // "-V\0"
 	*(unsigned *)(modulemgr_data + 0x2f0) = 0x3610000; // version
 
+	/*
+	// older patch sets is_cex function to return 0
 	DACR_OFF(
 		INSTALL_RET_THUMB((char *)vshbridge_base + 0x16f4, 0);
 	);
 	SceCpuForDriver_9CB9F0CE_flush_icache((void*)vshbridge_base, 0x9A00);
+	*/
 
 	// end patch version information
 
@@ -381,6 +385,9 @@ void thread_main(unsigned sysmem_base) {
 	SceProcessmgrForDriver_0AFF3EAE(pid, data);
 	DACR_OFF(ppid = data[5];);
 	LOG("Target PID: 0x%x\n", ppid);
+	SceProcessmgrForDriver_0AFF3EAE(ppid, data);
+	DACR_OFF(shell_pid = data[5];);
+	LOG("Shell PID: 0x%x\n", shell_pid);
 
 	int *modlist[MOD_LIST_SIZE];
 	int modlist_records;
@@ -402,6 +409,34 @@ void thread_main(unsigned sysmem_base) {
 		else if (strcmp(info.name, "SceLibKernel") == 0)
 			DACR_OFF(SceLibKernel_base = addr);
 	}
+
+	modlist_records = MOD_LIST_SIZE;
+	ret = sceKernelGetModuleListForKernel(shell_pid, 0x7FFFFFFF, 1, modlist, &modlist_records);
+	LOG("sceKernelGetModuleList() returned 0x%x\n", ret);
+
+	for (int i = 0; i < modlist_records; ++i) {
+		info.size = sizeof(info);
+		ret = sceKernelGetModuleInfoForKernel(shell_pid, modlist[i], &info);
+		if (strcmp(info.name, "SceShell") == 0)
+			DACR_OFF(
+				SceShell_base = (unsigned)info.segments[0].vaddr;
+				SceShell_size = (unsigned)info.segments[0].memsz;
+			);
+	}
+	LOG("Found SceShell at 0x%x of size 0x%x\n", SceShell_base, SceShell_size);
+}
+
+void patch_shell() {
+	static unsigned char update_check_patch[] = {
+	  0x00, 0x20, 0x10, 0x60, 0x70, 0x47, 0x00, 0xbf
+	};
+
+	if (sblAimgrIsCEX() == 1) {
+		LOG("We are running on retail, patching update url\n");
+		unrestricted_memcpy_for_pid(shell_pid, SceShell_base+0x363de8, update_check_patch, (sizeof(update_check_patch) + 0x10) & ~0xF);
+	} else {
+		LOG("We are running on debug, skipping shell patches\n");
+	}
 }
 
 void takeover_web_browser() {
@@ -417,7 +452,7 @@ void takeover_web_browser() {
 	for (int i = 0; i < 0x58/4; ++i)
 		popt[i] = 0;
 	popt[0/4] = 0x58;
-	popt[0x8/4] = 0x50480088;
+	popt[0x8/4] = 088x50480088;
 	popt[0x18/4] = 0x1000;
 	popt[0x24/4] = ppid;
 	ret = sceKernelAllocMemBlockForKernel("", 0xC20D050, 0x4000, popt);
@@ -516,7 +551,7 @@ void resolve_imports(unsigned sysmem_base) {
 	ret = sceKernelGetModuleListForKernel(0x10005, 0x7FFFFFFF, 1, modlist, &modlist_records);
 	LOG("sceKernelGetModuleList() returned 0x%x\n", ret);
 	LOG("modlist_records: %d\n", modlist_records);
-		module_info_t *threadmgr_info = 0, *sblauthmgr_info = 0, *processmgr_info = 0, *display_info = 0, *appmgr_info = 0;
+		module_info_t *threadmgr_info = 0, *sblauthmgr_info = 0, *processmgr_info = 0, *display_info = 0, *appmgr_info = 0, *sblaimgr_info = 0;
 	u32_t scenet_code = 0, scenet_data = 0;
 	for (int i = 0; i < modlist_records; ++i) {
 		info.size = sizeof(info);
@@ -542,12 +577,6 @@ void resolve_imports(unsigned sysmem_base) {
 		}
 		if (strcmp(info.name, "SceProcessmgr") == 0) {
 			processmgr_info = find_modinfo((u32_t)info.segments[0].vaddr, "SceProcessmgr");
-		}
-		if (strcmp(info.name, "SceVshBridge") == 0) {
-			// no need for exports, just get an offset
-			DACR_OFF(
-				vshbridge_base = (u32_t)info.segments[0].vaddr;
-			);
 		}
 	}
 
@@ -592,6 +621,7 @@ void resolve_imports(unsigned sysmem_base) {
 		sharedfb_update_end = (u32_t)find_export(appmgr_info, 0x565a9ab6);
 		aes_setkey = find_export(sysmem_info, 0xf12b6451);
 		aes_encrypt = find_export(sysmem_info, 0xC2A61770);
+		sblAimgrIsCEX = find_export(sysmem_info, 0xD78B04A2);
 		);
 }
 
@@ -614,6 +644,7 @@ void __attribute__ ((section (".text.start"))) payload(uint32_t sysmem_addr) {
 
 	resolve_imports(sysmem_base);
 	thread_main(sysmem_base);
+	patch_shell();
 	takeover_web_browser();
 
 	LOG("Kill current thread =>");
