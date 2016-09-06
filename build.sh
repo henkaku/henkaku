@@ -74,7 +74,7 @@ printf "</script>" >> output/static/exploit.html
 $PREPROCESS webkit/exploit.js -DSTATIC=0 -o build/exploit.dynamic.js
 uglifyjs build/exploit.dynamic.js -m "toplevel" > build/exploit.js
 touch output/dynamic/exploit.html
-printf "<script src='payload.js'></script><script>" >> output/dynamic/exploit.html
+printf "<noscript>Go to browser settings and check \"Enable JavaScript\", then reload this page.</noscript><script src='payload.js'></script><script>" >> output/dynamic/exploit.html
 cat build/exploit.js >> output/dynamic/exploit.html
 printf "</script>" >> output/dynamic/exploit.html
 cp output/static/payload.bin output/dynamic/stage2.bin
