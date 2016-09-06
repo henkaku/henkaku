@@ -44,7 +44,7 @@ echo "#define BUILD_HOST \"$BUILD_HOST\"" >> build/version.c
 echo "#define SHELL_VERSION $SHELL_VERSION" >> build/version.c
 echo "#define HEN_VERSION '$HEN_VERSION'" >> build/version.c
 
-PAYLOAD_KEY=9ab7d54770392e363d106a6c4e81886b
+PAYLOAD_KEY=06c82350e7bbfc7c30eafd0abeca95ad
 
 # user payload is injected into web browser process
 $CC -c -o build/user.o payload/user/user.c $CFLAGS
