@@ -48,6 +48,14 @@ do {                                                \
 	*target = (unsigned)func;                         \
 } while (0)
 
+#define INSTALL_RET(addr, ret) \
+do {                                            \
+	unsigned *target;                             \
+	target = (unsigned*)(addr);                   \
+	*target++ = 0xe3a00000 | ret; /* mov r0, #ret */ \
+	*target = 0xe12fff1e; /* bx lr */             \
+} while (0)
+
 #define INSTALL_RET_THUMB(addr, ret) \
 do {                                            \
 	unsigned *target;                             \
@@ -228,6 +236,7 @@ unsigned SceLibKernel_base = 0;
 unsigned SceEmailEngine_base = 0;
 unsigned SceShell_base = 0, SceShell_size = 0;
 u32_t sharedfb_update_begin = 0, sharedfb_update_process = 0, sharedfb_update_end = 0;
+unsigned scepower_code = 0;
 
 char pkg_url_prefix[256] __attribute__((aligned(16))) __attribute__ ((section (".pkgurl"))) = "PKG_URL_PREFIX_PLACEHOLDER";
 
@@ -357,6 +366,13 @@ void thread_main(unsigned sysmem_base) {
 	);
 	SceCpuForDriver_9CB9F0CE_flush_icache((void*)scenpdrm_code, 0x12000); // and npdrm patches
 	// end homebrew enable
+
+	// ScePower unlock for safe homebrew
+	DACR_OFF(
+		INSTALL_RET((char *)scepower_code + 0x45f0, 1); // 3.60
+	);
+	SceCpuForDriver_9CB9F0CE_flush_icache((void*)scepower_code, 0xa600); //
+	// end ScePower patch
 
 	// patch version information
 
@@ -551,7 +567,7 @@ void resolve_imports(unsigned sysmem_base) {
 	ret = sceKernelGetModuleListForKernel(0x10005, 0x7FFFFFFF, 1, modlist, &modlist_records);
 	LOG("sceKernelGetModuleList() returned 0x%x\n", ret);
 	LOG("modlist_records: %d\n", modlist_records);
-		module_info_t *threadmgr_info = 0, *sblauthmgr_info = 0, *processmgr_info = 0, *display_info = 0, *appmgr_info = 0, *sblaimgr_info = 0;
+		module_info_t *threadmgr_info = 0, *sblauthmgr_info = 0, *processmgr_info = 0, *display_info = 0, *appmgr_info = 0;
 	u32_t scenet_code = 0, scenet_data = 0;
 	for (int i = 0; i < modlist_records; ++i) {
 		info.size = sizeof(info);
@@ -578,10 +594,13 @@ void resolve_imports(unsigned sysmem_base) {
 		if (strcmp(info.name, "SceProcessmgr") == 0) {
 			processmgr_info = find_modinfo((u32_t)info.segments[0].vaddr, "SceProcessmgr");
 		}
+		if (strcmp(info.name, "ScePower") == 0) {
+			DACR_OFF(scepower_code = (u32_t)info.segments[0].vaddr);
+		}
 	}
 
 	LOG("threadmgr_info: 0x%08x | sblauthmgr_info: 0x%08x | scenet_code: 0x%08x | scenet_data: 0x%08x\n", threadmgr_info, sblauthmgr_info, scenet_code, scenet_data);
-	LOG("scenpdrm_code: 0x%08x\n", scenpdrm_code);
+	LOG("scenpdrm_code: 0x%08x | scepower_code: 0x%08x\n", scenpdrm_code, scepower_code);
 
 	LOG("Fixup: unlock SceNetPs global mutex ");
 	// 3.60
