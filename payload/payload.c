@@ -443,11 +443,12 @@ void thread_main(unsigned sysmem_base) {
 }
 
 void patch_shell() {
-	static unsigned char update_check_patch[] = {
+	static const unsigned char update_check_patch[] = {
 	  0x00, 0x20, 0x10, 0x60, 0x70, 0x47, 0x00, 0xbf
 	};
+	static const int retail_sceshell_size = 0x541b74;
 
-	if (sblAimgrIsCEX() == 1) {
+	if (sblAimgrIsCEX() == 1 && SceShell_size == retail_sceshell_size) {
 		LOG("We are running on retail, patching update url\n");
 		unrestricted_memcpy_for_pid(shell_pid, SceShell_base+0x363de8, update_check_patch, (sizeof(update_check_patch) + 0x10) & ~0xF);
 	} else {
