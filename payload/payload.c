@@ -446,11 +446,29 @@ void patch_shell() {
 	static const unsigned char update_check_patch[] = {
 	  0x00, 0x20, 0x10, 0x60, 0x70, 0x47, 0x00, 0xbf
 	};
+	static const unsigned char game_update_patch[] = {
+		0x00, 0x20, 0x08, 0x60, 0x70, 0x47, 0xc0, 0x46
+	};
+	static const unsigned char revoked_tid_patch[] = {
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+	};
+	static const unsigned char revoked_tid_patch_2[] = {
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+		0x53, 0x70, 0x61, 0x77, 0x6E, 0x50, 0x72, 0x6F // leftover overflow
+	};
 	static const int retail_sceshell_size = 0x541b74;
 
 	if (sblAimgrIsCEX() == 1 && SceShell_size == retail_sceshell_size) {
-		LOG("We are running on retail, patching update url\n");
-		unrestricted_memcpy_for_pid(shell_pid, SceShell_base+0x363de8, update_check_patch, (sizeof(update_check_patch) + 0x10) & ~0xF);
+		LOG("We are running on retail, patching shell\n");
+
+		// update checks
+		unrestricted_memcpy_for_pid(shell_pid, (char *)SceShell_base+0x363de8, (char *)update_check_patch, (sizeof(update_check_patch) + 0x10) & ~0xF);
+		// game updates
+		unrestricted_memcpy_for_pid(shell_pid, (char *)SceShell_base+0x37beda, (char *)game_update_patch, (sizeof(game_update_patch) + 0x10) & ~0xF);
+		// enable PSM/PSM Unity
+		unrestricted_memcpy_for_pid(shell_pid, (char *)SceShell_base+0x516e20, (char *)revoked_tid_patch, (sizeof(revoked_tid_patch) + 0x10) & ~0xF);
+		unrestricted_memcpy_for_pid(shell_pid, (char *)SceShell_base+0x516e2c, (char *)revoked_tid_patch_2, (sizeof(revoked_tid_patch_2) + 0x10) & ~0xF);
 	} else {
 		LOG("We are running on debug, skipping shell patches\n");
 	}
