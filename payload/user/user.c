@@ -533,7 +533,7 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 	ret = 0;
 	#else
 	// check if we actually need to install the package
-	if (get_version(F) == 0 && vitashell_installed(F)) {
+	if (vitashell_installed(F)) {
 		PRINTF("VitaShell is already installed so molecularShell will not be installed.\n");
 		PRINTF("If you wish to install molecularShell, remove VitaShell and restart the exploit.\n");
 		PRINTF("To update VitaShell, use VitaShell's built in updater.\n");
