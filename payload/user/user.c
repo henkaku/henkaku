@@ -336,15 +336,6 @@ static void mkdirs(func_map *F, const char *dir) {
 } while(0);
 
 #define VERSION_TXT "ux0:app/MLCL00001/version.txt"
-#define VITASHELL_EBOOT "ux0:app/VITASHELL/eboot.bin"
-
-int vitashell_installed(func_map *F) {
-	int fd = F->sceIoOpen(VITASHELL_EBOOT, SCE_O_RDONLY);
-	if (fd < 0)
-		return 0;
-	F->sceIoClose(fd);
-	return 1;
-}
 
 unsigned get_version(func_map *F) {
 	int fd = F->sceIoOpen(VERSION_TXT, SCE_O_RDONLY);
@@ -533,11 +524,7 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 	ret = 0;
 	#else
 	// check if we actually need to install the package
-	if (vitashell_installed(F)) {
-		PRINTF("VitaShell is already installed so molecularShell will not be installed.\n");
-		PRINTF("If you wish to install molecularShell, remove VitaShell and restart the exploit.\n");
-		PRINTF("To update VitaShell, use VitaShell's built in updater.\n");
-	} else if (SHELL_VERSION == 0 || get_version(F) < SHELL_VERSION) {
+	if (SHELL_VERSION == 0 || get_version(F) < SHELL_VERSION) {
 		ret = install_pkg(F);
 		set_version(F, SHELL_VERSION);
 	} else {
