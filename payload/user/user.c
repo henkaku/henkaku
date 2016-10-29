@@ -556,9 +556,9 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 		PRINTF("HENkaku was successfully installed\n");
 	}
 	F->fg_color = 0xFFFFFFFF;
-	PRINTF("(the application will close automatically in 6s)\n");
+	PRINTF("(the application will close automatically in 3s)\n");
 	PRINTF("!!! DO NOT PRESS THE PS BUTTON !!!\n");
-	F->sceKernelDelayThread(6 * 1000 * 1000);
+	F->sceKernelDelayThread(3 * 1000 * 1000);
 
 	while (1) {
 		F->kill_me();

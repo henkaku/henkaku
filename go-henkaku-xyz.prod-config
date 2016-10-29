@@ -17,6 +17,3 @@ STAGE2_URL_BASE="http://go.henkaku.xyz/x"
 
 # VitaShell version
 SHELL_VERSION=9
-
-# Version of HENkaku to display in settings
-HEN_VERSION=6

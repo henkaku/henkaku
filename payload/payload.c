@@ -2,7 +2,8 @@
 #include "args.h"
 
 #include "aes_key.c"
-#include "../build/version.c"
+
+// ALL 3.60 SPECIFIC SECTIONS ARE MARKED WITH "// BEGIN 3.60"
 
 #if RELEASE
 #define LOG(fmt, ...)
@@ -101,25 +102,20 @@ typedef struct SceModInfo {
 
 #define MOD_LIST_SIZE 0x80
 
-typedef struct module_imports // thanks roxfan
+typedef struct module_imports_2
 {
-	u16_t   size;               // size of this structure; 0x34 for Vita 1.x
-	u16_t   lib_version;        //
-	u16_t   attribute;          //
-	u16_t   num_functions;      // number of imported functions
-	u16_t   num_vars;           // number of imported variables
-	u16_t   num_tls_vars;       // number of imported TLS variables
-	u32_t   reserved1;          // ?
-	u32_t   module_nid;         // NID of the module to link to
-	char    *lib_name;          // name of module
-	u32_t   reserved2;          // ?
-	u32_t   *func_nid_table;    // array of function NIDs (numFuncs)
-	void    **func_entry_table; // parallel array of pointers to stubs; they're patched by the loader to jump to the final code
-	u32_t   *var_nid_table;     // NIDs of the imported variables (numVars)
-	void    **var_entry_table;  // array of pointers to "ref tables" for each variable
-	u32_t   *tls_nid_table;     // NIDs of the imported TLS variables (numTlsVars)
-	void    **tls_entry_table;  // array of pointers to ???
-} module_imports_t;
+  u16_t size; // 0x24
+  u16_t version;
+  u16_t flags;
+  u16_t num_functions;
+  u32_t reserved1;
+  u32_t lib_nid;
+  char     *lib_name;
+  u32_t *func_nid_table;
+  void     **func_entry_table;
+  u32_t unk1;
+  u32_t unk2;
+} module_imports_2_t;
 
 typedef struct module_exports // thanks roxfan
 {
@@ -166,6 +162,15 @@ int strcmp(const char *s1, const char *s2) {
 	return (*(unsigned char *)s1 - *(unsigned char *)--s2);
 }
 
+static inline int memcpy(void *dst, const void *src, int len) {
+	char *dst1 = (char *)dst;
+	const char *src1 = (const char *)src;
+	while (len > 0) {
+		*dst1++ = *src1++;
+		len--;
+	}
+}
+
 module_info_t * find_modinfo(uint32_t start_addr, const char *needle) {
 	start_addr &= ~0xF;
 	start_addr += 4;
@@ -195,6 +200,26 @@ void *find_export(module_info_t *mod, uint32_t nid) {
 	return NULL;
 }
 
+void *find_import(module_info_t *mod, uint32_t lnid, uint32_t fnid) {
+	if (!mod->stub_top)
+		return NULL;
+
+	for (unsigned stub = mod->stub_top; stub < mod->stub_end;) {
+		// Older fw versions use a different import format
+		module_imports_2_t *imports = (module_imports_2_t *)((unsigned int)mod + 0x5C + stub - mod->stub_top);
+
+		if (imports->size == sizeof(module_imports_2_t) && imports->lib_nid == lnid) {
+			for (int j = 0; j < imports->num_functions; ++j)
+				if (imports->func_nid_table[j] == fnid)
+					return (void*)((u32_t *)imports->func_entry_table)[j];
+		}
+
+		stub += imports->size;
+	}
+
+	return NULL;
+}
+
 void (*debug_print)(char *s, ...) = 0;
 
 unsigned g_homebrew_decrypt = 0;
@@ -210,7 +235,7 @@ int (*sceKernelCreateThreadForPid)() = 0;
 int (*sceKernelStartThread_089)() = 0;
 int (*sceKernelAllocMemBlockForKernel)() = 0;
 int (*sceKernelGetMemBlockBaseForKernel)() = 0;
-void (*SceCpuForDriver_9CB9F0CE_flush_icache)(void *addr, uint32_t size) = 0;
+void (*SceCpuForDriver_19f17bd0_flush_icache)(void *addr, uint32_t size) = 0;
 int (*sceKernelCreateThreadForKernel)() = 0;
 int (*sceKernelExitDeleteThread)() = 0;
 int (*sceKernelGetModuleListForKernel)() = 0;
@@ -226,10 +251,14 @@ int (*sceKernelWaitThreadEndForKernel)(int thid, int *r1, int *r2) = 0;
 int (*sblAimgrIsCEX)(void) = 0;
 void (*aes_setkey)(void *ctx, uint32_t blocksize, uint32_t keysize, void *key) = 0;
 void (*aes_encrypt)(void *ctx, void *src, void *dst) = 0;
+int (*sceKernelLoadModuleWithoutStartForDriver)(const char *path, int flags, int *opt) = 0;
+int (*sceKernelStartModuleForDriver)(int modid, int argc, void *args, int flags, void *opt, int *res) = 0;
+int (*sceKernelLoadStartModuleForDriver)(const char *path, int argc, void *args, int flags) = 0;
+int (*sceNpDrmPackageCheck)(int r0, int r1, int r2, int r3) = 0;
 
+module_info_t *modulemgr_info;
 unsigned modulemgr_base = 0;
 unsigned modulemgr_data = 0;
-unsigned scenpdrm_code = 0;
 int pid = 0, ppid = 0, shell_pid = 0;
 unsigned SceWebBrowser_base = 0;
 unsigned SceLibKernel_base = 0;
@@ -265,6 +294,11 @@ int hook_sharedfb_update_end(int r0, int r1, int r2, int r3)
 	return 0;
 }
 
+int sceNpDrmPackageCheckPatched(int r0, int r1, int r2, int r3)
+{
+	return 0;
+}
+
 // setup file decryption
 unsigned hook_sbl_F3411881(unsigned a1, unsigned a2, unsigned a3, unsigned a4) {
 	LOG("sbl_F3411881(0x%x, 0x%x, 0x%x, 0x%x)\n", a1, a2, a3, a4);
@@ -273,7 +307,7 @@ unsigned hook_sbl_F3411881(unsigned a1, unsigned a2, unsigned a3, unsigned a4) {
 	unsigned *somebuf = (unsigned*)a4;
 	u64_t authid;
 
-	if (res == 0x800f0624 || res == 0x800f0616 || res == 0x800f0024) {
+	if (res == 0x800f0624 || res == 0x800f0616 || res == 0x800f0024 || res == 0x800f0b3a) {
 		DACR_OFF(
 			g_homebrew_decrypt = 1;
 		);
@@ -319,7 +353,9 @@ void print_buffer(unsigned *buffer) {
 
 void patch_syscall(u32_t addr, void *function)
 {
+	// BEGIN 3.60
 	u32_t *syscall_table = (u32_t*) (*((u32_t*)(modulemgr_data + 0x334)));
+	// END 3.60
 
 	for (int i = 0; i < 0x1000; ++i)
 	{
@@ -339,60 +375,51 @@ void patch_syscall(u32_t addr, void *function)
 #include "../build/user.h"
 #endif
 
-void thread_main(unsigned sysmem_base) {
+void temp_patches(void) {
+	void *addr;
+	LOG("inserting temporary patches\n");
+	addr = find_import(modulemgr_info, 0x7ABF5135, 0xF3411881);
+	LOG("sbl_F3411881 stub: %p\n", addr);
+	DACR_OFF(INSTALL_HOOK(hook_sbl_F3411881, addr));
+	SceCpuForDriver_19f17bd0_flush_icache((uint32_t)addr & ~0x1F, 0x40);
+	LOG("hooked sbl_F3411881\n");
+	addr = find_import(modulemgr_info, 0x7ABF5135, 0x89CCDA2C);
+	LOG("sbl_89CCDA2C stub: %p\n", addr);
+	DACR_OFF(INSTALL_HOOK(hook_sbl_89CCDA2C, addr));
+	SceCpuForDriver_19f17bd0_flush_icache((uint32_t)addr & ~0x1F, 0x40);
+	LOG("hooked sbl_89CCDA2C\n");
+	addr = find_import(modulemgr_info, 0x7ABF5135, 0xBC422443);
+	LOG("sbl_BC422443 stub: %p\n", addr);
+	DACR_OFF(INSTALL_HOOK(hook_sbl_BC422443, addr));
+	SceCpuForDriver_19f17bd0_flush_icache((uint32_t)addr & ~0x1F, 0x40);
+	LOG("hooked sbl_BC422443\n");
+}
+
+void remove_patches(void) {
+	void *addr;
+	LOG("removing temporary patches\n");
+	addr = find_import(modulemgr_info, 0x7ABF5135, 0xF3411881);
+	LOG("sbl_F3411881 stub: %p\n", addr);
+	DACR_OFF(INSTALL_HOOK(hook_resume_sbl_F3411881, addr));
+	SceCpuForDriver_19f17bd0_flush_icache((uint32_t)addr & ~0x1F, 0x40);
+	LOG("unhooked sbl_F3411881\n");
+	addr = find_import(modulemgr_info, 0x7ABF5135, 0x89CCDA2C);
+	LOG("sbl_89CCDA2C stub: %p\n", addr);
+	DACR_OFF(INSTALL_HOOK(hook_resume_sbl_89CCDA2C, addr));
+	SceCpuForDriver_19f17bd0_flush_icache((uint32_t)addr & ~0x1F, 0x40);
+	LOG("unhooked sbl_89CCDA2C\n");
+	addr = find_import(modulemgr_info, 0x7ABF5135, 0xBC422443);
+	LOG("sbl_BC422443 stub: %p\n", addr);
+	DACR_OFF(INSTALL_HOOK(hook_resume_sbl_BC422443, addr));
+	SceCpuForDriver_19f17bd0_flush_icache((uint32_t)addr & ~0x1F, 0x40);
+	LOG("unhooked sbl_BC422443\n");
+}
+
+void thread_main(void) {
 	unsigned ret;
 
 	// homebrew enable
-	uint32_t *patch;
-	DACR_OFF(
-		INSTALL_HOOK(hook_sbl_F3411881, (char*)modulemgr_base + 0xb68c); // 3.60
-		INSTALL_HOOK(hook_sbl_89CCDA2C, (char*)modulemgr_base + 0xb64c); // 3.60
-		INSTALL_HOOK(hook_sbl_BC422443, (char*)modulemgr_base + 0xb67c); // 3.60
-
-		// patch vm code alloc checks
-		INSTALL_RET_THUMB((char *)sysmem_base + 0x1fa8c, 1); // 3.60
-		INSTALL_RET_THUMB((char *)sysmem_base + 0x8c00, 0); // 3.60
-
-		// patch error code 0x80870003 C0-9249-4
-		patch = (void*)(scenpdrm_code + 0x8068); // 3.60
-		*patch = 0x2500; // mov r5, 0
-		patch = (void*)(scenpdrm_code + 0x9994); // 3.60
-		*patch = 0x2600; // mov r6, 0
-
-		patch = (void*)(scenpdrm_code + 0x6A38);
-		*patch = 0x47702001; // always return 1 in install_allowed
-
-
-	);
-	SceCpuForDriver_9CB9F0CE_flush_icache((void*)scenpdrm_code, 0x12000); // and npdrm patches
-	// end homebrew enable
-
-	// ScePower unlock for safe homebrew
-	DACR_OFF(
-		INSTALL_RET((char *)scepower_code + 0x45f0, 1); // 3.60
-	);
-	SceCpuForDriver_9CB9F0CE_flush_icache((void*)scepower_code, 0xa600); //
-	// end ScePower patch
-
-	// patch version information
-
-	*(unsigned *)(modulemgr_data + 0x34) = 1;
-	*(unsigned *)(modulemgr_data + 0x2d0) = 0x28; // size
-	*(unsigned *)(modulemgr_data + 0x2d4) = 0x30362e33; // "3.60"
-	*(unsigned *)(modulemgr_data + 0x2d8) = 0xa4e52829; // ")(.."
-	*(unsigned *)(modulemgr_data + 0x2dc) = 0xa99de989; // "...."
-	*(unsigned *)(modulemgr_data + 0x2e0) = 0x0000002d | ((u32_t)HEN_VERSION << 8); // "-V\0"
-	*(unsigned *)(modulemgr_data + 0x2f0) = 0x3610000; // version
-
-	/*
-	// older patch sets is_cex function to return 0
-	DACR_OFF(
-		INSTALL_RET_THUMB((char *)vshbridge_base + 0x16f4, 0);
-	);
-	SceCpuForDriver_9CB9F0CE_flush_icache((void*)vshbridge_base, 0x9A00);
-	*/
-
-	// end patch version information
+	temp_patches();
 
 	// takeover the web browser or email if offline
 
@@ -425,53 +452,6 @@ void thread_main(unsigned sysmem_base) {
 		else if (strcmp(info.name, "SceLibKernel") == 0)
 			DACR_OFF(SceLibKernel_base = addr);
 	}
-
-	modlist_records = MOD_LIST_SIZE;
-	ret = sceKernelGetModuleListForKernel(shell_pid, 0x7FFFFFFF, 1, modlist, &modlist_records);
-	LOG("sceKernelGetModuleList() returned 0x%x\n", ret);
-
-	for (int i = 0; i < modlist_records; ++i) {
-		info.size = sizeof(info);
-		ret = sceKernelGetModuleInfoForKernel(shell_pid, modlist[i], &info);
-		if (strcmp(info.name, "SceShell") == 0)
-			DACR_OFF(
-				SceShell_base = (unsigned)info.segments[0].vaddr;
-				SceShell_size = (unsigned)info.segments[0].memsz;
-			);
-	}
-	LOG("Found SceShell at 0x%x of size 0x%x\n", SceShell_base, SceShell_size);
-}
-
-void patch_shell() {
-	static const unsigned char update_check_patch[] = {
-	  0x00, 0x20, 0x10, 0x60, 0x70, 0x47, 0x00, 0xbf
-	};
-	static const unsigned char game_update_patch[] = {
-		0x00, 0x20, 0x08, 0x60, 0x70, 0x47, 0xc0, 0x46
-	};
-	static const unsigned char revoked_tid_patch[] = {
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-	};
-	static const unsigned char revoked_tid_patch_2[] = {
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-		0x53, 0x70, 0x61, 0x77, 0x6E, 0x50, 0x72, 0x6F // leftover overflow
-	};
-	static const int retail_sceshell_size = 0x541b74;
-
-	if (sblAimgrIsCEX() == 1 && SceShell_size == retail_sceshell_size) {
-		LOG("We are running on retail, patching shell\n");
-
-		// update checks
-		unrestricted_memcpy_for_pid(shell_pid, (char *)SceShell_base+0x363de8, (char *)update_check_patch, (sizeof(update_check_patch) + 0x10) & ~0xF);
-		// game updates
-		unrestricted_memcpy_for_pid(shell_pid, (char *)SceShell_base+0x37beda, (char *)game_update_patch, (sizeof(game_update_patch) + 0x10) & ~0xF);
-		// enable PSM/PSM Unity
-		unrestricted_memcpy_for_pid(shell_pid, (char *)SceShell_base+0x516e20, (char *)revoked_tid_patch, (sizeof(revoked_tid_patch) + 0x10) & ~0xF);
-		unrestricted_memcpy_for_pid(shell_pid, (char *)SceShell_base+0x516e2c, (char *)revoked_tid_patch_2, (sizeof(revoked_tid_patch_2) + 0x10) & ~0xF);
-	} else {
-		LOG("We are running on debug, skipping shell patches\n");
-	}
 }
 
 void takeover_web_browser() {
@@ -481,21 +461,6 @@ void takeover_web_browser() {
 	base = SceEmailEngine_base + 0xE6F70;
 #else
 	base = SceWebBrowser_base + 0xC6200;
-#endif
-#if 0
-	unsigned popt[0x58/4];
-	for (int i = 0; i < 0x58/4; ++i)
-		popt[i] = 0;
-	popt[0/4] = 0x58;
-	popt[0x8/4] = 088x50480088;
-	popt[0x18/4] = 0x1000;
-	popt[0x24/4] = ppid;
-	ret = sceKernelAllocMemBlockForKernel("", 0xC20D050, 0x4000, popt);
-	LOG("alloc memblock ret = 0x%x\n", ret);
-	if (ret & 0x80000000)
-		return;
-	ret = sceKernelGetMemBlockBaseForKernel(ret, &base);
-	LOG("getbase ret = 0x%x base = 0x%x\n", ret, base);
 #endif
 
 	int thidlist[MOD_LIST_SIZE];
@@ -517,6 +482,7 @@ void takeover_web_browser() {
 	patch_syscall(sharedfb_update_end, hook_sharedfb_update_end);
 	patch_syscall((u32_t)sceDisplaySetFrameBufInternal, sceDisplaySetFrameBufInternalPatched);
 	patch_syscall((u32_t)sceDisplayGetFrameBufInternal, sceDisplayGetFrameBufInternalPatched);
+	patch_syscall((u32_t)sceNpDrmPackageCheck, sceNpDrmPackageCheckPatched);
 
 	// inject the code
 	LOG("injecting code to pid 0x%x at 0x%x\n", ppid, base);
@@ -547,6 +513,7 @@ void takeover_web_browser() {
 	sceKernelWaitThreadEndForKernel(thread, &status, NULL);
 
 	// undo patches
+	patch_syscall((u32_t)sceNpDrmPackageCheckPatched, sceNpDrmPackageCheck);
 	patch_syscall((u32_t)sceDisplaySetFrameBufInternalPatched, sceDisplaySetFrameBufInternal);
 	patch_syscall((u32_t)sceDisplayGetFrameBufInternalPatched, sceDisplayGetFrameBufInternal);
 	patch_syscall((u32_t)hook_sharedfb_update_begin, (void *)sharedfb_update_begin);
@@ -554,20 +521,32 @@ void takeover_web_browser() {
 	patch_syscall((u32_t)hook_sharedfb_update_end, (void *)sharedfb_update_end);
 }
 
+void load_taihen(void) {
+	unsigned opt, modid, ret, result;
+	// load taiHEN
+	opt = 4;
+	modid = sceKernelLoadModuleWithoutStartForDriver("ux0:tai/taihen.skprx", 0, &opt);
+	LOG("LoadTaiHen: 0x%08X\n", modid);
+	remove_patches();
+	LOG("Removed temp patches\n");
+	ret = sceKernelStartModuleForDriver(modid, 0, NULL, 0, NULL, &result);
+	LOG("StartTaiHen: 0x%08X, 0x%08X\n", ret, result);
+}
+
 void resolve_imports(unsigned sysmem_base) {
 	unsigned ret;
 
 	module_info_t *sysmem_info = find_modinfo(sysmem_base, "SceSysmem");
 
-	// 3.60-specific offsets here, used to find Modulemgr from just sysmem base
+	// BEGIN 3.60 specific offsets here, used to find Modulemgr from just sysmem base
 	LOG("sysmem base: 0x%08x\n", sysmem_base);
 	void *sysmem_data = (void*)(*(u32_t*)((u32_t)(sysmem_base) + 0x26a68) - 0xA0);
 	LOG("sysmem data base: 0x%08x\n", sysmem_data);
 	DACR_OFF(modulemgr_base = (*(u32_t*)((u32_t)(sysmem_data) + 0x438c) - 0x40););
 	LOG("modulemgr base: 0x%08x\n", modulemgr_base);
-	// end of 3.60-specific offsets
+	// END 3.60 specific offsets
 
-	module_info_t *modulemgr_info = find_modinfo((u32_t)modulemgr_base, "SceKernelModulemgr");
+	DACR_OFF(modulemgr_info = find_modinfo((u32_t)modulemgr_base, "SceKernelModulemgr"));
 	LOG("modulemgr modinfo: 0x%08x\n", modulemgr_info);
 
 	DACR_OFF(
@@ -586,7 +565,7 @@ void resolve_imports(unsigned sysmem_base) {
 	ret = sceKernelGetModuleListForKernel(0x10005, 0x7FFFFFFF, 1, modlist, &modlist_records);
 	LOG("sceKernelGetModuleList() returned 0x%x\n", ret);
 	LOG("modlist_records: %d\n", modlist_records);
-		module_info_t *threadmgr_info = 0, *sblauthmgr_info = 0, *processmgr_info = 0, *display_info = 0, *appmgr_info = 0;
+		module_info_t *threadmgr_info = 0, *sblauthmgr_info = 0, *processmgr_info = 0, *display_info = 0, *appmgr_info = 0, *scenpdrm_info = 0;
 	u32_t scenet_code = 0, scenet_data = 0;
 	for (int i = 0; i < modlist_records; ++i) {
 		info.size = sizeof(info);
@@ -596,7 +575,7 @@ void resolve_imports(unsigned sysmem_base) {
 		if (strcmp(info.name, "SceSblAuthMgr") == 0)
 			sblauthmgr_info = find_modinfo((u32_t)info.segments[0].vaddr, "SceSblAuthMgr");
 		if (strcmp(info.name, "SceNpDrm") == 0)
-			DACR_OFF(scenpdrm_code = (u32_t)info.segments[0].vaddr;);
+			scenpdrm_info = find_modinfo((u32_t)info.segments[0].vaddr, "SceNpDrm");
 		if (strcmp(info.name, "SceNetPs") == 0) {
 			scenet_code = (u32_t)info.segments[0].vaddr;
 			scenet_data = (u32_t)info.segments[1].vaddr;
@@ -619,13 +598,13 @@ void resolve_imports(unsigned sysmem_base) {
 	}
 
 	LOG("threadmgr_info: 0x%08x | sblauthmgr_info: 0x%08x | scenet_code: 0x%08x | scenet_data: 0x%08x\n", threadmgr_info, sblauthmgr_info, scenet_code, scenet_data);
-	LOG("scenpdrm_code: 0x%08x | scepower_code: 0x%08x\n", scenpdrm_code, scepower_code);
+	LOG("scenpdrm_info: 0x%08x | scepower_code: 0x%08x\n", scenpdrm_info, scepower_code);
 
 	LOG("Fixup: unlock SceNetPs global mutex ");
-	// 3.60
+	// BEGIN 3.60
 	int (*sce_psnet_bnet_mutex_unlock)() = (void*)(scenet_code + 0x2a098|1);
 	void *mutex = (void*)((u32_t)scenet_data + 0x850);
-	// end
+	// END 3.60
 	ret = sce_psnet_bnet_mutex_unlock(mutex);
 	LOG("=> ret = 0x%08x\n", ret);
 
@@ -643,7 +622,7 @@ void resolve_imports(unsigned sysmem_base) {
 		sceKernelStartThread_089 = find_export(threadmgr_info, 0x21F5419B);
 		sceKernelAllocMemBlockForKernel = find_export(sysmem_info, 0xC94850C9);
 		sceKernelGetMemBlockBaseForKernel = find_export(sysmem_info, 0xA841EDDA);
-		SceCpuForDriver_9CB9F0CE_flush_icache = find_export(sysmem_info, 0x9CB9F0CE);
+		SceCpuForDriver_19f17bd0_flush_icache = find_export(sysmem_info, 0x19f17bd0);
 		sceKernelCreateThreadForKernel = find_export(threadmgr_info, 0xC6674E7D);
 		sceKernelExitDeleteThread = find_export(threadmgr_info, 0x1D17DECF);
 		SceModulemgrForKernel_0xB427025E_set_syscall = find_export(modulemgr_info, 0xB427025E);
@@ -660,14 +639,20 @@ void resolve_imports(unsigned sysmem_base) {
 		aes_setkey = find_export(sysmem_info, 0xf12b6451);
 		aes_encrypt = find_export(sysmem_info, 0xC2A61770);
 		sblAimgrIsCEX = find_export(sysmem_info, 0xD78B04A2);
-		);
+		sceKernelLoadModuleWithoutStartForDriver = find_export(modulemgr_info, 0x86D8D634);
+		sceKernelStartModuleForDriver = find_export(modulemgr_info, 0x0675B682);
+		sceKernelLoadStartModuleForDriver = find_export(modulemgr_info, 0x189BFBBB);
+		sceNpDrmPackageCheck = find_export(scenpdrm_info, 0xA1D885FA);
+	);
 }
 
 void __attribute__ ((section (".text.start"))) payload(uint32_t sysmem_addr) {
 	// find sysmem base, etc
 	uint32_t sysmem_base = sysmem_addr;
 	uint32_t ret;
-	void (*debug_print_local)(char *s, ...) = (void*)(sysmem_base + 0x1A155); // 3.60
+	// BEGIN 3.60
+	void (*debug_print_local)(char *s, ...) = (void*)(sysmem_base + 0x1A155);
+	// END 3.60
 
 	DACR_OFF(
 		debug_print = debug_print_local;
@@ -681,9 +666,9 @@ void __attribute__ ((section (".text.start"))) payload(uint32_t sysmem_addr) {
 	#endif
 
 	resolve_imports(sysmem_base);
-	thread_main(sysmem_base);
-	patch_shell();
+	thread_main();
 	takeover_web_browser();
+	load_taihen();
 
 	LOG("Kill current thread =>");
 	LOG("sceKernelExitDeleteThread at 0x%08x\n", sceKernelExitDeleteThread);

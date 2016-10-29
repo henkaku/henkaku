@@ -20,6 +20,3 @@ STAGE2_URL_BASE="http://your_url_here.com/stage2.php"
 # the exploit was run with
 # If VERSION is 0, this is ignored and vitashell is always downloaded and installed
 SHELL_VERSION=0
-
-# Version of HENkaku to display in settings
-HEN_VERSION=4
