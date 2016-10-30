@@ -6,6 +6,7 @@
 #include <psp2/kernel/sysmem.h>
 #include <psp2/display.h>
 #include <psp2/io/fcntl.h>
+#include <psp2/io/stat.h>
 
 #include "promoterutil.h"
 #include "sysmodule_internal.h"
@@ -14,6 +15,16 @@
 
 #include "../../build/version.c"
 #include "../args.h"
+
+const char taihen_config[] = 
+	"# DO NOT MODIFY THIS, IT IS AUTO-GENERATED\n"
+	"# MODIFY ux0:data/tai/config.txt INSTEAD\n\n"
+	"*KERNEL\n"
+	"ux0:app/MLCL00001/henkaku.skprx\n"
+	"*SceShell\n"
+	"ux0:app/MLCL00001/henkaku.suprx\n"
+	"*SceSettings\n"
+	"ux0:app/MLCL00001/henkaku.suprx\n";
 
 typedef struct func_map {
 	struct args *args;
@@ -52,6 +63,10 @@ typedef struct func_map {
 	int (*sceIoClose)();
 	int (*sceIoMkdir)();
 	int (*sceIoRead)();
+	int (*sceIoRemove)();
+	int (*sceIoLseek)();
+	int (*sceIoGetstat)();
+	int (*sceIoChstat)();
 
 	int (*sceKernelGetModuleList)();
 	int (*sceKernelGetModuleInfo)();
@@ -158,6 +173,7 @@ int render_thread(int args, unsigned *argp) {
 	}
 }
 
+// BEGIN 3.60
 void resolve_functions(func_map *F) {
 	int ret;
 
@@ -223,6 +239,10 @@ void resolve_functions(func_map *F) {
 	F->sceIoClose = (void*)(SceLibKernel_base + 0x6A0C);
 	F->sceIoMkdir = (void*)(SceLibKernel_base + 0xA4F5);
 	F->sceIoRead = (void*)(SceLibKernel_base + 0x6A9C);
+	F->sceIoRemove = (void*)(SceLibKernel_base + 0xa4d5);
+	F->sceIoLseek = (void*)(SceLibKernel_base + 0xa4bd);
+	F->sceIoGetstat = (void*)(SceLibKernel_base + 0xa52d);
+	F->sceIoChstat = (void*)(SceLibKernel_base + 0xa53d);
 
 	F->scePromoterUtilityInit = (void*)(ScePromoterUtil_base + 0x1);
 	F->scePromoterUtilityExit = (void*)(ScePromoterUtil_base + 0xF);
@@ -232,6 +252,7 @@ void resolve_functions(func_map *F) {
 
 	F->sysmodule_svc_offset = SceCommonDialog_base + 0xC988;
 }
+// END 3.60
 
 #define PRINTF(fmt, ...) do { psvDebugScreenPrintf(F, F->base, &F->X, &F->Y, fmt, ##__VA_ARGS__); LOG(fmt, ##__VA_ARGS__); } while (0);
 
@@ -270,7 +291,7 @@ int download_file(func_map *F, const char *src, const char *dst) {
 	long long length = 0;
 	ret = F->sceHttpGetResponseContentLength(req, &length);
 
-	int fd = F->sceIoOpen(dst, SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC, 6);
+	int fd = F->sceIoOpen(dst, SCE_O_TRUNC | SCE_O_CREAT | SCE_O_WRONLY, 6);
 	int total_read = 0;
 	if (fd < 0) {
 		PRINTF("sceIoOpen: 0x%x\n", fd);
@@ -335,10 +356,11 @@ static void mkdirs(func_map *F, const char *dir) {
 	download_file(F, url, file_name); \
 } while(0);
 
-#define VERSION_TXT "ux0:app/MLCL00001/version.txt"
+#define SHELL_VERSION_TXT "ux0:app/MLCL00001/version.txt"
+#define TAIHEN_VERSION_TXT "ux0:tai/version.txt"
 
-unsigned get_version(func_map *F) {
-	int fd = F->sceIoOpen(VERSION_TXT, SCE_O_RDONLY);
+unsigned get_version(func_map *F, const char *path) {
+	int fd = F->sceIoOpen(path, SCE_O_RDONLY);
 	if (fd < 0)
 		return 0;
 	unsigned ver = 0;
@@ -347,8 +369,8 @@ unsigned get_version(func_map *F) {
 	return ver;
 }
 
-void set_version(func_map *F, unsigned version) {
-	int fd = F->sceIoOpen(VERSION_TXT, SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC, 6);
+void set_version(func_map *F, const char *path, unsigned version) {
+	int fd = F->sceIoOpen(path, SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC, 6);
 	if (fd < 0) {
 		PRINTF("Failed to open version.txt: 0x%x\n", fd);
 		return;
@@ -359,6 +381,23 @@ void set_version(func_map *F, unsigned version) {
 		return;
 	}
 	F->sceIoClose(fd);
+}
+
+static int exists(func_map *F, const char *path) {
+	int fd = F->sceIoOpen(path, SCE_O_RDONLY);
+	if (fd < 0)
+		return 0;
+	F->sceIoClose(fd);
+	return 1;
+}
+
+static int mark_world_readable(func_map *F, const char *path) {
+	SceIoStat stat;
+	int ret;
+	ret = F->sceIoGetstat(path, &stat);
+	stat.st_mode = 0x2186;
+	ret = F->sceIoChstat(path, &stat, 1);
+	return ret;
 }
 
 int install_pkg(func_map *F) {
@@ -382,6 +421,8 @@ int install_pkg(func_map *F) {
 	mkdirs(F, file_name);
 
 	GET_FILE("eboot.bin");
+	GET_FILE("henkaku.skprx");
+	GET_FILE("henkaku.suprx");
 	GET_FILE("sce_sys/param.sfo");
 	GET_FILE("sce_sys/icon0.png");
 	GET_FILE("sce_sys/package/head.bin");
@@ -446,12 +487,58 @@ int install_pkg(func_map *F) {
 	return ret;
 }
 
+int install_taihen(func_map *F) {
+	int ret;
+	const char *pkg_url_prefix;
+	const char *pkg_path = "ux0:tai";
+	char file_name[0x400] = {0};
+	char url[0x400] = {0};
+
+	pkg_url_prefix = F->args->pkg_url_prefix;
+
+	// this is to get random directory
+	LOG("taiHEN install directory: %s\n", pkg_path);
+
+	// create directory structure
+	mkdirs(F, pkg_path);
+
+	F->sceIoRemove("ux0:tai/taihen.skprx");
+
+	GET_FILE("taihen.skprx");
+	mark_world_readable(F, "ux0:tai/taihen.skprx");
+
+	if (exists(F, "ux0:tai/taihen.skprx")) {
+		return 0;
+	} else {
+		return -1;
+	}
+}
+
+int write_taihen_config(func_map *F) {
+	int fd;
+
+	// write default config
+	F->sceIoRemove("ux0:tai/config.txt");
+	fd = F->sceIoOpen("ux0:tai/config.txt", SCE_O_TRUNC | SCE_O_CREAT | SCE_O_WRONLY, 6);
+	F->sceIoWrite(fd, taihen_config, sizeof(taihen_config));
+	F->sceIoClose(fd);
+	mark_world_readable(F, "ux0:tai/config.txt");
+
+	return 0;
+}
+
+int verify_taihen(func_map *F) {
+	write_taihen_config(F);
+	return 1; // TODO: implement checks
+}
+
 void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *argp) {
 	int ret;
 	struct func_map FF = {0};
 	FF.args = (struct args *)argp;
 	resolve_functions(&FF);
 	struct func_map *F = &FF;
+	int tries = 0;
 
 	F->fg_color = 0xFFFFFFFF;
 	F->Y = 36; // make sure text starts below the status bar
@@ -521,23 +608,69 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 	PRINTF("\n");
 	PRINTF("This is the offline version of the exploit.\n");
 	PRINTF("Please make sure to keep it up to date by running offlineInstaller when you are online.\n");
-	ret = 0;
-	#else
-	// check if we actually need to install the package
-	if (SHELL_VERSION == 0 || get_version(F) < SHELL_VERSION) {
-		ret = install_pkg(F);
-		set_version(F, SHELL_VERSION);
+	// verify installation
+	if (verify_taihen(F) < 0) {
+		F->fg_color = 0xFF0000FF;
+		PRINTF("ERROR: taiHENkaku files are corrupted, please reinstall online.\n");
+		F->fg_color = 0xFFFFFFFF;
+		set_version(F, SHELL_VERSION_TXT, 0);
+		set_version(F, TAIHEN_VERSION_TXT, 0);
+		sceIoRemove("ux0:tai/taihen.skprx");
+		sceIoRemove("ux0:app/MLCL00001/henkaku.skprx");
+		ret = -1;
 	} else {
-		PRINTF("molecularShell already installed and is the latest version\n");
-		PRINTF("(if you want to force reinstall, remove its bubble and restart the exploit)\n");
 		ret = 0;
 	}
+	#else
+	do {
+		// check if we actually need to install the package
+		if (TAIHEN_VERSION == 0 || get_version(F, TAIHEN_VERSION_TXT) < TAIHEN_VERSION) {
+			ret = install_taihen(F);
+			set_version(F, TAIHEN_VERSION_TXT, TAIHEN_VERSION);
+		} else {
+			PRINTF("taiHEN already installed and is the latest version\n");
+			ret = 0;
+		}
+		if (ret < 0) {
+			F->fg_color = 0xFF0000FF;
+			PRINTF("HENkaku failed to install taiHEN: error code 0x%x, retrying (%d tries left)...", ret, tries);
+			F->fg_color = 0xFFFFFFFF;
+			continue;
+		}
+		// check if we actually need to install the package
+		if (SHELL_VERSION == 0 || get_version(F, SHELL_VERSION_TXT) < SHELL_VERSION) {
+			ret = install_pkg(F);
+			set_version(F, SHELL_VERSION_TXT, SHELL_VERSION);
+		} else {
+			PRINTF("molecularShell already installed and is the latest version\n");
+			PRINTF("(if you want to force reinstall, remove its bubble and restart the exploit)\n");
+			ret = 0;
+		}
+		if (ret < 0) {
+			F->fg_color = 0xFF0000FF;
+			PRINTF("HENkaku failed to install pkg: error code 0x%x, retrying (%d tries left)...", ret, tries);
+			F->fg_color = 0xFFFFFFFF;
+			continue;
+		}
+		// verify installation
+		if (verify_taihen(F) < 0) {
+			F->fg_color = 0xFF0000FF;
+			PRINTF("ERROR: taiHENkaku files are corrupted, trying to reinstall (%d tries left)...\n", tries);
+			F->fg_color = 0xFFFFFFFF;
+			set_version(F, SHELL_VERSION_TXT, 0);
+			set_version(F, TAIHEN_VERSION_TXT, 0);
+			sceIoRemove("ux0:tai/taihen.skprx");
+			sceIoRemove("ux0:app/MLCL00001/henkaku.skprx");
+		} else {
+			break;
+		}
+	} while (tries-- > 0);
 	#endif
 
 	PRINTF("\n\n");
 	if (ret < 0) {
 		F->fg_color = 0xFF0000FF;
-		PRINTF("HENkaku failed to install the pkg: error code 0x%x\n", ret);
+		PRINTF("HENkaku failed to install: error code 0x%x\n", ret);
 	} else {
 		F->fg_color = 0xFF00FF00;
 		PRINTF("HENkaku was successfully installed\n");
@@ -548,7 +681,7 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 	F->sceKernelDelayThread(3 * 1000 * 1000);
 
 	while (1) {
-		F->kill_me();
+		F->kill_me(ret);
 		F->sceKernelDelayThread(100 * 1000);
 	}
 }

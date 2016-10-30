@@ -14,9 +14,9 @@ fi
 
 source $1
 
-if [ -z "$RELEASE" ] || [ -z "$PKG_URL_PREFIX" ] || [ -z "$STAGE2_URL_BASE" ] || [ -z "$SHELL_VERSION" ]; then
+if [ -z "$RELEASE" ] || [ -z "$PKG_URL_PREFIX" ] || [ -z "$STAGE2_URL_BASE" ] || [ -z "$SHELL_VERSION" ]  || [ -z "$TAIHEN_VERSION" ]; then
 	echo "Please make sure all of the following variables are defined in your config file:"
-	echo "RELEASE, PKG_URL_PREFIX, STAGE2_URL_BASE, SHELL_VERSION"
+	echo "RELEASE, PKG_URL_PREFIX, STAGE2_URL_BASE, SHELL_VERSION, TAIHEN_VERSION"
 	echo "(see sample.config.in for an example)"
 	exit 2
 fi
@@ -42,6 +42,7 @@ echo "#define BUILD_VERSION \"$BUILD_VERSION\"" >> build/version.c
 echo "#define BUILD_DATE \"$BUILD_DATE\"" >> build/version.c
 echo "#define BUILD_HOST \"$BUILD_HOST\"" >> build/version.c
 echo "#define SHELL_VERSION $SHELL_VERSION" >> build/version.c
+echo "#define TAIHEN_VERSION $TAIHEN_VERSION" >> build/version.c
 
 PAYLOAD_KEY=c787069478255b5051727bc3fdecff1a
 

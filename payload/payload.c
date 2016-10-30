@@ -254,9 +254,10 @@ void (*aes_encrypt)(void *ctx, void *src, void *dst) = 0;
 int (*sceKernelLoadModuleWithoutStartForDriver)(const char *path, int flags, int *opt) = 0;
 int (*sceKernelStartModuleForDriver)(int modid, int argc, void *args, int flags, void *opt, int *res) = 0;
 int (*sceKernelLoadStartModuleForDriver)(const char *path, int argc, void *args, int flags) = 0;
-int (*sceNpDrmPackageCheck)(int r0, int r1, int r2, int r3) = 0;
+int (*SceCpuForDriver_9CB9F0CE_flush_dcache)(uint32_t addr, int len) = 0;
 
 module_info_t *modulemgr_info;
+module_info_t *scenpdrm_info = 0;
 unsigned modulemgr_base = 0;
 unsigned modulemgr_data = 0;
 int pid = 0, ppid = 0, shell_pid = 0;
@@ -294,9 +295,9 @@ int hook_sharedfb_update_end(int r0, int r1, int r2, int r3)
 	return 0;
 }
 
-int sceNpDrmPackageCheckPatched(int r0, int r1, int r2, int r3)
+int hook_SceSblAIMgrForDriver_D78B04A2(void)
 {
-	return 0;
+	return 1;
 }
 
 // setup file decryption
@@ -362,6 +363,7 @@ void patch_syscall(u32_t addr, void *function)
 		if (syscall_table[i] == addr)
 		{
 			SceModulemgrForKernel_0xB427025E_set_syscall(i, function);
+			LOG("found syscall %x for %p\n", i, addr);
 		}
 	}
 }
@@ -375,51 +377,102 @@ void patch_syscall(u32_t addr, void *function)
 #include "../build/user.h"
 #endif
 
-void temp_patches(void) {
+char old_sbl_F3411881[16];
+char old_sbl_89CCDA2C[16];
+char old_sbl_BC422443[16];
+char old_sblai_D78B04A2[16];
+
+void temp_pkgpatches(void) {
+	void *addr;
+	LOG("inserting temporary patches\n");
+	addr = find_import(scenpdrm_info, 0xFD00C69A, 0xD78B04A2);
+	LOG("sblai_D78B04A2 stub: %p\n", addr);
+	DACR_OFF(
+		memcpy(old_sblai_D78B04A2, addr, 16);
+		INSTALL_HOOK(hook_SceSblAIMgrForDriver_D78B04A2, addr);
+		SceCpuForDriver_19f17bd0_flush_icache((uint32_t)addr & ~0x1F, 0x20);
+		SceCpuForDriver_9CB9F0CE_flush_dcache((uint32_t)addr & ~0x1F, 0x20);
+	);
+	LOG("hooked sblai_D78B04A2\n");
+}
+
+void remove_pkgpatches(void) {
+	void *addr;
+	LOG("removing temporary patches\n");
+	addr = find_import(scenpdrm_info, 0xFD00C69A, 0xD78B04A2);
+	LOG("sblai_D78B04A2 stub: %p\n", addr);
+	DACR_OFF(
+		memcpy(addr, old_sblai_D78B04A2, 16);
+		SceCpuForDriver_19f17bd0_flush_icache((uint32_t)addr & ~0x1F, 0x20);
+		SceCpuForDriver_9CB9F0CE_flush_dcache((uint32_t)addr & ~0x1F, 0x20);
+	);
+	LOG("unhooked sblai_D78B04A2\n");
+}
+
+void temp_sigpatches(void) {
 	void *addr;
 	LOG("inserting temporary patches\n");
 	addr = find_import(modulemgr_info, 0x7ABF5135, 0xF3411881);
 	LOG("sbl_F3411881 stub: %p\n", addr);
-	DACR_OFF(INSTALL_HOOK(hook_sbl_F3411881, addr));
-	SceCpuForDriver_19f17bd0_flush_icache((uint32_t)addr & ~0x1F, 0x40);
+	DACR_OFF(
+		memcpy(old_sbl_F3411881, addr, 16);
+		INSTALL_HOOK(hook_sbl_F3411881, addr);
+		SceCpuForDriver_19f17bd0_flush_icache((uint32_t)addr & ~0x1F, 0x20);
+		SceCpuForDriver_9CB9F0CE_flush_dcache((uint32_t)addr & ~0x1F, 0x20);
+	);
 	LOG("hooked sbl_F3411881\n");
 	addr = find_import(modulemgr_info, 0x7ABF5135, 0x89CCDA2C);
 	LOG("sbl_89CCDA2C stub: %p\n", addr);
-	DACR_OFF(INSTALL_HOOK(hook_sbl_89CCDA2C, addr));
-	SceCpuForDriver_19f17bd0_flush_icache((uint32_t)addr & ~0x1F, 0x40);
+	DACR_OFF(memcpy(old_sbl_89CCDA2C, addr, 16));
+	DACR_OFF(
+		memcpy(old_sbl_89CCDA2C, addr, 16);
+		INSTALL_HOOK(hook_sbl_89CCDA2C, addr);
+		SceCpuForDriver_19f17bd0_flush_icache((uint32_t)addr & ~0x1F, 0x20);
+		SceCpuForDriver_9CB9F0CE_flush_dcache((uint32_t)addr & ~0x1F, 0x20);
+	);
 	LOG("hooked sbl_89CCDA2C\n");
 	addr = find_import(modulemgr_info, 0x7ABF5135, 0xBC422443);
 	LOG("sbl_BC422443 stub: %p\n", addr);
-	DACR_OFF(INSTALL_HOOK(hook_sbl_BC422443, addr));
-	SceCpuForDriver_19f17bd0_flush_icache((uint32_t)addr & ~0x1F, 0x40);
+	DACR_OFF(
+		memcpy(old_sbl_BC422443, addr, 16);
+		INSTALL_HOOK(hook_sbl_BC422443, addr);
+		SceCpuForDriver_19f17bd0_flush_icache((uint32_t)addr & ~0x1F, 0x20);
+		SceCpuForDriver_9CB9F0CE_flush_dcache((uint32_t)addr & ~0x1F, 0x20);
+	);
 	LOG("hooked sbl_BC422443\n");
 }
 
-void remove_patches(void) {
+void remove_sigpatches(void) {
 	void *addr;
 	LOG("removing temporary patches\n");
 	addr = find_import(modulemgr_info, 0x7ABF5135, 0xF3411881);
 	LOG("sbl_F3411881 stub: %p\n", addr);
-	DACR_OFF(INSTALL_HOOK(hook_resume_sbl_F3411881, addr));
-	SceCpuForDriver_19f17bd0_flush_icache((uint32_t)addr & ~0x1F, 0x40);
+	DACR_OFF(
+		memcpy(addr, old_sbl_F3411881, 16);
+		SceCpuForDriver_19f17bd0_flush_icache((uint32_t)addr & ~0x1F, 0x20);
+		SceCpuForDriver_9CB9F0CE_flush_dcache((uint32_t)addr & ~0x1F, 0x20);
+	);
 	LOG("unhooked sbl_F3411881\n");
 	addr = find_import(modulemgr_info, 0x7ABF5135, 0x89CCDA2C);
 	LOG("sbl_89CCDA2C stub: %p\n", addr);
-	DACR_OFF(INSTALL_HOOK(hook_resume_sbl_89CCDA2C, addr));
-	SceCpuForDriver_19f17bd0_flush_icache((uint32_t)addr & ~0x1F, 0x40);
+	DACR_OFF(
+		memcpy(addr, old_sbl_89CCDA2C, 16);
+		SceCpuForDriver_19f17bd0_flush_icache((uint32_t)addr & ~0x1F, 0x20);
+		SceCpuForDriver_9CB9F0CE_flush_dcache((uint32_t)addr & ~0x1F, 0x20);
+	);
 	LOG("unhooked sbl_89CCDA2C\n");
 	addr = find_import(modulemgr_info, 0x7ABF5135, 0xBC422443);
 	LOG("sbl_BC422443 stub: %p\n", addr);
-	DACR_OFF(INSTALL_HOOK(hook_resume_sbl_BC422443, addr));
-	SceCpuForDriver_19f17bd0_flush_icache((uint32_t)addr & ~0x1F, 0x40);
+	DACR_OFF(
+		memcpy(addr, old_sbl_BC422443, 16);
+		SceCpuForDriver_19f17bd0_flush_icache((uint32_t)addr & ~0x1F, 0x20);
+		SceCpuForDriver_9CB9F0CE_flush_dcache((uint32_t)addr & ~0x1F, 0x20);
+	);
 	LOG("unhooked sbl_BC422443\n");
 }
 
 void thread_main(void) {
 	unsigned ret;
-
-	// homebrew enable
-	temp_patches();
 
 	// takeover the web browser or email if offline
 
@@ -454,7 +507,7 @@ void thread_main(void) {
 	}
 }
 
-void takeover_web_browser() {
+int takeover_web_browser() {
 	unsigned ret;
 	unsigned base = 0;
 #ifdef OFFLINE
@@ -482,7 +535,7 @@ void takeover_web_browser() {
 	patch_syscall(sharedfb_update_end, hook_sharedfb_update_end);
 	patch_syscall((u32_t)sceDisplaySetFrameBufInternal, sceDisplaySetFrameBufInternalPatched);
 	patch_syscall((u32_t)sceDisplayGetFrameBufInternal, sceDisplayGetFrameBufInternalPatched);
-	patch_syscall((u32_t)sceNpDrmPackageCheck, sceNpDrmPackageCheckPatched);
+	temp_pkgpatches();
 
 	// inject the code
 	LOG("injecting code to pid 0x%x at 0x%x\n", ppid, base);
@@ -513,21 +566,24 @@ void takeover_web_browser() {
 	sceKernelWaitThreadEndForKernel(thread, &status, NULL);
 
 	// undo patches
-	patch_syscall((u32_t)sceNpDrmPackageCheckPatched, sceNpDrmPackageCheck);
+	remove_pkgpatches();
 	patch_syscall((u32_t)sceDisplaySetFrameBufInternalPatched, sceDisplaySetFrameBufInternal);
 	patch_syscall((u32_t)sceDisplayGetFrameBufInternalPatched, sceDisplayGetFrameBufInternal);
 	patch_syscall((u32_t)hook_sharedfb_update_begin, (void *)sharedfb_update_begin);
 	patch_syscall((u32_t)hook_sharedfb_update_process, (void *)sharedfb_update_process);
 	patch_syscall((u32_t)hook_sharedfb_update_end, (void *)sharedfb_update_end);
+
+	return status;
 }
 
 void load_taihen(void) {
 	unsigned opt, modid, ret, result;
 	// load taiHEN
+	temp_sigpatches();
 	opt = 4;
 	modid = sceKernelLoadModuleWithoutStartForDriver("ux0:tai/taihen.skprx", 0, &opt);
 	LOG("LoadTaiHen: 0x%08X\n", modid);
-	remove_patches();
+	remove_sigpatches();
 	LOG("Removed temp patches\n");
 	ret = sceKernelStartModuleForDriver(modid, 0, NULL, 0, NULL, &result);
 	LOG("StartTaiHen: 0x%08X, 0x%08X\n", ret, result);
@@ -565,7 +621,7 @@ void resolve_imports(unsigned sysmem_base) {
 	ret = sceKernelGetModuleListForKernel(0x10005, 0x7FFFFFFF, 1, modlist, &modlist_records);
 	LOG("sceKernelGetModuleList() returned 0x%x\n", ret);
 	LOG("modlist_records: %d\n", modlist_records);
-		module_info_t *threadmgr_info = 0, *sblauthmgr_info = 0, *processmgr_info = 0, *display_info = 0, *appmgr_info = 0, *scenpdrm_info = 0;
+		module_info_t *threadmgr_info = 0, *sblauthmgr_info = 0, *processmgr_info = 0, *display_info = 0, *appmgr_info = 0;
 	u32_t scenet_code = 0, scenet_data = 0;
 	for (int i = 0; i < modlist_records; ++i) {
 		info.size = sizeof(info);
@@ -575,7 +631,7 @@ void resolve_imports(unsigned sysmem_base) {
 		if (strcmp(info.name, "SceSblAuthMgr") == 0)
 			sblauthmgr_info = find_modinfo((u32_t)info.segments[0].vaddr, "SceSblAuthMgr");
 		if (strcmp(info.name, "SceNpDrm") == 0)
-			scenpdrm_info = find_modinfo((u32_t)info.segments[0].vaddr, "SceNpDrm");
+			DACR_OFF(scenpdrm_info = find_modinfo((u32_t)info.segments[0].vaddr, "SceNpDrm"));
 		if (strcmp(info.name, "SceNetPs") == 0) {
 			scenet_code = (u32_t)info.segments[0].vaddr;
 			scenet_data = (u32_t)info.segments[1].vaddr;
@@ -642,14 +698,14 @@ void resolve_imports(unsigned sysmem_base) {
 		sceKernelLoadModuleWithoutStartForDriver = find_export(modulemgr_info, 0x86D8D634);
 		sceKernelStartModuleForDriver = find_export(modulemgr_info, 0x0675B682);
 		sceKernelLoadStartModuleForDriver = find_export(modulemgr_info, 0x189BFBBB);
-		sceNpDrmPackageCheck = find_export(scenpdrm_info, 0xA1D885FA);
+		SceCpuForDriver_9CB9F0CE_flush_dcache = find_export(sysmem_info, 0x9CB9F0CE);
 	);
 }
 
 void __attribute__ ((section (".text.start"))) payload(uint32_t sysmem_addr) {
 	// find sysmem base, etc
 	uint32_t sysmem_base = sysmem_addr;
-	uint32_t ret;
+	int ret;
 	// BEGIN 3.60
 	void (*debug_print_local)(char *s, ...) = (void*)(sysmem_base + 0x1A155);
 	// END 3.60
@@ -667,8 +723,11 @@ void __attribute__ ((section (".text.start"))) payload(uint32_t sysmem_addr) {
 
 	resolve_imports(sysmem_base);
 	thread_main();
-	takeover_web_browser();
-	load_taihen();
+	ret = takeover_web_browser();
+	if (ret == 0)
+		load_taihen();
+	else
+		LOG("skipping taihen loading\n");
 
 	LOG("Kill current thread =>");
 	LOG("sceKernelExitDeleteThread at 0x%08x\n", sceKernelExitDeleteThread);
