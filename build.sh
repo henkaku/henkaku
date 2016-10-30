@@ -14,9 +14,9 @@ fi
 
 source $1
 
-if [ -z "$RELEASE" ] || [ -z "$PKG_URL_PREFIX" ] || [ -z "$STAGE2_URL_BASE" ] || [ -z "$SHELL_VERSION" ]  || [ -z "$TAIHEN_VERSION" ]; then
+if [ -z "$RELEASE" ] || [ -z "$PKG_URL_PREFIX" ] || [ -z "$STAGE2_URL_BASE" ] || [ -z "$SHELL_VERSION" ] || [ -z "$TAIHEN_VERSION" ] || [ -z "$TAIHEN_CRC32" ]; then
 	echo "Please make sure all of the following variables are defined in your config file:"
-	echo "RELEASE, PKG_URL_PREFIX, STAGE2_URL_BASE, SHELL_VERSION, TAIHEN_VERSION"
+	echo "RELEASE, PKG_URL_PREFIX, STAGE2_URL_BASE, SHELL_VERSION, TAIHEN_VERSION, TAIHEN_CRC32"
 	echo "(see sample.config.in for an example)"
 	exit 2
 fi
@@ -32,7 +32,18 @@ DEFINES="-DRELEASE=$RELEASE"
 PREPROCESS="$CC -E -P -C -w -x c $DEFINES"
 CFLAGS="-fPIE -fno-zero-initialized-in-bss -std=c99 -mcpu=cortex-a9 -Os -mthumb $DEFINES"
 
-echo "0) User payload"
+echo "0) taiHEN plugin"
+
+mkdir build/plugin
+pushd build/plugin
+cmake ../../plugin
+make
+popd
+cp build/plugin/henkaku.skprx output/henkaku.skprx
+cp build/plugin/henkaku.suprx output/henkaku.suprx
+HENKAKU_CRC32=$(crc32 output/henkaku.skprx)
+
+echo "1) User payload"
 
 # generate version stuffs
 BUILD_VERSION=$(git describe --dirty --always --tags)
@@ -43,17 +54,20 @@ echo "#define BUILD_DATE \"$BUILD_DATE\"" >> build/version.c
 echo "#define BUILD_HOST \"$BUILD_HOST\"" >> build/version.c
 echo "#define SHELL_VERSION $SHELL_VERSION" >> build/version.c
 echo "#define TAIHEN_VERSION $TAIHEN_VERSION" >> build/version.c
+echo "#define TAIHEN_CRC32 $TAIHEN_CRC32" >> build/version.c
+echo "#define HENKAKU_CRC32 0x$HENKAKU_CRC32" >> build/version.c
 
 PAYLOAD_KEY=c787069478255b5051727bc3fdecff1a
 
 # user payload is injected into web browser process
 $CC -c -o build/user.o payload/user/user.c $CFLAGS
 $CC -c -o build/compress.o payload/user/compress.c $CFLAGS
-$LD -o build/user.elf build/user.o build/compress.o -lgcc $LDFLAGS
+$CC -c -o build/crc32.o payload/user/crc32.c $CFLAGS
+$LD -o build/user.elf build/user.o build/compress.o build/crc32.o -lgcc $LDFLAGS
 $OBJCOPY -O binary build/user.elf build/user.bin
 xxd -i build/user.bin > build/user.h
 
-echo "1) Payload"
+echo "2) Payload"
 
 # loader decrypts and lods a larger payload
 $CC -c -o build/loader.o payload/loader.c $CFLAGS
@@ -82,7 +96,7 @@ openssl enc -aes-128-ecb -in build/payload.bin -nopad -out build/payload.enc -K 
 
 ./payload/write_pkg_url.py build/payload.enc $PKG_URL_PREFIX
 
-echo "2) Kernel ROP"
+echo "3) Kernel ROP"
 if [ "x$KROP_PREBUILT" == "x" ]; then
   ./krop/build_rop.py krop/rop.S build/
 else
@@ -90,7 +104,7 @@ else
   cp $KROP_PREBUILT build/krop.rop
 fi
 
-echo "3) User ROP"
+echo "4) User ROP"
 echo "symbol stage2_url_base = \"$STAGE2_URL_BASE\";" > build/config.rop
 
 ./urop/make_rop_array.py build/loader.enc kx_loader build/kx_loader.rop
@@ -104,7 +118,7 @@ $PREPROCESS urop/loader.rop.in -o build/loader.rop.in
 erb build/loader.rop.in > build/loader.rop
 roptool -s build/loader.rop -t urop/webkit-360-pkg -o build/loader.rop.bin >/dev/null
 
-echo "4) Webkit"
+echo "5) Webkit"
 # Static website
 $PREPROCESS webkit/exploit.js -DSTATIC=1 -o build/exploit.static.js
 uglifyjs build/exploit.static.js -m "toplevel" > build/exploit.js
@@ -126,12 +140,12 @@ cp output/static/payload.bin output/dynamic/stage2.bin
 cp webkit/stage2.php output/dynamic/stage2.php
 cp webkit/stage2.go output/dynamic/stage2.go
 
-echo "5) Offline"
+echo "6) Offline"
 mkdir -p build/offline output/offline
 
 # offline user-mode is different
 $CC -c -o build/offline/user.o payload/user/user.c $CFLAGS -DOFFLINE=1
-$LD -o build/offline/user.elf build/offline/user.o build/compress.o -lgcc $LDFLAGS
+$LD -o build/offline/user.elf build/offline/user.o build/compress.o build/crc32.o -lgcc $LDFLAGS
 $OBJCOPY -O binary build/offline/user.elf build/offline/user.bin
 xxd -i build/offline/user.bin > build/offline/user.h
 

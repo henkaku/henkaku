@@ -20,3 +20,6 @@ SHELL_VERSION=9
 
 # Version of taiHEN, set to 0 to always download
 TAIHEN_VERSION=1
+
+# CRC of taiHEN for basic checks, set to 0 to disable checks
+TAIHEN_CRC32=0xd8ae23ec

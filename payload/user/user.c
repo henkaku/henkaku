@@ -16,6 +16,8 @@
 #include "../../build/version.c"
 #include "../args.h"
 
+#define INSTALL_ATTEMPTS 5
+
 const char taihen_config[] = 
 	"# DO NOT MODIFY THIS, IT IS AUTO-GENERATED\n"
 	"# MODIFY ux0:data/tai/config.txt INSTEAD\n\n"
@@ -527,9 +529,35 @@ int write_taihen_config(func_map *F) {
 	return 0;
 }
 
+static uint32_t crc32_file(func_map *F, const char *path) {
+	uint32_t crc;
+	char buffer[1024];
+	int fd;
+	int rd;
+	crc = 0;
+	fd = F->sceIoOpen(path, SCE_O_RDONLY, 0);
+	if (fd < 0) return 0;
+	while ((rd = F->sceIoRead(fd, buffer, 1024)) > 0) {
+		crc = crc32(crc, buffer, rd);
+	}
+	F->sceIoClose(fd);
+	return crc;
+}
+
 int verify_taihen(func_map *F) {
-	write_taihen_config(F);
-	return 1; // TODO: implement checks
+	uint32_t crc;
+	if (TAIHEN_CRC32 > 0) {
+		crc = crc32_file(F, "ux0:tai/taihen.skprx");
+		PRINTF("taihen.skprx CRC32: 0x%08X\n", crc);
+		if (crc != TAIHEN_CRC32) return -1;
+		write_taihen_config(F);
+	}
+	if (HENKAKU_CRC32 > 0) {
+		crc = crc32_file(F, "ux0:app/MLCL00001/henkaku.skprx");
+		PRINTF("henkaku.skprx CRC32: 0x%08X\n", crc);
+		if (crc != HENKAKU_CRC32) return -1;
+	}
+	return 1;
 }
 
 void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *argp) {
@@ -538,7 +566,7 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 	FF.args = (struct args *)argp;
 	resolve_functions(&FF);
 	struct func_map *F = &FF;
-	int tries = 0;
+	int tries = INSTALL_ATTEMPTS;
 
 	F->fg_color = 0xFFFFFFFF;
 	F->Y = 36; // make sure text starts below the status bar
@@ -615,8 +643,8 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 		F->fg_color = 0xFFFFFFFF;
 		set_version(F, SHELL_VERSION_TXT, 0);
 		set_version(F, TAIHEN_VERSION_TXT, 0);
-		sceIoRemove("ux0:tai/taihen.skprx");
-		sceIoRemove("ux0:app/MLCL00001/henkaku.skprx");
+		F->sceIoRemove("ux0:tai/taihen.skprx");
+		F->sceIoRemove("ux0:app/MLCL00001/henkaku.skprx");
 		ret = -1;
 	} else {
 		ret = 0;
@@ -659,8 +687,8 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 			F->fg_color = 0xFFFFFFFF;
 			set_version(F, SHELL_VERSION_TXT, 0);
 			set_version(F, TAIHEN_VERSION_TXT, 0);
-			sceIoRemove("ux0:tai/taihen.skprx");
-			sceIoRemove("ux0:app/MLCL00001/henkaku.skprx");
+			F->sceIoRemove("ux0:tai/taihen.skprx");
+			F->sceIoRemove("ux0:app/MLCL00001/henkaku.skprx");
 		} else {
 			break;
 		}
