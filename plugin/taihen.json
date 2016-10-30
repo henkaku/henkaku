@@ -1,0 +1,40 @@
+{
+  "taiHEN": {
+    "nid": 1576460514,
+    "modules": {
+      "taiHEN": {
+        "nid": 3593704605,
+        "kernel": false,
+        "functions": {
+          "taiHookFunctionExport": 4097704567,
+          "taiHookFunctionImport": 609792291,
+          "taiHookFunctionOffset": 3521989062,
+          "taiGetModuleInfo": 2777256836,
+          "taiHookRelease": 472967065,
+          "taiInjectAbs": 1247316228,
+          "taiInjectData": 2901348486,
+          "taiInjectRelease": 564447398
+        },
+        "variables": {
+        }
+      }, 
+      "taiHENForKernel": {
+        "nid": 2909511371,
+        "kernel": true,
+        "functions": {
+          "taiHookFunctionAbs": 3605329551,
+          "taiHookFunctionExportForKernel": 1171062720,
+          "taiHookFunctionImportForKernel": 1159321730,
+          "taiHookFunctionOffsetForKernel": 2402393463,
+          "taiGetModuleInfoForKernel": 1855132055,
+          "taiHookReleaseForKernel": 3525736650,
+          "taiInjectAbsForKernel": 4230976111,
+          "taiInjectDataForKernel": 2678390840,
+          "taiInjectReleaseForKernel": 1371225801
+        },
+        "variables": {
+        }
+      }
+    }
+  }
+}

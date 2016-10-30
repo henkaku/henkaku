@@ -513,7 +513,6 @@ int install_taihen(func_map *F) {
 	F->sceIoRemove("ux0:tai/taihen.skprx");
 
 	GET_FILE("taihen.skprx");
-	mark_world_readable(F, "ux0:tai/taihen.skprx");
 
 	if (exists(F, "ux0:tai/taihen.skprx")) {
 		return 0;
@@ -530,7 +529,6 @@ int write_taihen_config(func_map *F) {
 	fd = F->sceIoOpen("ux0:tai/config.txt", SCE_O_TRUNC | SCE_O_CREAT | SCE_O_WRONLY, 6);
 	F->sceIoWrite(fd, taihen_config, sizeof(taihen_config));
 	F->sceIoClose(fd);
-	mark_world_readable(F, "ux0:tai/config.txt");
 
 	return 0;
 }
@@ -552,13 +550,11 @@ static uint32_t crc32_file(func_map *F, const char *path) {
 
 int verify_taihen(func_map *F) {
 	uint32_t crc;
-	if (TAIHEN_CRC32 > 0) {
+	if (TAIHEN_CRC32 > 0) { // 0 skips checks
 		crc = crc32_file(F, "ux0:tai/taihen.skprx");
 		PRINTF("taihen.skprx CRC32: 0x%08X\n", crc);
 		if (crc != TAIHEN_CRC32) return -1;
 		write_taihen_config(F);
-	}
-	if (HENKAKU_CRC32 > 0) {
 		crc = crc32_file(F, "ux0:app/MLCL00001/henkaku.skprx");
 		PRINTF("henkaku.skprx CRC32: 0x%08X\n", crc);
 		if (crc != HENKAKU_CRC32) return -1;

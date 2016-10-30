@@ -255,6 +255,7 @@ int (*sceKernelLoadModuleWithoutStartForDriver)(const char *path, int flags, int
 int (*sceKernelStartModuleForDriver)(int modid, int argc, void *args, int flags, void *opt, int *res) = 0;
 int (*sceKernelLoadStartModuleForDriver)(const char *path, int argc, void *args, int flags) = 0;
 int (*SceCpuForDriver_9CB9F0CE_flush_dcache)(uint32_t addr, int len) = 0;
+int (*sceKernelDeleteThreadForKernel)(int tid) = 0;
 
 module_info_t *modulemgr_info;
 module_info_t *scenpdrm_info = 0;
@@ -394,6 +395,8 @@ void temp_pkgpatches(void) {
 		SceCpuForDriver_9CB9F0CE_flush_dcache((uint32_t)addr & ~0x1F, 0x20);
 	);
 	LOG("hooked sblai_D78B04A2\n");
+
+	__asm__ volatile ("isb" ::: "memory");
 }
 
 void remove_pkgpatches(void) {
@@ -407,6 +410,8 @@ void remove_pkgpatches(void) {
 		SceCpuForDriver_9CB9F0CE_flush_dcache((uint32_t)addr & ~0x1F, 0x20);
 	);
 	LOG("unhooked sblai_D78B04A2\n");
+
+	__asm__ volatile ("isb" ::: "memory");
 }
 
 void temp_sigpatches(void) {
@@ -440,6 +445,8 @@ void temp_sigpatches(void) {
 		SceCpuForDriver_9CB9F0CE_flush_dcache((uint32_t)addr & ~0x1F, 0x20);
 	);
 	LOG("hooked sbl_BC422443\n");
+
+	__asm__ volatile ("isb" ::: "memory");
 }
 
 void remove_sigpatches(void) {
@@ -469,6 +476,8 @@ void remove_sigpatches(void) {
 		SceCpuForDriver_9CB9F0CE_flush_dcache((uint32_t)addr & ~0x1F, 0x20);
 	);
 	LOG("unhooked sbl_BC422443\n");
+
+	__asm__ volatile ("isb" ::: "memory");
 }
 
 void thread_main(void) {
@@ -564,6 +573,7 @@ int takeover_web_browser() {
 
 	int status = 0;
 	sceKernelWaitThreadEndForKernel(thread, &status, NULL);
+	sceKernelDeleteThreadForKernel(thread);
 
 	// undo patches
 	remove_pkgpatches();
@@ -576,7 +586,7 @@ int takeover_web_browser() {
 	return status;
 }
 
-void load_taihen(void) {
+int load_taihen(int args, void *argp) {
 	unsigned opt, modid, ret, result;
 	// load taiHEN
 	temp_sigpatches();
@@ -587,6 +597,7 @@ void load_taihen(void) {
 	LOG("Removed temp patches\n");
 	ret = sceKernelStartModuleForDriver(modid, 0, NULL, 0, NULL, &result);
 	LOG("StartTaiHen: 0x%08X, 0x%08X\n", ret, result);
+	return ret;
 }
 
 void resolve_imports(unsigned sysmem_base) {
@@ -699,6 +710,7 @@ void resolve_imports(unsigned sysmem_base) {
 		sceKernelStartModuleForDriver = find_export(modulemgr_info, 0x0675B682);
 		sceKernelLoadStartModuleForDriver = find_export(modulemgr_info, 0x189BFBBB);
 		SceCpuForDriver_9CB9F0CE_flush_dcache = find_export(sysmem_info, 0x9CB9F0CE);
+		sceKernelDeleteThreadForKernel = find_export(threadmgr_info, 0xac834f3f);
 	);
 }
 
@@ -724,8 +736,17 @@ void __attribute__ ((section (".text.start"))) payload(uint32_t sysmem_addr) {
 	resolve_imports(sysmem_base);
 	thread_main();
 	ret = takeover_web_browser();
-	if (ret == 0)
-		load_taihen();
+	if (ret == 0) {
+		int tid;
+		int res;
+		tid = sceKernelCreateThreadForKernel("load_taihen", load_taihen, 64, 0x2000, 0, 0x10000, 0);
+		LOG("load_taihen tid: %x\n", tid);
+		ret = sceKernelStartThread_089(tid, 0, NULL);
+		LOG("start thread: %x\n", ret);
+		ret = sceKernelWaitThreadEndForKernel(tid, &res, NULL);
+		LOG("thread returned: %x, %x\n", ret, res);
+		sceKernelDeleteThreadForKernel(tid);
+	}
 	else
 		LOG("skipping taihen loading\n");
 
