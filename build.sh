@@ -81,14 +81,15 @@ $OBJCOPY -O binary build/payload.elf build/payload.bin
 
 cat payload/pad.bin build/loader.bin > build/loader.full
 # loader must be <=0x100 bytes
-SIZE=$(du -sb build/loader.full | awk '{ print $1 }')
+SIZE=$(ls -l build/loader.full | awk '{ print $5 }')
 if ((SIZE>0x100)); then
 	echo "loader size is $SIZE should be less or equal 0x100 bytes"
 	exit -1
 fi
 echo "loader size is $SIZE"
-truncate -s 256 build/loader.full
-openssl enc -aes-256-ecb -in build/loader.full -nopad -out build/loader.enc -K BD00BF08B543681B6B984708BD00BF0023036018467047D0F8A03043F69D1130
+dd if=/dev/zero bs=256 count=1 > build/loader.256
+dd of=build/loader.256 if=build/loader.full bs=256 count=1 conv=notrunc
+openssl enc -aes-256-ecb -in build/loader.256 -nopad -out build/loader.enc -K BD00BF08B543681B6B984708BD00BF0023036018467047D0F8A03043F69D1130
 openssl enc -aes-128-ecb -in build/payload.bin -nopad -out build/payload.enc -K $PAYLOAD_KEY
 
 ./payload/block_check.py build/loader.enc

@@ -25,16 +25,21 @@ add_executable(kernel.elf
 )
 
 target_link_libraries(user.elf
-	gcc
+  SceIofilemgr_stub
 )
 
 target_link_libraries(kernel.elf
 	gcc
+  SceIofilemgr_stub
 )
 
-#set_target_properties(kernel.elf
-#	PROPERTIES LINK_FLAGS "-nostdlib"
-#)
+set_target_properties(kernel.elf
+	PROPERTIES LINK_FLAGS "-nostdlib"
+)
+
+set_target_properties(user.elf
+  PROPERTIES LINK_FLAGS "-nostartfiles"
+)
 
 add_custom_target(henkaku.skprx ALL
 	COMMAND vita-elf-create kernel.elf kernel.velf

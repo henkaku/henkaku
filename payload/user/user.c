@@ -503,6 +503,12 @@ int install_taihen(func_map *F) {
 
 	// create directory structure
 	mkdirs(F, pkg_path);
+	mkdirs(F, "ux0:data/tai");
+	if (!exists(F, "ux0:data/tai/config.txt")) {
+		int fd = F->sceIoOpen("ux0:data/tai/config.txt", SCE_O_CREAT | SCE_O_WRONLY, 6);
+		F->sceIoClose(fd);
+		mark_world_readable(F, "ux0:data/tai/config.txt");
+	}
 
 	F->sceIoRemove("ux0:tai/taihen.skprx");
 
