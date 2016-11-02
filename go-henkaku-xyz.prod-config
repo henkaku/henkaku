@@ -19,7 +19,7 @@ STAGE2_URL_BASE="http://beta.henkaku.xyz/x"
 HENKAKU_RELEASE=7
 
 # VitaShell version
-SHELL_VERSION=9
+SHELL_VERSION=10
 
 # Version of taiHEN, set to 0 to always download
 TAIHEN_VERSION=1
