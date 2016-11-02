@@ -251,11 +251,13 @@ int (*sceKernelWaitThreadEndForKernel)(int thid, int *r1, int *r2) = 0;
 int (*sblAimgrIsCEX)(void) = 0;
 void (*aes_setkey)(void *ctx, uint32_t blocksize, uint32_t keysize, void *key) = 0;
 void (*aes_encrypt)(void *ctx, void *src, void *dst) = 0;
+int (*sceKernelLoadStartModuleForPid)(int pid, const char *path, int args, void *argp, int flags, int *option, int *status) = 0;
 int (*sceKernelLoadModuleWithoutStartForDriver)(const char *path, int flags, int *opt) = 0;
 int (*sceKernelStartModuleForDriver)(int modid, int argc, void *args, int flags, void *opt, int *res) = 0;
 int (*sceKernelLoadStartModuleForDriver)(const char *path, int argc, void *args, int flags) = 0;
 int (*SceCpuForDriver_9CB9F0CE_flush_dcache)(uint32_t addr, int len) = 0;
 int (*sceKernelDeleteThreadForKernel)(int tid) = 0;
+int (*SceSblAIMgrForDriver_F4B98F66)(void) = 0;
 
 module_info_t *modulemgr_info;
 module_info_t *scenpdrm_info = 0;
@@ -297,6 +299,11 @@ int hook_sharedfb_update_end(int r0, int r1, int r2, int r3)
 }
 
 int hook_SceSblAIMgrForDriver_D78B04A2(void)
+{
+	return 1;
+}
+
+int hook_SceSblAIMgrForDriver_F4B98F66(void)
 {
 	return 1;
 }
@@ -382,6 +389,7 @@ char old_sbl_F3411881[16];
 char old_sbl_89CCDA2C[16];
 char old_sbl_BC422443[16];
 char old_sblai_D78B04A2[16];
+char old_sblai_F4B98F66[16];
 
 void temp_pkgpatches(void) {
 	void *addr;
@@ -395,6 +403,15 @@ void temp_pkgpatches(void) {
 		SceCpuForDriver_9CB9F0CE_flush_dcache((uint32_t)addr & ~0x1F, 0x20);
 	);
 	LOG("hooked sblai_D78B04A2\n");
+	addr = find_import(scenpdrm_info, 0xFD00C69A, 0xF4B98F66);
+	LOG("sblai_F4B98F66 stub: %p\n", addr);
+	DACR_OFF(
+		memcpy(old_sblai_F4B98F66, addr, 16);
+		INSTALL_HOOK(hook_SceSblAIMgrForDriver_F4B98F66, addr);
+		SceCpuForDriver_19f17bd0_flush_icache((uint32_t)addr & ~0x1F, 0x20);
+		SceCpuForDriver_9CB9F0CE_flush_dcache((uint32_t)addr & ~0x1F, 0x20);
+	);
+	LOG("hooked sblai_F4B98F66\n");
 
 	__asm__ volatile ("isb" ::: "memory");
 }
@@ -410,6 +427,14 @@ void remove_pkgpatches(void) {
 		SceCpuForDriver_9CB9F0CE_flush_dcache((uint32_t)addr & ~0x1F, 0x20);
 	);
 	LOG("unhooked sblai_D78B04A2\n");
+	addr = find_import(scenpdrm_info, 0xFD00C69A, 0xF4B98F66);
+	LOG("sblai_F4B98F66 stub: %p\n", addr);
+	DACR_OFF(
+		memcpy(addr, old_sblai_F4B98F66, 16);
+		SceCpuForDriver_19f17bd0_flush_icache((uint32_t)addr & ~0x1F, 0x20);
+		SceCpuForDriver_9CB9F0CE_flush_dcache((uint32_t)addr & ~0x1F, 0x20);
+	);
+	LOG("unhooked sblai_F4B98F66\n");
 
 	__asm__ volatile ("isb" ::: "memory");
 }
@@ -592,11 +617,37 @@ int load_taihen(int args, void *argp) {
 	temp_sigpatches();
 	opt = 4;
 	modid = sceKernelLoadModuleWithoutStartForDriver("ux0:tai/taihen.skprx", 0, &opt);
-	LOG("LoadTaiHen: 0x%08X\n", modid);
+	LOG("LoadTaiHEN: 0x%08X\n", modid);
 	remove_sigpatches();
 	LOG("Removed temp patches\n");
 	ret = sceKernelStartModuleForDriver(modid, 0, NULL, 0, NULL, &result);
-	LOG("StartTaiHen: 0x%08X, 0x%08X\n", ret, result);
+	result = -1;
+	LOG("StartTaiHEN: 0x%08X, 0x%08X\n", ret, result);
+	if (result < 0) {
+		ret = result;
+		goto end;
+	}
+
+	// load henkaku kernel
+	modid = sceKernelLoadModuleWithoutStartForDriver("ux0:app/MLCL00001/henkaku.skprx", 0, &opt);
+	LOG("LoadHENKaku kernel: 0x%08X\n", modid);
+	result = -1;
+	ret = sceKernelStartModuleForDriver(modid, 0, NULL, 0, NULL, &result);
+	LOG("StartHENkaku kernel: 0x%08X, 0x%08X\n", ret, result);
+	if (result < 0) {
+		ret = result;
+		goto end;
+	}
+
+	// load henkaku shell
+	// SceUID pid, const char *path, SceSize args, void *argp, int flags, SceKernelLMOption *option, int *status
+	ret = sceKernelLoadStartModuleForPid(shell_pid, "ux0:app/MLCL00001/henkaku.suprx", 0, NULL, 0, &opt, &result);
+	LOG("StartHENkaku shell: 0x%08X, 0x%08X\n", ret, result);
+	if (result < 0) {
+		ret = result;
+		goto end;
+	}
+end:
 	return ret;
 }
 
@@ -709,6 +760,7 @@ void resolve_imports(unsigned sysmem_base) {
 		sceKernelLoadModuleWithoutStartForDriver = find_export(modulemgr_info, 0x86D8D634);
 		sceKernelStartModuleForDriver = find_export(modulemgr_info, 0x0675B682);
 		sceKernelLoadStartModuleForDriver = find_export(modulemgr_info, 0x189BFBBB);
+		sceKernelLoadStartModuleForPid = find_export(modulemgr_info, 0x9d953c22);
 		SceCpuForDriver_9CB9F0CE_flush_dcache = find_export(sysmem_info, 0x9CB9F0CE);
 		sceKernelDeleteThreadForKernel = find_export(threadmgr_info, 0xac834f3f);
 	);
@@ -739,7 +791,7 @@ void __attribute__ ((section (".text.start"))) payload(uint32_t sysmem_addr) {
 	if (ret == 0) {
 		int tid;
 		int res;
-		tid = sceKernelCreateThreadForKernel("load_taihen", load_taihen, 64, 0x2000, 0, 0x10000, 0);
+		tid = sceKernelCreateThreadForKernel("load_taihen", load_taihen, 64, 0x4000, 0, 0x10000, 0);
 		LOG("load_taihen tid: %x\n", tid);
 		ret = sceKernelStartThread_089(tid, 0, NULL);
 		LOG("start thread: %x\n", ret);

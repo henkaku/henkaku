@@ -16,8 +16,7 @@ link_directories(
 	${CMAKE_CURRENT_BINARY_DIR}
 )
 
-add_definitions(-DENABLE_LOGGING)
-add_definitions(-D__VITA_KERNEL__) # FIXME: shouldn't need to define manually
+#add_definitions(-DENABLE_LOGGING)
 
 add_executable(user.elf
 	user.c
@@ -28,23 +27,27 @@ add_executable(kernel.elf
 )
 
 target_link_libraries(user.elf
+  taiHEN_stub
+  SceLibKernel_stub
   SceIofilemgr_stub
 )
 
 target_link_libraries(kernel.elf
 	gcc
   taiHEN_stub
-  SceStdio_stub
   SceSysmem_stub
   SceIofilemgr_stub
+  SceStdio_stub
+  SceKernelModulemgr_stub
 )
 
 set_target_properties(kernel.elf
-	PROPERTIES LINK_FLAGS "-nostdlib"
+  PROPERTIES LINK_FLAGS "-nostdlib"
+	COMPILE_FLAGS "-D__VITA_KERNEL__"
 )
 
 set_target_properties(user.elf
-  PROPERTIES LINK_FLAGS "-nostartfiles"
+  PROPERTIES LINK_FLAGS "-nostdlib"
 )
 
 add_custom_target(henkaku.skprx ALL

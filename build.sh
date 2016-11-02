@@ -14,9 +14,9 @@ fi
 
 source $1
 
-if [ -z "$RELEASE" ] || [ -z "$PKG_URL_PREFIX" ] || [ -z "$STAGE2_URL_BASE" ] || [ -z "$SHELL_VERSION" ] || [ -z "$TAIHEN_VERSION" ] || [ -z "$TAIHEN_CRC32" ]; then
+if [ -z "$RELEASE" ] || [ -z "$PKG_URL_PREFIX" ] || [ -z "$STAGE2_URL_BASE" ] || [ -z "$SHELL_VERSION" ] || [ -z "$TAIHEN_VERSION" ] || [ -z "$TAIHEN_CRC32" ] || [ -z "$HENKAKU_RELEASE" ]; then
 	echo "Please make sure all of the following variables are defined in your config file:"
-	echo "RELEASE, PKG_URL_PREFIX, STAGE2_URL_BASE, SHELL_VERSION, TAIHEN_VERSION, TAIHEN_CRC32"
+	echo "RELEASE, PKG_URL_PREFIX, STAGE2_URL_BASE, SHELL_VERSION, TAIHEN_VERSION, TAIHEN_CRC32, HENKAKU_RELEASE"
 	echo "(see sample.config.in for an example)"
 	exit 2
 fi
@@ -32,6 +32,18 @@ DEFINES="-DRELEASE=$RELEASE"
 PREPROCESS="$CC -E -P -C -w -x c $DEFINES"
 CFLAGS="-fPIE -fno-zero-initialized-in-bss -std=c99 -mcpu=cortex-a9 -Os -mthumb $DEFINES"
 
+# generate version stuffs
+BUILD_VERSION=$(git describe --dirty --always --tags)
+BUILD_DATE=$(date)
+BUILD_HOST=$(hostname)
+echo "#define BUILD_VERSION \"$BUILD_VERSION\"" >> build/version.c
+echo "#define BUILD_DATE \"$BUILD_DATE\"" >> build/version.c
+echo "#define BUILD_HOST \"$BUILD_HOST\"" >> build/version.c
+echo "#define SHELL_VERSION $SHELL_VERSION" >> build/version.c
+echo "#define HENKAKU_RELEASE $HENKAKU_RELEASE" >> build/version.c
+echo "#define TAIHEN_VERSION $TAIHEN_VERSION" >> build/version.c
+echo "#define TAIHEN_CRC32 $TAIHEN_CRC32" >> build/version.c
+
 echo "0) taiHEN plugin"
 
 mkdir build/plugin
@@ -42,20 +54,12 @@ popd
 cp build/plugin/henkaku.skprx output/henkaku.skprx
 cp build/plugin/henkaku.suprx output/henkaku.suprx
 HENKAKU_CRC32=$(crc32 output/henkaku.skprx)
+HENKAKU_USER_CRC32=$(crc32 output/henkaku.suprx)
 
 echo "1) User payload"
 
-# generate version stuffs
-BUILD_VERSION=$(git describe --dirty --always --tags)
-BUILD_DATE=$(date)
-BUILD_HOST=$(hostname)
-echo "#define BUILD_VERSION \"$BUILD_VERSION\"" >> build/version.c
-echo "#define BUILD_DATE \"$BUILD_DATE\"" >> build/version.c
-echo "#define BUILD_HOST \"$BUILD_HOST\"" >> build/version.c
-echo "#define SHELL_VERSION $SHELL_VERSION" >> build/version.c
-echo "#define TAIHEN_VERSION $TAIHEN_VERSION" >> build/version.c
-echo "#define TAIHEN_CRC32 $TAIHEN_CRC32" >> build/version.c
 echo "#define HENKAKU_CRC32 0x$HENKAKU_CRC32" >> build/version.c
+echo "#define HENKAKU_USER_CRC32 0x$HENKAKU_USER_CRC32" >> build/version.c
 
 PAYLOAD_KEY=c787069478255b5051727bc3fdecff1a
 

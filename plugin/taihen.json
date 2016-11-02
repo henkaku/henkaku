@@ -1,25 +1,25 @@
 {
-  "taiHEN": {
+  "taihen": {
     "nid": 1576460514,
     "modules": {
-      "taiHEN": {
-        "nid": 3593704605,
+      "taihen": {
+        "nid": 540875304,
         "kernel": false,
         "functions": {
-          "taiHookFunctionExport": 4097704567,
-          "taiHookFunctionImport": 609792291,
-          "taiHookFunctionOffset": 3521989062,
+          "taiHookFunctionExportForUser": 2269553102,
+          "taiHookFunctionImportForUser": 1399025245,
+          "taiHookFunctionOffsetForUser": 87368282,
           "taiGetModuleInfo": 2777256836,
           "taiHookRelease": 472967065,
           "taiInjectAbs": 1247316228,
-          "taiInjectData": 2901348486,
+          "taiInjectDataForUser": 3458578876,
           "taiInjectRelease": 564447398
         },
         "variables": {
         }
       }, 
-      "taiHENForKernel": {
-        "nid": 2909511371,
+      "taihenForKernel": {
+        "nid": 3487819968,
         "kernel": true,
         "functions": {
           "taiHookFunctionAbs": 3605329551,

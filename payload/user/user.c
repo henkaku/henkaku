@@ -558,6 +558,9 @@ int verify_taihen(func_map *F) {
 		crc = crc32_file(F, "ux0:app/MLCL00001/henkaku.skprx");
 		PRINTF("henkaku.skprx CRC32: 0x%08X\n", crc);
 		if (crc != HENKAKU_CRC32) return -1;
+		crc = crc32_file(F, "ux0:app/MLCL00001/henkaku.suprx");
+		PRINTF("henkaku.suprx CRC32: 0x%08X\n", crc);
+		if (crc != HENKAKU_USER_CRC32) return -1;
 	}
 	return 1;
 }

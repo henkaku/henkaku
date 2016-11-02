@@ -4,16 +4,35 @@
 #ifndef HENKAKU_HEADER
 #define HENKAKU_HEADER
 
-// TODO: Have this define in the SDK or something
-#ifndef __VITA_KERNEL__
-#define __VITA_KERNEL__
-#endif
+#include <stdint.h>
+
+// TODO: Move to sdk
+int sceClibPrintf(const char *fmt, ...);
+int sceClibSnprintf(char *buf, size_t len, const char *fmt, ...);
 
 /** Logging function */
 #ifdef ENABLE_LOGGING
+#ifdef __VITA_KERNEL__
 #define LOG(fmt, ...) printf("[%s:%d] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
+#else
+#define LOG(fmt, ...) sceClibPrintf("[%s:%d] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
+#endif
 #else
 #define LOG(fmt, ...)
 #endif
+
+/** Config */
+typedef struct {
+  uint32_t magic;
+  uint32_t version;
+  uint32_t use_psn_spoofing;
+  uint32_t allow_unsafe_hb;
+  uint32_t use_spoofed_version;
+  uint32_t spoofed_version;
+} __attribute__((packed)) henkaku_config_t;
+
+#define HENKAKU_CONFIG_MAGIC (0x4C434C4D)
+#define CONFIG_PATH "ux0:temp/app_work/MLCL00001/rec/config.bin"
+#define SPOOF_VERSION (0x3630000)
 
 #endif // HENKAKU_HEADER

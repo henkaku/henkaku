@@ -15,6 +15,9 @@ PKG_URL_PREFIX="http://your_url_here.com/pkg/"
 # You only need this for the dynamic version of the exploit (which is recommended)
 STAGE2_URL_BASE="http://your_url_here.com/stage2.php"
 
+# Version to show in Settings
+HENKAKU_RELEASE=7
+
 # Version of bundled vitashell pkg
 # When repeatedly executing the exploit, vitashell is only downloaded and installed when SHELL_VERSION is bigger than previous SHELL_VERSION
 # the exploit was run with
