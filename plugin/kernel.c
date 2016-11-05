@@ -111,9 +111,7 @@ static int sceKernelGetSystemSwVersion_patched(SceKernelFwInfo *info) {
   info->version = config.spoofed_version;
   ver_major = ((config.spoofed_version >> 24) & 0xF) + 10 * (config.spoofed_version >> 28);
   ver_minor = ((config.spoofed_version >> 16) & 0xF) + 10 * ((config.spoofed_version >> 20) & 0xF);
-  //snprintf(info->versionString, 16, "%d.%02d", ver_major, ver_minor);
-  // TODO: move this to a local patch in SceSettings
-  snprintf(info->versionString, 16, "%d.%02d \xE5\xA4\x89\xE9\x9D\xA9)(%d", ver_major, ver_minor, HENKAKU_RELEASE);
+  snprintf(info->versionString, 16, "%d.%02d", ver_major, ver_minor);
   return ret;
 }
 

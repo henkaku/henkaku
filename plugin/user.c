@@ -15,9 +15,7 @@ static int sceKernelGetSystemSwVersion_SceSettings_patched(SceKernelFwInfo *info
   int ret;
   int ver_major;
   int ver_minor;
-  LOG("before version hook");
   ret = TAI_CONTINUE(int, g_sceKernelGetSystemSwVersion_SceSettings_hook, info);
-  LOG("after version hook");
   info->version = DISPLAY_VERSION; // TODO: user configurable option
   ver_major = ((DISPLAY_VERSION >> 24) & 0xF) + 10 * (DISPLAY_VERSION >> 28);
   ver_minor = ((DISPLAY_VERSION >> 16) & 0xF) + 10 * ((DISPLAY_VERSION >> 20) & 0xF);
@@ -58,15 +56,6 @@ static int app_start(SceSize argc, const void *args) {
   return ret;
 }
 
-static tai_hook_ref_t local_open_hook;
-SceUID hook_local_open(const char *path, int flags, SceMode mode) {
-  SceUID fd;
-  fd = TAI_CONTINUE(SceUID, local_open_hook, path, flags, mode);
-  LOG("open in AppName: %s, ret: %x", path, fd);
-  asm ("bkpt #0");
-  return fd;
-}
-
 static int load_config_user(void) {
   SceUID fd;
   int rd;
@@ -97,8 +86,6 @@ static int load_config_user(void) {
 }
 
 int module_start(SceSize argc, const void *args) {
-  sceClibPrintf("test\n");
-  return SCE_KERNEL_START_SUCCESS; // TODO: Fix user patches
   tai_module_info_t info;
   LOG("loading HENkaku config for user");
   load_config_user();
@@ -140,6 +127,21 @@ int module_start(SceSize argc, const void *args) {
                                              game_update_check_patched);
           break;
         }
+        case 0x6CB01295: { // PDEL 3.60 SceShell thanks to anonymous for offsets
+          g_hooks[2] = taiHookFunctionOffset(&g_update_check_hook, 
+                                             info.modid, 
+                                             0,         // segidx
+                                             0x12c882,  // offset
+                                             1,         // thumb
+                                             update_check_patched);
+          g_hooks[3] = taiHookFunctionOffset(&g_game_update_check_hook, 
+                                             info.modid, 
+                                             0,         // segidx
+                                             0x36df3e,  // offset
+                                             1,         // thumb
+                                             game_update_check_patched);
+          break;
+        }
         default: {
           LOG("SceShell NID %X not recognized, skipping PSN spoofing patches", info.module_nid);
         }
@@ -154,7 +156,7 @@ int module_start(SceSize argc, const void *args) {
 int module_stop(SceSize argc, const void *args) {
   return SCE_KERNEL_STOP_SUCCESS;
   // free hooks that didn't fail
-  if (g_hooks[0] >= 0) taiHookRelease(g_hooks[0], g_app_start_hook);
+  //if (g_hooks[0] >= 0) taiHookRelease(g_hooks[0], g_app_start_hook);
   if (g_hooks[1] >= 0) taiHookRelease(g_hooks[1], g_sceKernelGetSystemSwVersion_SceSettings_hook);
   if (g_hooks[2] >= 0) taiHookRelease(g_hooks[2], g_update_check_hook);
   if (g_hooks[3] >= 0) taiHookRelease(g_hooks[3], g_game_update_check_hook);
