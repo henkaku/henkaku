@@ -132,7 +132,7 @@ static int load_config_kernel(void) {
   config.magic = HENKAKU_CONFIG_MAGIC;
   config.version = HENKAKU_RELEASE;
   config.use_psn_spoofing = 1;
-  config.allow_unsafe_hb = 1;
+  config.allow_unsafe_hb = 1; // TODO: change this in the next release
   config.use_spoofed_version = 1;
   config.spoofed_version = SPOOF_VERSION;
   return 0;

@@ -35,6 +35,22 @@
         },
         "variables": {
         }
+      }, 
+      "taihenUnsafe": {
+        "nid": 2998301478,
+        "kernel": false,
+        "functions": {
+          "taiLoadKernelModule": 3603990244,
+          "taiStartKernelModuleForUser": 2850755214,
+          "taiLoadStartKernelModuleForUser": 2559617235,
+          "taiLoadStartModuleForPidForUser": 3897797579,
+          "taiStopUnloadKernelModuleForUser": 1277030648,
+          "taiUnloadKernelModule": 1275696130,
+          "taiMemcpyUserToKernel": 4138861294,
+          "taiMemcpyKernelToUser": 2310758437
+        },
+        "variables": {
+        }
       }
     }
   }
