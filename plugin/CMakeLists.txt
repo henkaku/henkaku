@@ -29,18 +29,19 @@ add_executable(kernel.elf
 )
 
 target_link_libraries(user.elf
-  taiHEN_stub
+  taihen_stub
   SceLibKernel_stub
   SceIofilemgr_stub
 )
 
 target_link_libraries(kernel.elf
 	gcc
-  taiHEN_stub
-  SceSysmem_stub
-  SceIofilemgr_stub
-  SceStdio_stub
-  SceKernelModulemgr_stub
+  taihenForKernel_stub
+  SceSysmemForDriver_stub
+  SceSysclibForDriver_stub
+  SceIofilemgrForDriver_stub
+  SceDebugForDriver_stub
+  SceModulemgrForKernel_stub
 )
 
 set_target_properties(kernel.elf

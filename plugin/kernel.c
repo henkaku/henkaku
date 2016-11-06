@@ -78,7 +78,12 @@ static int some_process_check_patched(void) {
 
 static tai_hook_ref_t g_some_power_auth_check_hook;
 static int some_power_auth_check_patched(void) {
-  TAI_CONTINUE(int, g_some_power_auth_check_hook);
+  // this function may be called in the process of looping
+  // see: https://github.com/yifanlu/taiHEN/issues/12
+  // for now, we mark this as a FIXME and do this check manually
+  if (g_some_power_auth_check_hook) {
+    TAI_CONTINUE(int, g_some_power_auth_check_hook);
+  }
   return 1;
 }
 
