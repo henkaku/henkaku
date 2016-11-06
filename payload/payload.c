@@ -258,6 +258,7 @@ int (*sceKernelLoadStartModuleForDriver)(const char *path, int argc, void *args,
 int (*SceCpuForDriver_9CB9F0CE_flush_dcache)(uint32_t addr, int len) = 0;
 int (*sceKernelDeleteThreadForKernel)(int tid) = 0;
 int (*SceSblAIMgrForDriver_F4B98F66)(void) = 0;
+int (*SceDebugForKernel_F857CDD6_set_crash_flag)(int) = 0;
 
 module_info_t *modulemgr_info;
 module_info_t *scenpdrm_info = 0;
@@ -508,6 +509,12 @@ void remove_sigpatches(void) {
 void thread_main(void) {
 	unsigned ret;
 
+	// halt on crash
+#if !RELEASE
+	LOG("disabling auto-reboot\n");
+	SceDebugForKernel_F857CDD6_set_crash_flag(0);
+#endif
+
 	// takeover the web browser or email if offline
 
 	unsigned data[0xE8/4];
@@ -612,15 +619,18 @@ int takeover_web_browser() {
 }
 
 int load_taihen(int args, void *argp) {
-	unsigned opt, modid, ret, result;
+	unsigned opt, taiid, modid, ret, result;
+	SceModInfo info;
+	module_info_t *taihen_info;
+	int (*taiLoadPluginsForTitleForKernel)(int pid, const char *titleid, int flags);
 	// load taiHEN
 	temp_sigpatches();
 	opt = 4;
-	modid = sceKernelLoadModuleWithoutStartForDriver("ux0:tai/taihen.skprx", 0, &opt);
-	LOG("LoadTaiHEN: 0x%08X\n", modid);
+	taiid = sceKernelLoadModuleWithoutStartForDriver("ux0:tai/taihen.skprx", 0, &opt);
+	LOG("LoadTaiHEN: 0x%08X\n", taiid);
 	remove_sigpatches();
 	LOG("Removed temp patches\n");
-	ret = sceKernelStartModuleForDriver(modid, 0, NULL, 0, NULL, &result);
+	ret = sceKernelStartModuleForDriver(taiid, 0, NULL, 0, NULL, &result);
 	result = -1;
 	LOG("StartTaiHEN: 0x%08X, 0x%08X\n", ret, result);
 	if (result < 0) {
@@ -632,21 +642,13 @@ int load_taihen(int args, void *argp) {
 	modid = sceKernelLoadModuleWithoutStartForDriver("ux0:app/MLCL00001/henkaku.skprx", 0, &opt);
 	LOG("LoadHENKaku kernel: 0x%08X\n", modid);
 	result = -1;
-	ret = sceKernelStartModuleForDriver(modid, 0, NULL, 0, NULL, &result);
+	ret = sceKernelStartModuleForDriver(modid, 4, &shell_pid, 0, NULL, &result);
 	LOG("StartHENkaku kernel: 0x%08X, 0x%08X\n", ret, result);
 	if (result < 0) {
 		ret = result;
 		goto end;
 	}
 
-	// load henkaku shell
-	// SceUID pid, const char *path, SceSize args, void *argp, int flags, SceKernelLMOption *option, int *status
-	ret = sceKernelLoadStartModuleForPid(shell_pid, "ux0:app/MLCL00001/henkaku.suprx", 0, NULL, 0, &opt, &result);
-	LOG("StartHENkaku shell: 0x%08X, 0x%08X\n", ret, result);
-	if (result < 0) {
-		ret = result;
-		goto end;
-	}
 end:
 	return ret;
 }
@@ -763,6 +765,7 @@ void resolve_imports(unsigned sysmem_base) {
 		sceKernelLoadStartModuleForPid = find_export(modulemgr_info, 0x9d953c22);
 		SceCpuForDriver_9CB9F0CE_flush_dcache = find_export(sysmem_info, 0x9CB9F0CE);
 		sceKernelDeleteThreadForKernel = find_export(threadmgr_info, 0xac834f3f);
+		SceDebugForKernel_F857CDD6_set_crash_flag = find_export(sysmem_info, 0xF857CDD6);
 	);
 }
 
@@ -779,7 +782,7 @@ void __attribute__ ((section (".text.start"))) payload(uint32_t sysmem_addr) {
 	);
 
 	LOG("+++ Entered kernel payload +++\n");
-	LOG("sp=0x%x\n", &ret);
+	LOG("payload=0x%x, sp=0x%x\n", payload, &ret);
 
 	#ifdef OFFLINE
 	LOG("(offline version)\n");

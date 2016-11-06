@@ -33,6 +33,6 @@ typedef struct {
 
 #define HENKAKU_CONFIG_MAGIC (0x4C434C4D)
 #define CONFIG_PATH "ux0:temp/app_work/MLCL00001/rec/config.bin"
-#define SPOOF_VERSION (0x3630000)
+#define SPOOF_VERSION (0x3610000)
 
 #endif // HENKAKU_HEADER

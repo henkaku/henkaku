@@ -17,6 +17,7 @@ STAGE2_URL_BASE="http://your_url_here.com/stage2.php"
 
 # Version to show in Settings
 HENKAKU_RELEASE=7
+BETA_RELEASE=0
 
 # Version of bundled vitashell pkg
 # When repeatedly executing the exploit, vitashell is only downloaded and installed when SHELL_VERSION is bigger than previous SHELL_VERSION

@@ -19,13 +19,14 @@
 #define INSTALL_ATTEMPTS 5
 
 const char taihen_config[] = 
-	"# DO NOT MODIFY THIS, IT IS AUTO-GENERATED\n"
-	"# MODIFY ux0:data/tai/config.txt INSTEAD\n\n"
+	"# You must reboot for changes to take place.\n"
 	"*KERNEL\n"
-	"ux0:app/MLCL00001/henkaku.skprx\n"
-	"*SceShell\n"
+	"# henkaku.skprx is hard-coded to load and is not listed here\n"
+	"*main\n"
+	"# main is a special titleid for SceShell\n"
 	"ux0:app/MLCL00001/henkaku.suprx\n"
-	"*SceSettings\n"
+	"*NPXS10015\n"
+	"# this is for modifying the version string\n"
 	"ux0:app/MLCL00001/henkaku.suprx\n";
 
 typedef struct func_map {
@@ -210,7 +211,7 @@ void resolve_functions(func_map *F) {
 			ScePromoterUtil_base = addr;
 		else if (!strcmp(name, "SceCommonDialog"))
 			SceCommonDialog_base = addr;
-		LOG("Module %s at 0x%x\n", info.module_name, info.segments[0].vaddr);
+		//LOG("Module %s at 0x%x\n", info.module_name, info.segments[0].vaddr);
 	}
 
 	F->sceKernelAllocMemBlock = (void*)(SceLibKernel_base + 0x610C);
@@ -514,6 +515,8 @@ int install_taihen(func_map *F) {
 
 	GET_FILE("taihen.skprx");
 
+	write_taihen_config(F);
+
 	if (exists(F, "ux0:tai/taihen.skprx")) {
 		return 0;
 	} else {
@@ -554,7 +557,6 @@ int verify_taihen(func_map *F) {
 		crc = crc32_file(F, "ux0:tai/taihen.skprx");
 		PRINTF("taihen.skprx CRC32: 0x%08X\n", crc);
 		if (crc != TAIHEN_CRC32) return -1;
-		write_taihen_config(F);
 		crc = crc32_file(F, "ux0:app/MLCL00001/henkaku.skprx");
 		PRINTF("henkaku.skprx CRC32: 0x%08X\n", crc);
 		if (crc != HENKAKU_CRC32) return -1;
@@ -710,7 +712,7 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 	}
 	F->fg_color = 0xFFFFFFFF;
 	PRINTF("(the application will close automatically in 3s)\n");
-	PRINTF("!!! DO NOT PRESS THE PS BUTTON !!!\n");
+	PRINTF("If the browser crashes or shows a black screen, that is okay.\n");
 	F->sceKernelDelayThread(3 * 1000 * 1000);
 
 	while (1) {

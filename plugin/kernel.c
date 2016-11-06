@@ -40,7 +40,7 @@ typedef struct {
 
 static henkaku_config_t config;
 
-static SceUID g_hooks[7];
+static SceUID g_hooks[6];
 
 static tai_hook_ref_t g_parse_headers_hook;
 static int parse_headers_patched(int ctx, const void *headers, size_t len, void *args) {
@@ -82,26 +82,6 @@ static int some_power_auth_check_patched(void) {
   return 1;
 }
 
-static tai_hook_ref_t g_load_user_libs_hook;
-static int load_user_libs_patched(SceUID pid, void *args, int flags) {
-  int ret;
-  SceUID mod;
-  char titleid[32];
-
-  ret = TAI_CONTINUE(int, g_load_user_libs_hook, pid, args, flags);
-
-  sceKernelGetProcessTitleIdForKernel(pid, titleid, 32);
-  LOG("title started: %s", titleid);
-
-  // TODO: replace with configuration system
-  if (strncmp(titleid, "NPXS10015", 32) == 0) {
-    mod = sceKernelLoadModuleForPid(pid, "ux0:app/MLCL00001/henkaku.suprx", 0x8000, NULL);
-    LOG("load henkaku user: %x", mod);
-  }
-
-  return ret;
-}
-
 static tai_hook_ref_t g_sceKernelGetSystemSwVersion_hook;
 static int sceKernelGetSystemSwVersion_patched(SceKernelFwInfo *info) {
   int ret;
@@ -120,7 +100,7 @@ static int SceSblSsUpdateMgr_8E3EC2E1_patched(int r0, uintptr_t out) {
   int ver;
   int ret;
   ret = TAI_CONTINUE(int, g_SceSblSsUpdateMgr_8E3EC2E1_hook, r0, out);
-  ver = SPOOF_VERSION;
+  ver = config.spoofed_version;
   sceKernelMemcpyKernelToUser(out+4, &ver, 4);
   return ret;
 }
@@ -134,7 +114,11 @@ static int load_config_kernel(void) {
     sceIoCloseForDriver(fd);
     if (rd == sizeof(config)) {
       if (config.magic == HENKAKU_CONFIG_MAGIC) {
-        return 0;
+        if (config.version >= 8) {
+          return 0;
+        } else {
+          LOG("config version too old");
+        }
       } else {
         LOG("config incorrect magic: %x", config.magic);
       }
@@ -148,13 +132,14 @@ static int load_config_kernel(void) {
   config.magic = HENKAKU_CONFIG_MAGIC;
   config.version = HENKAKU_RELEASE;
   config.use_psn_spoofing = 1;
-  config.allow_unsafe_hb = 1; // TODO: default 0
+  config.allow_unsafe_hb = 1;
   config.use_spoofed_version = 1;
   config.spoofed_version = SPOOF_VERSION;
   return 0;
 }
 
 int module_start(SceSize argc, const void *args) {
+  SceUID shell_pid;
   LOG("loading HENkaku config for kernel");
   load_config_kernel();
   // this hook enables extended permissions for unsafe homebrew + blocking unsafe homebrew if requested
@@ -173,16 +158,14 @@ int module_start(SceSize argc, const void *args) {
                                               0xF8769E86, 
                                               some_sysroot_check_patched);
   LOG("some_sysroot_check_hook: %x", g_hooks[1]);
-  /*
-  // we remove this because it might not be needed. the MRC at the beginning makes libsubstitute complain. Should file ticket.
-  g_hooks[2] = taiHookFunctionExportForKernel(KERNEL_PID, 
+  // we remove this because it might not be needed. the branch at the beginning makes substitute fail
+  /*g_hooks[2] = taiHookFunctionExportForKernel(KERNEL_PID, 
                                               &g_some_process_check_patched_hook, 
                                               "SceSysmem", 
                                               0x63A519E5, // SceSysmemForKernel
                                               0xD514BB56, 
                                               some_process_check_patched);
-  LOG("some_process_check_patched_hook: %x", g_hooks[2]);
-  */
+  LOG("some_process_check_patched_hook: %x", g_hooks[2]);*/
   // this hook patches an auth check in ScePower for enabling overclocking in safe homebrew
   g_hooks[3] = taiHookFunctionImportForKernel(KERNEL_PID, 
                                               &g_some_power_auth_check_hook, 
@@ -191,18 +174,9 @@ int module_start(SceSize argc, const void *args) {
                                               0x8612B243, 
                                               some_power_auth_check_patched);
   LOG("some_power_auth_check_hook: %x", g_hooks[3]);
-  // this allows us to load henkaku.suprx with SceSettings regardless of ux0:tai/config.txt settings
-  // this is because ux0:tai/config.txt is not used if non-safe homebrew is not enabled
-  g_hooks[4] = taiHookFunctionExportForKernel(KERNEL_PID, 
-                                              &g_load_user_libs_hook, 
-                                              "SceKernelModulemgr", 
-                                              0xC445FA63, // SceModulemgrForKernel
-                                              0x3AD26B43,
-                                              load_user_libs_patched);
-  LOG("load_user_libs added");
   if (config.use_spoofed_version) {
     // this hook spoofs the system version for the API access
-    g_hooks[5] = taiHookFunctionExportForKernel(KERNEL_PID, 
+    g_hooks[4] = taiHookFunctionExportForKernel(KERNEL_PID, 
                                                 &g_sceKernelGetSystemSwVersion_hook, 
                                                 "SceKernelModulemgr", 
                                                 0xD4A60A52, // SceModulemgrForDriver
@@ -210,7 +184,7 @@ int module_start(SceSize argc, const void *args) {
                                                 sceKernelGetSystemSwVersion_patched);
     LOG("sceKernelGetSystemSwVersion_hook: %x", g_hooks[4]);
     // this hook spoofs the system version for internal access
-    g_hooks[6] = taiHookFunctionExportForKernel(KERNEL_PID, 
+    g_hooks[5] = taiHookFunctionExportForKernel(KERNEL_PID, 
                                                 &g_SceSblSsUpdateMgr_8E3EC2E1_hook, 
                                                 "SceSblUpdateMgr", 
                                                 0x31406C49, // SceSblSsUpdateMgr
@@ -220,6 +194,15 @@ int module_start(SceSize argc, const void *args) {
   } else {
     LOG("skipping version spoofing");
   }
+  if (argc == 4) {
+    shell_pid = *(SceUID *)args;
+    LOG("loading shell plugins");
+    // normally this would be done automatically by taiHEN
+    // but since our exploit runs AFTER SceShell is loaded, 
+    // we have to do this manually
+    taiLoadPluginsForTitleForKernel(shell_pid, "main", 0);
+    LOG("shell plugins loaded");
+  }
   return SCE_KERNEL_START_SUCCESS;
 }
 
@@ -228,10 +211,9 @@ int module_stop(SceSize argc, const void *args) {
   taiHookReleaseForKernel(g_hooks[1], g_some_sysroot_check_hook);
   //taiHookReleaseForKernel(g_hooks[2], g_some_process_check_patched_hook);
   taiHookReleaseForKernel(g_hooks[3], g_some_power_auth_check_hook);
-  taiHookReleaseForKernel(g_hooks[4], g_load_user_libs_hook);
   if (config.use_spoofed_version) {
-    taiHookReleaseForKernel(g_hooks[5], g_sceKernelGetSystemSwVersion_hook);
-    taiHookReleaseForKernel(g_hooks[6], g_SceSblSsUpdateMgr_8E3EC2E1_hook);
+    taiHookReleaseForKernel(g_hooks[4], g_sceKernelGetSystemSwVersion_hook);
+    taiHookReleaseForKernel(g_hooks[5], g_SceSblSsUpdateMgr_8E3EC2E1_hook);
   }
   return SCE_KERNEL_STOP_SUCCESS;
 }

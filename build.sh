@@ -21,6 +21,10 @@ if [ -z "$RELEASE" ] || [ -z "$PKG_URL_PREFIX" ] || [ -z "$STAGE2_URL_BASE" ] ||
 	exit 2
 fi
 
+if [ -z "$BETA_RELEASE" ]; then
+  BETA_RELEASE=0
+fi
+
 set -ex
 
 CC=arm-vita-eabi-gcc
@@ -41,6 +45,7 @@ echo "#define BUILD_DATE \"$BUILD_DATE\"" >> build/version.c
 echo "#define BUILD_HOST \"$BUILD_HOST\"" >> build/version.c
 echo "#define SHELL_VERSION $SHELL_VERSION" >> build/version.c
 echo "#define HENKAKU_RELEASE $HENKAKU_RELEASE" >> build/version.c
+echo "#define BETA_RELEASE $BETA_RELEASE" >> build/version.c
 echo "#define TAIHEN_VERSION $TAIHEN_VERSION" >> build/version.c
 echo "#define TAIHEN_CRC32 $TAIHEN_CRC32" >> build/version.c
 
@@ -48,7 +53,7 @@ echo "0) taiHEN plugin"
 
 mkdir build/plugin
 pushd build/plugin
-cmake ../../plugin
+cmake -DRELEASE=$RELEASE ../../plugin
 make
 popd
 cp build/plugin/henkaku.skprx output/henkaku.skprx

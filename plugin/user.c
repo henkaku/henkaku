@@ -8,7 +8,7 @@
 
 static henkaku_config_t config;
 
-static SceUID g_hooks[6];
+static SceUID g_hooks[4];
 
 static tai_hook_ref_t g_sceKernelGetSystemSwVersion_SceSettings_hook;
 static int sceKernelGetSystemSwVersion_SceSettings_patched(SceKernelFwInfo *info) {
@@ -16,10 +16,13 @@ static int sceKernelGetSystemSwVersion_SceSettings_patched(SceKernelFwInfo *info
   int ver_major;
   int ver_minor;
   ret = TAI_CONTINUE(int, g_sceKernelGetSystemSwVersion_SceSettings_hook, info);
-  info->version = DISPLAY_VERSION; // TODO: user configurable option
   ver_major = ((DISPLAY_VERSION >> 24) & 0xF) + 10 * (DISPLAY_VERSION >> 28);
   ver_minor = ((DISPLAY_VERSION >> 16) & 0xF) + 10 * ((DISPLAY_VERSION >> 20) & 0xF);
-  sceClibSnprintf(info->versionString, 16, "%d.%02d \xE5\xA4\x89\xE9\x9D\xA9-%d", ver_major, ver_minor, HENKAKU_RELEASE);
+  if (BETA_RELEASE) {
+    sceClibSnprintf(info->versionString, 16, "%d.%02d \xE5\xA4\x89\xE9\x9D\xA9-%d\xCE\xB2%d", ver_major, ver_minor, HENKAKU_RELEASE, BETA_RELEASE);
+  } else {
+    sceClibSnprintf(info->versionString, 16, "%d.%02d \xE5\xA4\x89\xE9\x9D\xA9-%d", ver_major, ver_minor, HENKAKU_RELEASE);
+  }
   return ret;
 }
 
@@ -41,8 +44,8 @@ static tai_hook_ref_t g_app_start_hook;
 static int app_start(SceSize argc, const void *args) {
   int ret;
   LOG("before app start");
-  LOG("data: %p", g_app_start_hook);
-  LOG("%x %x %x", *(int *)g_app_start_hook, *(int *)(g_app_start_hook+4), *(int *)(g_app_start_hook+8));
+  //LOG("data: %p", g_app_start_hook);
+  //LOG("%x %x %x", *(int *)g_app_start_hook, *(int *)(g_app_start_hook+4), *(int *)(g_app_start_hook+8));
   ret = TAI_CONTINUE(int, g_app_start_hook, argc, args);
   LOG("app_start: %x", ret);
   /*
@@ -65,7 +68,11 @@ static int load_config_user(void) {
     sceIoClose(fd);
     if (rd == sizeof(config)) {
       if (config.magic == HENKAKU_CONFIG_MAGIC) {
-        return 0;
+        if (config.version >= 8) {
+          return 0;
+        } else {
+          LOG("config version too old");
+        }
       } else {
         LOG("config incorrect magic: %x", config.magic);
       }
@@ -79,7 +86,7 @@ static int load_config_user(void) {
   config.magic = HENKAKU_CONFIG_MAGIC;
   config.version = HENKAKU_RELEASE;
   config.use_psn_spoofing = 1;
-  config.allow_unsafe_hb = 1; // TODO: default 0
+  config.allow_unsafe_hb = 0;
   config.use_spoofed_version = 1;
   config.spoofed_version = SPOOF_VERSION;
   return 0;

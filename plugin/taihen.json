@@ -30,7 +30,8 @@
           "taiHookReleaseForKernel": 3525736650,
           "taiInjectAbsForKernel": 4230976111,
           "taiInjectDataForKernel": 2678390840,
-          "taiInjectReleaseForKernel": 1371225801
+          "taiInjectReleaseForKernel": 1371225801,
+          "taiLoadPluginsForTitleForKernel": 2621581546
         },
         "variables": {
         }
