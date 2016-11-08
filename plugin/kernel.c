@@ -137,7 +137,7 @@ static int load_config_kernel(void) {
   config.magic = HENKAKU_CONFIG_MAGIC;
   config.version = HENKAKU_RELEASE;
   config.use_psn_spoofing = 1;
-  config.allow_unsafe_hb = 1; // TODO: change this in the next release
+  config.allow_unsafe_hb = 0;
   config.use_spoofed_version = 1;
   config.spoofed_version = SPOOF_VERSION;
   return 0;
@@ -172,6 +172,7 @@ int module_start(SceSize argc, const void *args) {
                                               some_process_check_patched);
   LOG("some_process_check_patched_hook: %x", g_hooks[2]);*/
   // this hook patches an auth check in ScePower for enabling overclocking in safe homebrew
+  g_some_power_auth_check_hook = 0;
   g_hooks[3] = taiHookFunctionImportForKernel(KERNEL_PID, 
                                               &g_some_power_auth_check_hook, 
                                               "ScePower", 

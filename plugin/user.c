@@ -161,7 +161,7 @@ int module_start(SceSize argc, const void *args) {
 }
 
 int module_stop(SceSize argc, const void *args) {
-  return SCE_KERNEL_STOP_SUCCESS;
+  LOG("stopping module");
   // free hooks that didn't fail
   //if (g_hooks[0] >= 0) taiHookRelease(g_hooks[0], g_app_start_hook);
   if (g_hooks[1] >= 0) taiHookRelease(g_hooks[1], g_sceKernelGetSystemSwVersion_SceSettings_hook);
