@@ -36,6 +36,7 @@ typedef struct func_map {
 	void *base;
 
 	unsigned sysmodule_svc_offset;
+	unsigned scectrl_svc_offset;
 
 	int (*sceKernelAllocMemBlock)();
 	int (*sceKernelGetMemBlockBase)();
@@ -79,6 +80,9 @@ typedef struct func_map {
 	int (*scePromoterUtilityGetState)();
 	int (*scePromoterUtilityGetResult)();
 	int (*scePromoterUtilityExit)();
+	int (*sceShellUtilInitEvents)();
+	int (*sceShellUtilLock)();
+	int (*sceShellUtilUnlock)();
 } func_map;
 
 #include "../libc.c"
@@ -186,6 +190,7 @@ void resolve_functions(func_map *F) {
 	unsigned SceLibHttp_base = 0;
 	unsigned ScePromoterUtil_base = 0;
 	unsigned SceCommonDialog_base = 0;
+	unsigned SceShellSvc_base = 0;
 
 	F->sceKernelGetModuleList = (void*)(SceLibKernel_base + 0x675C);
 	F->sceKernelGetModuleInfo = (void*)(SceLibKernel_base + 0x676C);
@@ -211,6 +216,8 @@ void resolve_functions(func_map *F) {
 			ScePromoterUtil_base = addr;
 		else if (!strcmp(name, "SceCommonDialog"))
 			SceCommonDialog_base = addr;
+		else if (!strcmp(name, "SceShellSvc"))
+			SceShellSvc_base = addr;
 		//LOG("Module %s at 0x%x\n", info.module_name, info.segments[0].vaddr);
 	}
 
@@ -254,6 +261,11 @@ void resolve_functions(func_map *F) {
 	F->scePromoterUtilityGetResult = (void*)(ScePromoterUtil_base + 0x263);
 
 	F->sysmodule_svc_offset = SceCommonDialog_base + 0xC988;
+	F->scectrl_svc_offset = SceCommonDialog_base + 0xC978;
+
+	F->sceShellUtilInitEvents = (void *)(SceShellSvc_base + 0xc795);
+	F->sceShellUtilLock = (void *)(SceShellSvc_base + 0xcac3);
+	F->sceShellUtilUnlock = (void *)(SceShellSvc_base + 0xcbd9);
 }
 // END 3.60
 
@@ -330,7 +342,7 @@ int download_file(func_map *F, const char *src, const char *dst) {
 	return 0;
 }
 
-unsigned __attribute__((noinline)) call_syscall(unsigned a1, unsigned num) {
+unsigned __attribute__((noinline)) call_syscall(unsigned a1, unsigned a2, unsigned a3, unsigned num) {
 	__asm__ (
 		"mov r12, %0 \n"
 		"svc 0 \n"
@@ -441,7 +453,7 @@ int install_pkg(func_map *F) {
 	unsigned syscall_num = (addr[0] & 0xFFF) + 1;
 
 	LOG("syscall number: 0x%x\n", syscall_num);
-	ret = call_syscall(SCE_SYSMODULE_PROMOTER_UTIL, syscall_num);
+	ret = call_syscall(SCE_SYSMODULE_PROMOTER_UTIL, 0, 0, syscall_num);
 	if (ret < 0) {
 		PRINTF("sceSysmoduleLoadModuleInternal: 0x%x\n", ret);
 		return ret;
@@ -512,10 +524,12 @@ int install_taihen(func_map *F) {
 	}
 
 	F->sceIoRemove("ux0:tai/taihen.skprx");
-
 	GET_FILE("taihen.skprx");
 
-	write_taihen_config(F);
+
+	if (!exists(F, "ux0:tai/config.txt")) {
+		write_taihen_config(F);
+	}
 
 	if (exists(F, "ux0:tai/taihen.skprx")) {
 		return 0;
@@ -567,6 +581,25 @@ int verify_taihen(func_map *F) {
 	return 1;
 }
 
+int should_reinstall(func_map *F) {
+	unsigned buf[32/4];
+	int ret;
+	unsigned *addr = (void*)F->scectrl_svc_offset;
+	unsigned syscall_num = (addr[0] & 0xFFF) - 7;
+
+	LOG("ctrl peek syscall number: 0x%x\n", syscall_num);
+	ret = call_syscall(0, buf, 1, syscall_num);
+	LOG("sceCtrlPeekBufferPositive2: 0x%x, 0x%x\n", ret, buf[2]);
+	if (ret < 0) {
+		return 0;
+	}
+	if (buf[2] & 0x800) { // R1
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
 void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *argp) {
 	int ret;
 	struct func_map FF = {0};
@@ -574,6 +607,11 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 	resolve_functions(&FF);
 	struct func_map *F = &FF;
 	int tries = INSTALL_ATTEMPTS;
+
+	ret = F->sceShellUtilInitEvents(0);
+	LOG("sceShellUtilInitEvents: %x\n", ret);
+	ret = F->sceShellUtilLock(7);
+	LOG("sceShellUtilLock: %x\n", ret);
 
 	F->fg_color = 0xFFFFFFFF;
 	F->Y = 36; // make sure text starts below the status bar
@@ -630,10 +668,24 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 	F->X = 0;
 
 	// done with the bullshit now, let's rock
-	PRINTF("HENkaku version " BUILD_VERSION " built at " BUILD_DATE " by " BUILD_HOST "\n");
+	PRINTF("HENkaku R%d%s (" BUILD_VERSION ") built at " BUILD_DATE " by " BUILD_HOST "\n", HENKAKU_RELEASE, BETA_RELEASE ? " Beta" : "");
 	PRINTF("Please demand a refund if you paid for this free software either on its own or as part of a bundle!\n\n");
-	PRINTF("!!! DO NOT PRESS THE PS BUTTON !!!\n");
-	PRINTF("installing...\n");
+
+	F->fg_color = 0xFFFF00FF;
+	if (should_reinstall(F)) {
+	#ifndef OFFLINE
+		PRINTF("Forcing reinstall of taiHEN and molecularShell, configuration will be reset\n\n");
+		F->sceIoRemove("ux0:temp/app_work/MLCL00001/rec/config.bin");
+		write_taihen_config(F);
+		set_version(F, SHELL_VERSION_TXT, 0);
+		set_version(F, TAIHEN_VERSION_TXT, 0);
+	#else
+		PRINTF("You must use the online installer to force reinstall!\n\n");
+	#endif
+	}
+	F->fg_color = 0xFFFFFFFF;
+
+	PRINTF("starting...\n");
 
 	F->sceKernelDelayThread(1000 * 1000);
 
@@ -701,6 +753,9 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 		}
 	} while (tries-- > 0);
 	#endif
+
+	ret = F->sceShellUtilUnlock(7);
+	LOG("sceShellUtilUnlock: %x\n", ret);
 
 	PRINTF("\n\n");
 	if (ret < 0) {

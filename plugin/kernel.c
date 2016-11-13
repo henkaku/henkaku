@@ -143,6 +143,7 @@ static int load_config_kernel(void) {
   return 0;
 }
 
+void _start() __attribute__ ((weak, alias ("module_start")));
 int module_start(SceSize argc, const void *args) {
   SceUID shell_pid;
   LOG("loading HENkaku config for kernel");
