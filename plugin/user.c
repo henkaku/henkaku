@@ -92,6 +92,7 @@ static int load_config_user(void) {
   return 0;
 }
 
+void _start() __attribute__ ((weak, alias ("module_start")));
 int module_start(SceSize argc, const void *args) {
   tai_module_info_t info;
   LOG("loading HENkaku config for user");

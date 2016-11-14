@@ -517,11 +517,6 @@ int install_taihen(func_map *F) {
 	// create directory structure
 	mkdirs(F, pkg_path);
 	mkdirs(F, "ux0:data/tai");
-	if (!exists(F, "ux0:data/tai/config.txt")) {
-		int fd = F->sceIoOpen("ux0:data/tai/config.txt", SCE_O_CREAT | SCE_O_WRONLY, 6);
-		F->sceIoClose(fd);
-		mark_world_readable(F, "ux0:data/tai/config.txt");
-	}
 
 	F->sceIoRemove("ux0:tai/taihen.skprx");
 	GET_FILE("taihen.skprx");
@@ -716,6 +711,7 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 			set_version(F, TAIHEN_VERSION_TXT, TAIHEN_VERSION);
 		} else {
 			PRINTF("taiHEN already installed and is the latest version\n");
+			PRINTF("(if you want to force reinstall, reboot your Vita and hold R1 while running the exploit)\n");
 			ret = 0;
 		}
 		if (ret < 0) {
@@ -730,7 +726,7 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 			set_version(F, SHELL_VERSION_TXT, SHELL_VERSION);
 		} else {
 			PRINTF("molecularShell already installed and is the latest version\n");
-			PRINTF("(if you want to force reinstall, remove its bubble and restart the exploit)\n");
+			PRINTF("(if you want to force reinstall, reboot your Vita and hold R1 while running the exploit)\n");
 			ret = 0;
 		}
 		if (ret < 0) {
@@ -754,9 +750,6 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 	} while (tries-- > 0);
 	#endif
 
-	ret = F->sceShellUtilUnlock(7);
-	LOG("sceShellUtilUnlock: %x\n", ret);
-
 	PRINTF("\n\n");
 	if (ret < 0) {
 		F->fg_color = 0xFF0000FF;
@@ -769,6 +762,9 @@ void __attribute__ ((section (".text.start"))) user_payload(int args, unsigned *
 	PRINTF("(the application will close automatically in 3s)\n");
 	PRINTF("If the browser crashes or shows a black screen, that is okay.\n");
 	F->sceKernelDelayThread(3 * 1000 * 1000);
+
+	ret = F->sceShellUtilUnlock(7);
+	LOG("sceShellUtilUnlock: %x\n", ret);
 
 	while (1) {
 		F->kill_me(ret);
