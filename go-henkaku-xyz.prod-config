@@ -17,13 +17,13 @@ STAGE2_URL_BASE="http://beta.henkaku.xyz/x"
 
 # Version to show in Settings
 HENKAKU_RELEASE=7
-BETA_RELEASE=3
+BETA_RELEASE=4
 
 # VitaShell version
 SHELL_VERSION=12
 
 # Version of taiHEN, set to 0 to always download
-TAIHEN_VERSION=2
+TAIHEN_VERSION=3
 
 # CRC of taiHEN for basic checks, set to 0 to disable checks
 TAIHEN_CRC32=0
