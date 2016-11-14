@@ -506,7 +506,7 @@ void remove_sigpatches(void) {
 	__asm__ volatile ("isb" ::: "memory");
 }
 
-void thread_main(void) {
+void thread_main(unsigned sysmem_base) {
 	unsigned ret;
 
 	// halt on crash
@@ -514,6 +514,11 @@ void thread_main(void) {
 	LOG("disabling auto-reboot\n");
 	SceDebugForKernel_F857CDD6_set_crash_flag(0);
 #endif
+
+	// FIXME: Remove this patch here and put it in taiHEN
+	DACR_OFF(
+    INSTALL_RET_THUMB((char *)sysmem_base + 0x8c00, 0); // 3.60
+  );
 
 	// takeover the web browser or email if offline
 
@@ -789,7 +794,7 @@ void __attribute__ ((section (".text.start"))) payload(uint32_t sysmem_addr) {
 	#endif
 
 	resolve_imports(sysmem_base);
-	thread_main();
+	thread_main(sysmem_base);
 	ret = takeover_web_browser();
 	if (ret == 0) {
 		int tid;
