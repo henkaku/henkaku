@@ -489,7 +489,6 @@ static void init_modules() {
 int _start(SceSize argc, void *argp) {
 	int ret;
 	int tries = INSTALL_ATTEMPTS;
-	sceKernelExitProcess(0);
 
 	LOG("hello world!\n");
 

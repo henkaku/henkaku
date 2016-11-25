@@ -254,6 +254,7 @@ static int (*sceKernelGetMemBlockBaseForKernel)(int uid, void **base) = 0;
 static unsigned g_homebrew_decrypt = 0;
 static module_info_t *modulemgr_info = 0;
 static module_info_t *scenpdrm_info = 0;
+static module_info_t *appmgr_info = 0;
 
 // save the block id of our own memory
 static int g_rw_block = 0;
@@ -268,6 +269,11 @@ int hook_SceSblAIMgrForDriver_D78B04A2(void)
 int hook_SceSblAIMgrForDriver_F4B98F66(void)
 {
 	return 1;
+}
+
+int hook_sysroot_421EFC96(void)
+{
+	return 0;
 }
 
 // setup file decryption
@@ -318,6 +324,7 @@ static char old_sbl_89CCDA2C[16] = {0};
 static char old_sbl_BC422443[16] = {0};
 static char old_sblai_D78B04A2[16] = {0};
 static char old_sblai_F4B98F66[16] = {0};
+static char old_sysroot_421EFC96[16] = {0};
 
 void temp_pkgpatches(void) {
 	void *addr;
@@ -398,6 +405,15 @@ void temp_sigpatches(void) {
 		SceCpuForDriver_9CB9F0CE_flush_dcache((uint32_t)addr & ~0x1F, 0x20);
 	);
 	LOG("hooked sbl_BC422443");
+	addr = find_import(appmgr_info, 0x2ED7F97A, 0x421EFC96);
+	LOG("sysroot_421EFC96 stub: %p", addr);
+	DACR_OFF(
+		memcpy(old_sysroot_421EFC96, addr, 16);
+		INSTALL_HOOK(hook_sysroot_421EFC96, addr);
+		SceCpuForDriver_19f17bd0_flush_icache((uint32_t)addr & ~0x1F, 0x20);
+		SceCpuForDriver_9CB9F0CE_flush_dcache((uint32_t)addr & ~0x1F, 0x20);
+	);
+	LOG("hooked sysroot_421EFC96");
 
 	DACR_OFF(has_sigpatches = 1);
 
@@ -438,52 +454,7 @@ void remove_sigpatches(void) {
 	__asm__ volatile ("isb" ::: "memory");
 }
 
-/* Install path and arguments */
-const char launch_path[] = "ux0:data/installer.self";
-const char launch_args[] = "-nonsuspendable\0-livearea_off\0";
-
-static int thread_main(int args, void *argp) {
-	char buffer[INSTALLER_SIZE_ALIGNED];
-	int opt[52/4];
-	int ctx[16/4];
-	const char *start;
-	int fd;
-	int ret;
-
-	LOG("Main kernel thread!");
-
-	LOG("Inflating installer...");
-	ret = SceKernelUtilsForDriver_inflate_check_hdr(build_installer_installer_deflate, 0, 0, 0, &start);
-	LOG("inflate_check_hdr: %x, start: %x", ret, start);
-	for (int i = 0; i < sizeof(ctx)/4; i++) {
-		ctx[i] = 0;
-	}
-	ctx[0] = sizeof(ctx);
-	ret = SceKernelUtilsForDriver_inflate(buffer, INSTALLER_SIZE_ALIGNED, start, NULL, &ctx);
-	LOG("inflate: %x", ret);
-
-	LOG("Loading installer to system");
-	fd = sceIoOpenForDriver(launch_path, 0x603, 0x6);
-	LOG("sceIoOpenForDriver: %x", fd);
-	if (fd >= 0) {
-		ret = sceIoWriteForDriver(fd, buffer, INSTALLER_SIZE);
-		LOG("sceIoWriteForDriver: %x", ret);
-		sceIoCloseForDriver(fd);
-
-		for (int i = 0; i < sizeof(opt)/4; i++) {
-			opt[i] = 0;
-		}
-		opt[0] = sizeof(opt);
-		LOG("Launching installer...");
-		ret = SceAppMgrForDriver_launchbypath(launch_path, launch_args, sizeof(launch_args), 0, opt, NULL);
-		LOG("SceAppMgrForDriver_launchbypath: %x", ret);
-	}
-
-	LOG("done with kernel thread!");
-	return 0;
-}
-
-static int load_taihen(void) {
+int load_taihen(void) {
 	int opt, taiid, modid, ret, result;
 
 	// load taiHEN
@@ -539,6 +510,61 @@ void cleanup(void) {
 	return free_and_exit(g_rx_block, sceKernelFreeMemBlockForKernel, lr);
 }
 
+/* Install path and arguments */
+const char launch_path[] = "ux0:data/installer.self";
+const char launch_args[] = "-nonsuspendable\0-livearea_off\0";
+
+int thread_main(int args, void *argp) {
+	char buffer[INSTALLER_SIZE_ALIGNED];
+	int opt[52/4];
+	int ctx[16/4];
+	const char *start;
+	int fd;
+	int ret;
+
+	void *lr;
+	__asm__ volatile ("mov %0, lr" : "=r" (lr));
+
+	LOG("Main kernel thread, called from %x!", lr);
+
+	LOG("Inflating installer...");
+	ret = SceKernelUtilsForDriver_inflate_check_hdr(build_installer_installer_deflate, 0, 0, 0, &start);
+	LOG("inflate_check_hdr: %x, start: %x", ret, start);
+	for (int i = 0; i < sizeof(ctx)/4; i++) {
+		ctx[i] = 0;
+	}
+	ctx[0] = sizeof(ctx);
+	ret = SceKernelUtilsForDriver_inflate(buffer, INSTALLER_SIZE_ALIGNED, start, NULL, &ctx);
+	LOG("inflate: %x", ret);
+
+	LOG("Loading installer to system");
+	fd = sceIoOpenForDriver(launch_path, 0x603, 0x6);
+	LOG("sceIoOpenForDriver: %x", fd);
+	if (fd >= 0) {
+		ret = sceIoWriteForDriver(fd, buffer, INSTALLER_SIZE);
+		LOG("sceIoWriteForDriver: %x", ret);
+		sceIoCloseForDriver(fd);
+
+		for (int i = 0; i < sizeof(opt)/4; i++) {
+			opt[i] = 0;
+		}
+		opt[0] = sizeof(opt);
+		LOG("Launching installer...");
+		ret = SceAppMgrForDriver_launchbypath(launch_path, launch_args, sizeof(launch_args), 0, opt, NULL);
+		LOG("SceAppMgrForDriver_launchbypath: %x", ret);
+	} else {
+		LOG("unable to write installer!");
+		__asm__ volatile ("mov lr, %0\n"
+											"mov r0, %1\n"
+											"bx r0\n" :: "r" (lr), "r" (cleanup) : "r0", "lr");
+		LOG("should not be here!");
+		while (1);
+	}
+
+	LOG("done with kernel thread!");
+	return 0;
+}
+
 void resolve_imports(unsigned sysmem_base) {
 	module_info_t *sysmem_info = find_modinfo(sysmem_base, "SceSysmem");
 	u32_t modulemgr_base;
@@ -570,7 +596,7 @@ void resolve_imports(unsigned sysmem_base) {
 	ret = sceKernelGetModuleListForKernel(0x10005, 0x7FFFFFFF, 1, modlist, &modlist_records);
 	LOG("sceKernelGetModuleList() returned 0x%x", ret);
 	LOG("modlist_records: %d", modlist_records);
-	module_info_t *threadmgr_info = 0, *sblauthmgr_info = 0, *processmgr_info = 0, *display_info = 0, *appmgr_info = 0, *iofilemgr_info = 0;
+	module_info_t *threadmgr_info = 0, *sblauthmgr_info = 0, *processmgr_info = 0, *display_info = 0, *iofilemgr_info = 0;
 	u32_t scenet_code = 0, scenet_data = 0, modulemgr_data = 0;
 	for (int i = 0; i < modlist_records; ++i) {
 		info.size = sizeof(info);
@@ -592,7 +618,7 @@ void resolve_imports(unsigned sysmem_base) {
 			modulemgr_data = (u32_t)info.segments[1].vaddr;
 		}
 		if (strcmp(info.name, "SceAppMgr") == 0) {
-			appmgr_info = find_modinfo((u32_t)info.segments[0].vaddr, "SceAppMgr");
+			DACR_OFF(appmgr_info = find_modinfo((u32_t)info.segments[0].vaddr, "SceAppMgr"));
 		}
 		if (strcmp(info.name, "SceIofilemgr") == 0) {
 			iofilemgr_info = find_modinfo((u32_t)info.segments[0].vaddr, "SceIofilemgr");
