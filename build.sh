@@ -43,6 +43,7 @@ BUILD_HOST=$(hostname)
 echo "#define BUILD_VERSION \"$BUILD_VERSION\"" >> build/version.c
 echo "#define BUILD_DATE \"$BUILD_DATE\"" >> build/version.c
 echo "#define BUILD_HOST \"$BUILD_HOST\"" >> build/version.c
+echo "#define PKG_URL_PREFIX \"$PKG_URL_PREFIX\"" >> build/version.c
 echo "#define SHELL_VERSION $SHELL_VERSION" >> build/version.c
 echo "#define HENKAKU_RELEASE $HENKAKU_RELEASE" >> build/version.c
 echo "#define BETA_RELEASE $BETA_RELEASE" >> build/version.c
@@ -61,32 +62,35 @@ cp build/plugin/henkaku.suprx output/henkaku.suprx
 HENKAKU_CRC32=$(crc32 output/henkaku.skprx)
 HENKAKU_USER_CRC32=$(crc32 output/henkaku.suprx)
 
-echo "1) User payload"
+echo "1) Installer"
 
 echo "#define HENKAKU_CRC32 0x$HENKAKU_CRC32" >> build/version.c
 echo "#define HENKAKU_USER_CRC32 0x$HENKAKU_USER_CRC32" >> build/version.c
 
-PAYLOAD_KEY=c787069478255b5051727bc3fdecff1a
-
 # user payload is injected into web browser process
-$CC -c -o build/user.o payload/user/user.c $CFLAGS
-$CC -c -o build/compress.o payload/user/compress.c $CFLAGS
-$CC -c -o build/crc32.o payload/user/crc32.c $CFLAGS
-$LD -o build/user.elf build/user.o build/compress.o build/crc32.o -lgcc $LDFLAGS
-$OBJCOPY -O binary build/user.elf build/user.bin
-xxd -i build/user.bin > build/user.h
+mkdir build/installer
+pushd build/installer
+cmake -DRELEASE=$RELEASE ../../installer
+make
+popd
+INSTALLER_SIZE=$(ls -l build/installer/installer.self | awk '{ print $5 }')
+python -c "import zlib,sys;print zlib.compress(sys.stdin.read())" < build/installer/installer.self > build/installer/installer.deflate
+xxd -i build/installer/installer.deflate > build/installer.h
+echo "#define INSTALLER_SIZE $INSTALLER_SIZE" >> build/version.c
 
 echo "2) Payload"
+
+$CC -c -o build/payload.o payload/payload.c $CFLAGS
+$LD -o build/payload.elf build/payload.o $LDFLAGS
+$OBJCOPY -O binary build/payload.elf build/payload.bin
+PAYLOAD_SIZE=$(ls -l build/payload.bin | awk '{ print $5 }')
+echo "#define PAYLOAD_SIZE $PAYLOAD_SIZE" >> build/version.c
 
 # loader decrypts and lods a larger payload
 $CC -c -o build/loader.o payload/loader.c $CFLAGS
 $AS -o build/loader_start.o payload/loader_start.S
 $LD -o build/loader.elf build/loader.o build/loader_start.o $LDFLAGS
 $OBJCOPY -O binary build/loader.elf build/loader.bin
-
-$CC -c -o build/payload.o payload/payload.c $CFLAGS
-$LD -o build/payload.elf build/payload.o $LDFLAGS
-$OBJCOPY -O binary build/payload.elf build/payload.bin
 
 cat payload/pad.bin build/loader.bin > build/loader.full
 # loader must be <=0x100 bytes
@@ -99,12 +103,8 @@ echo "loader size is $SIZE"
 dd if=/dev/zero bs=256 count=1 > build/loader.256
 dd of=build/loader.256 if=build/loader.full bs=256 count=1 conv=notrunc
 openssl enc -aes-256-ecb -in build/loader.256 -nopad -out build/loader.enc -K BD00BF08B543681B6B984708BD00BF0023036018467047D0F8A03043F69D1130
-openssl enc -aes-128-ecb -in build/payload.bin -nopad -out build/payload.enc -K $PAYLOAD_KEY
 
 ./payload/block_check.py build/loader.enc
-./payload/block_check.py build/payload.enc
-
-./payload/write_pkg_url.py build/payload.enc $PKG_URL_PREFIX
 
 echo "3) Kernel ROP"
 if [ "x$KROP_PREBUILT" == "x" ]; then
@@ -118,7 +118,7 @@ echo "4) User ROP"
 echo "symbol stage2_url_base = \"$STAGE2_URL_BASE\";" > build/config.rop
 
 ./urop/make_rop_array.py build/loader.enc kx_loader build/kx_loader.rop
-./urop/make_rop_array.py build/payload.enc second_payload build/second_payload.rop
+./urop/make_rop_array.py build/payload.bin second_payload build/second_payload.rop
 
 $PREPROCESS urop/exploit.rop.in -o build/exploit.rop.in
 erb build/exploit.rop.in > build/exploit.rop
@@ -153,18 +153,11 @@ cp webkit/stage2.go output/dynamic/stage2.go
 echo "6) Offline"
 mkdir -p build/offline output/offline
 
-# offline user-mode is different
-$CC -c -o build/offline/user.o payload/user/user.c $CFLAGS -DOFFLINE=1
-$LD -o build/offline/user.elf build/offline/user.o build/compress.o build/crc32.o -lgcc $LDFLAGS
-$OBJCOPY -O binary build/offline/user.elf build/offline/user.bin
-xxd -i build/offline/user.bin > build/offline/user.h
-
 # offline kernel payload is different
 $CC -c -o build/offline/payload.o payload/payload.c $CFLAGS -DOFFLINE=1
 $LD -o build/offline/payload.elf build/offline/payload.o $LDFLAGS
 $OBJCOPY -O binary build/offline/payload.elf build/offline/payload.bin
-openssl enc -aes-128-ecb -in build/offline/payload.bin -nopad -out build/offline/payload.enc -K $PAYLOAD_KEY
-./urop/make_rop_array.py build/offline/payload.enc second_payload build/offline/second_payload.rop
+./urop/make_rop_array.py build/offline/payload.bin second_payload build/offline/second_payload.rop
 
 # as a result, offline urop exploit is different as well
 # prepare offline stage2
