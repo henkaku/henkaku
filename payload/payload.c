@@ -538,7 +538,7 @@ int thread_main(int args, void *argp) {
 	LOG("inflate: %x", ret);
 
 	LOG("Loading installer to system");
-	fd = sceIoOpenForDriver(launch_path, 0x603, 0x6);
+	ret = fd = sceIoOpenForDriver(launch_path, 0x603, 0x6);
 	LOG("sceIoOpenForDriver: %x", fd);
 	if (fd >= 0) {
 		ret = sceIoWriteForDriver(fd, buffer, INSTALLER_SIZE);
@@ -552,7 +552,8 @@ int thread_main(int args, void *argp) {
 		LOG("Launching installer...");
 		ret = SceAppMgrForDriver_launchbypath(launch_path, launch_args, sizeof(launch_args), 0, opt, NULL);
 		LOG("SceAppMgrForDriver_launchbypath: %x", ret);
-	} else {
+	}
+	if (ret < 0) {
 		LOG("unable to write installer!");
 		__asm__ volatile ("mov lr, %0\n"
 											"mov r0, %1\n"
