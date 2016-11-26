@@ -2,7 +2,6 @@
 #include <psp2kern/kernel/sysmem.h>
 #include <psp2kern/kernel/cpu.h>
 #include <psp2kern/io/fcntl.h>
-#include <psp2kern/sblacmgr.h>
 #include <stdio.h>
 #include <string.h>
 #include <taihen.h>
@@ -150,12 +149,9 @@ int henkaku_reload_config(void) {
   int state;
   int ret;
   ENTER_SYSCALL(state);
-  if (sceSblACMgrIsShell(0)) {
-    ret = load_config_kernel();
-  } else {
-    ret = -1;
-  }
+  ret = load_config_kernel();
   EXIT_SYSCALL(state);
+  return ret;
 }
 
 void _start() __attribute__ ((weak, alias ("module_start")));
