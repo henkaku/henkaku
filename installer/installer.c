@@ -632,13 +632,22 @@ int _start(SceSize argc, void *argp) {
 	if (ret < 0) {
 		cui_data.fg_color = 0xFF0000FF;
 		DRAWF("HENkaku failed to install: error code 0x%x\n", ret);
+		cui_data.fg_color = 0xFFFFFFFF;
+		DRAWF("(press any key to exit)\n");
+		SceCtrlData buf;
+		while (sceCtrlPeekBufferPositive(0, &buf, 1) > 0) {
+			LOG("buttons: %x\n", buf.buttons);
+			if (buf.buttons != 0) {
+				break;
+			}
+		}
 	} else {
 		cui_data.fg_color = 0xFF00FF00;
 		DRAWF("HENkaku was successfully installed\n");
+		cui_data.fg_color = 0xFFFFFFFF;
+		DRAWF("(the application will close automatically in 3s)\n", 3);
+		sceKernelDelayThread((ret < 0 ? 10 : 3) * 1000 * 1000);
 	}
-	cui_data.fg_color = 0xFFFFFFFF;
-	DRAWF("(the application will close automatically in %ds)\n", ret < 0 ? 10 : 3);
-	sceKernelDelayThread((ret < 0 ? 10 : 3) * 1000 * 1000);
 
 	ret = sceShellUtilUnlock(7);
 	LOG("sceShellUtilUnlock: %x\n", ret);
