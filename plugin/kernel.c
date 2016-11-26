@@ -1,6 +1,8 @@
 #include <psp2kern/kernel/modulemgr.h>
 #include <psp2kern/kernel/sysmem.h>
+#include <psp2kern/kernel/cpu.h>
 #include <psp2kern/io/fcntl.h>
+#include <psp2kern/sblacmgr.h>
 #include <stdio.h>
 #include <string.h>
 #include <taihen.h>
@@ -143,6 +145,19 @@ static int load_config_kernel(void) {
   return 0;
 }
 
+// user export
+int henkaku_reload_config(void) {
+  int state;
+  int ret;
+  ENTER_SYSCALL(state);
+  if (sceSblACMgrIsShell(0)) {
+    ret = load_config_kernel();
+  } else {
+    ret = -1;
+  }
+  EXIT_SYSCALL(state);
+}
+
 void _start() __attribute__ ((weak, alias ("module_start")));
 int module_start(SceSize argc, const void *args) {
   SceUID shell_pid;
@@ -164,14 +179,13 @@ int module_start(SceSize argc, const void *args) {
                                               0xF8769E86, 
                                               some_sysroot_check_patched);
   LOG("some_sysroot_check_hook: %x", g_hooks[1]);
-  // we remove this because it might not be needed. the branch at the beginning makes substitute fail
-  /*g_hooks[2] = taiHookFunctionExportForKernel(KERNEL_PID, 
+  g_hooks[2] = taiHookFunctionExportForKernel(KERNEL_PID, 
                                               &g_some_process_check_patched_hook, 
                                               "SceSysmem", 
                                               0x63A519E5, // SceSysmemForKernel
                                               0xD514BB56, 
                                               some_process_check_patched);
-  LOG("some_process_check_patched_hook: %x", g_hooks[2]);*/
+  LOG("some_process_check_patched_hook: %x", g_hooks[2]);
   // this hook patches an auth check in ScePower for enabling overclocking in safe homebrew
   g_some_power_auth_check_hook = 0;
   g_hooks[3] = taiHookFunctionImportForKernel(KERNEL_PID, 
@@ -216,7 +230,7 @@ int module_start(SceSize argc, const void *args) {
 int module_stop(SceSize argc, const void *args) {
   taiHookReleaseForKernel(g_hooks[0], g_parse_headers_hook);
   taiHookReleaseForKernel(g_hooks[1], g_some_sysroot_check_hook);
-  //taiHookReleaseForKernel(g_hooks[2], g_some_process_check_patched_hook);
+  taiHookReleaseForKernel(g_hooks[2], g_some_process_check_patched_hook);
   taiHookReleaseForKernel(g_hooks[3], g_some_power_auth_check_hook);
   if (config.use_spoofed_version) {
     taiHookReleaseForKernel(g_hooks[4], g_sceKernelGetSystemSwVersion_hook);

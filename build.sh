@@ -59,6 +59,7 @@ make
 popd
 cp build/plugin/henkaku.skprx output/henkaku.skprx
 cp build/plugin/henkaku.suprx output/henkaku.suprx
+cp build/plugin/henkaku-libs/libHENkaku_stub.a output/libHENkaku_stub.a
 HENKAKU_CRC32=$(crc32 output/henkaku.skprx)
 HENKAKU_USER_CRC32=$(crc32 output/henkaku.suprx)
 

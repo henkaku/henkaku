@@ -42,6 +42,7 @@ target_link_libraries(kernel.elf
   SceIofilemgrForDriver_stub
   SceDebugForDriver_stub
   SceModulemgrForKernel_stub
+  SceSblACMgrForDriver_stub
 )
 
 set_target_properties(kernel.elf
@@ -54,13 +55,21 @@ set_target_properties(user.elf
 )
 
 add_custom_target(henkaku.skprx ALL
-	COMMAND vita-elf-create -e ${CMAKE_SOURCE_DIR}/henkaku.yml kernel.elf kernel.velf ${CMAKE_SOURCE_DIR}/taihen.json
+	COMMAND vita-elf-create -e ${CMAKE_SOURCE_DIR}/kernel.yml kernel.elf kernel.velf ${CMAKE_SOURCE_DIR}/taihen.json
 	COMMAND vita-make-fself kernel.velf henkaku.skprx
 )
 add_dependencies(henkaku.skprx kernel.elf)
 
 add_custom_target(henkaku.suprx ALL
-	COMMAND vita-elf-create -e ${CMAKE_SOURCE_DIR}/henkaku.yml user.elf user.velf ${CMAKE_SOURCE_DIR}/taihen.json
+	COMMAND vita-elf-create -e ${CMAKE_SOURCE_DIR}/user.yml user.elf user.velf ${CMAKE_SOURCE_DIR}/taihen.json
 	COMMAND vita-make-fself user.velf henkaku.suprx
 )
 add_dependencies(henkaku.suprx user.elf)
+
+add_custom_target(henkaku-libs ALL
+  COMMAND vita-elf-export kernel kernel.elf ${CMAKE_SOURCE_DIR}/kernel.yml kernel.json
+  COMMAND vita-libs-gen kernel.json henkaku-libs
+  COMMAND make -C henkaku-libs
+)
+
+add_dependencies(henkaku-libs henkaku.elf)
