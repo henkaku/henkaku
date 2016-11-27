@@ -635,14 +635,24 @@ int _start(SceSize argc, void *argp) {
 	call_syscall(0, 0, 0, 0xff3);
 
 	DRAWF("\n\n");
-	if (ret < 0) {
+	if (ret == 0x8002d013) {
+		cui_data.fg_color = 0xFFFF00FF;
+		DRAWF("taiHEN has already been started!\n");
+		cui_data.fg_color = 0xFFFFFFFF;
+		DRAWF("(press any key to exit)\n");
+		SceCtrlData buf;
+		while (sceCtrlPeekBufferPositive(0, &buf, 1) > 0) {
+			if (buf.buttons != 0) {
+				break;
+			}
+		}
+	} else if (ret < 0) {
 		cui_data.fg_color = 0xFF0000FF;
 		DRAWF("HENkaku failed to install: error code 0x%x\n", ret);
 		cui_data.fg_color = 0xFFFFFFFF;
 		DRAWF("(press any key to exit)\n");
 		SceCtrlData buf;
 		while (sceCtrlPeekBufferPositive(0, &buf, 1) > 0) {
-			LOG("buttons: %x\n", buf.buttons);
 			if (buf.buttons != 0) {
 				break;
 			}

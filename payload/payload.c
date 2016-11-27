@@ -471,21 +471,26 @@ int load_taihen(void) {
 	LOG("LoadTaiHEN: 0x%08X", taiid);
 	remove_sigpatches();
 	LOG("Removed temp patches");
+	result = 0;
 	ret = sceKernelStartModuleForDriver(taiid, 0, NULL, 0, NULL, &result);
 	LOG("StartTaiHEN: 0x%08X, 0x%08X", ret, result);
-	if (result < 0) {
+	if (ret == 0) {
 		ret = result;
+	}
+	if (ret < 0) {
 		goto end;
 	}
 
 	// load henkaku kernel
 	modid = sceKernelLoadModuleWithoutStartForDriver("ux0:app/MLCL00001/henkaku.skprx", 0, &opt);
 	LOG("LoadHENKaku kernel: 0x%08X", modid);
-	result = -1;
+	result = 0;
 	ret = sceKernelStartModuleForDriver(modid, 0, NULL, 0, NULL, &result);
 	LOG("StartHENkaku kernel: 0x%08X, 0x%08X", ret, result);
-	if (result < 0) {
+	if (ret == 0) {
 		ret = result;
+	}
+	if (ret < 0) {
 		goto end;
 	}
 
