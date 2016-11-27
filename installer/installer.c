@@ -23,7 +23,7 @@
 
 #include "../build/version.c"
 
-#define INSTALL_ATTEMPTS 2
+#define INSTALL_ATTEMPTS 1
 
 #if RELEASE
 #define LOG(...)
@@ -619,14 +619,20 @@ int _start(SceSize argc, void *argp) {
 	} while (tries-- > 0);
 
 	DRAWF("\n");
+
+	DRAWF("Removing temporary patches...\n");
+	call_syscall(0, 0, 0, 0xff1);
+
 	if (ret >= 0) {
 		DRAWF("Starting taiHEN...\n");
 		ret = call_syscall(0, 0, 0, 0xff0);
+	} else {
+		call_syscall(0, 0, 0, 0xff2);
 	}
 
 	DRAWF("Cleaning up...\n");
 	sceIoRemove("ux0:data/installer.self");
-	call_syscall(0, 0, 0, 0xff1);
+	call_syscall(0, 0, 0, 0xff3);
 
 	DRAWF("\n\n");
 	if (ret < 0) {

@@ -448,6 +448,14 @@ void remove_sigpatches(void) {
 		SceCpuForDriver_9CB9F0CE_flush_dcache((uint32_t)addr & ~0x1F, 0x20);
 	);
 	LOG("unhooked sbl_BC422443");
+	addr = find_import(appmgr_info, 0x2ED7F97A, 0x421EFC96);
+	LOG("sysroot_421EFC96 stub: %p", addr);
+	DACR_OFF(
+		memcpy(addr, old_sysroot_421EFC96, 16);
+		SceCpuForDriver_19f17bd0_flush_icache((uint32_t)addr & ~0x1F, 0x20);
+		SceCpuForDriver_9CB9F0CE_flush_dcache((uint32_t)addr & ~0x1F, 0x20);
+	);
+	LOG("unhooked sysroot_421EFC96");
 
 	DACR_OFF(has_sigpatches = 0);
 
@@ -492,18 +500,16 @@ static void __attribute__((noinline, naked)) free_and_exit(int blk, void *free, 
 										"bx r1" :: "r" (lr) : "lr");
 }
 
-void cleanup(void) {
+void cleanup_memory(void) {
 	void *lr;
 	__asm__ volatile ("mov %0, lr" : "=r" (lr));
-	LOG("calling cleanup from %x", lr);
-	// remove patches
-	LOG("removing temp patches");
-	remove_sigpatches();
-	remove_pkgpatches();
+	LOG("calling cleanup from %x", lr);\
 	// remove syscalls
 	LOG("removing syscalls");
 	SceModulemgrForKernel_0xB427025E_set_syscall(0xff0, syscall_stub);
 	SceModulemgrForKernel_0xB427025E_set_syscall(0xff1, syscall_stub);
+	SceModulemgrForKernel_0xB427025E_set_syscall(0xff2, syscall_stub);
+	SceModulemgrForKernel_0xB427025E_set_syscall(0xff3, syscall_stub);
 	LOG("freeing memory");
 	sceKernelFreeMemBlockForKernel(g_rw_block); // free stage 2 stack
 	LOG("freeing executable memory");
@@ -555,9 +561,11 @@ int thread_main(int args, void *argp) {
 	}
 	if (ret < 0) {
 		LOG("unable to write installer!");
+		remove_sigpatches();
+		remove_pkgpatches();
 		__asm__ volatile ("mov lr, %0\n"
 											"mov r0, %1\n"
-											"bx r0\n" :: "r" (lr), "r" (cleanup) : "r0", "lr");
+											"bx r0\n" :: "r" (lr), "r" (cleanup_memory) : "r0", "lr");
 		LOG("should not be here!");
 		while (1);
 	}
@@ -664,7 +672,6 @@ void resolve_imports(unsigned sysmem_base) {
 	void **syscall_table = (void **) (*((u32_t*)(modulemgr_data + 0x334)));
 	// END 3.60
 	LOG("syscall 0xff0: %x", syscall_table[0xff0]);
-	LOG("syscall 0xff1: %x", syscall_table[0xff1]);
 	DACR_OFF(syscall_stub = syscall_table[0xff0]);
 }
 
@@ -702,7 +709,9 @@ void __attribute__ ((section (".text.start"))) payload(uint32_t sysmem_addr, voi
 	LOG("set up syscalls");
 
 	SceModulemgrForKernel_0xB427025E_set_syscall(0xff0, load_taihen);
-	SceModulemgrForKernel_0xB427025E_set_syscall(0xff1, cleanup);
+	SceModulemgrForKernel_0xB427025E_set_syscall(0xff1, remove_pkgpatches);
+	SceModulemgrForKernel_0xB427025E_set_syscall(0xff2, remove_sigpatches);
+	SceModulemgrForKernel_0xB427025E_set_syscall(0xff3, cleanup_memory);
 
 	LOG("adding temporary patches");
 	temp_pkgpatches();
