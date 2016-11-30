@@ -47,6 +47,7 @@ const char taihen_config[] =
 	"ux0:app/MLCL00001/henkaku.suprx\n";
 
 static int g_tpl; // http template
+static volatile int g_render_hold; // set 1 to stop rendering in the meantime
 
 static struct {
 	int X, Y;
@@ -67,6 +68,46 @@ enum {
 // Draw functions
 #include "font.c"
 
+static void clear_screen(void) {
+	uint32_t *fb = (uint32_t *)cui_data.base;
+	uint16_t *logo = (uint16_t *)(cui_data.base);
+
+	g_render_hold = 1;
+
+	for (int i = 0; i < FRAMEBUFFER_SIZE; i += 4)
+	{
+		((unsigned int *)cui_data.base)[i/4] = 0xFF000000;
+	}
+
+	decompress((char *)molecule_logo.data, cui_data.base, sizeof(molecule_logo.data), molecule_logo.size);
+
+	cui_data.Y = SCREEN_HEIGHT-molecule_logo.height;
+	cui_data.X = SCREEN_WIDTH-molecule_logo.width;
+
+	for (int y = 0; y < molecule_logo.height; ++y)
+	{
+		for (int x = 0; x < molecule_logo.width; ++x)
+		{
+			uint16_t rgb = logo[x+y*molecule_logo.width];
+
+			uint8_t r = ((((rgb >> 11) & 0x1F) * 527) + 23) >> 6;
+			uint8_t g = ((((rgb >> 5) & 0x3F) * 259) + 33) >> 6;
+			uint8_t b = (((rgb & 0x1F) * 527) + 23) >> 6;
+
+			uint32_t *fb_ptr = fb + (cui_data.X + x) + (cui_data.Y + y)*LINE_SIZE;
+			*fb_ptr = 0xFF000000 | (b << 16) | (g << 8) | r;
+		}
+	}
+
+	// clear uncompressed data
+	sceClibMemset(cui_data.base, 0, molecule_logo.size);
+
+	cui_data.Y = 32;
+	cui_data.X = 0;
+
+	g_render_hold = 0;
+}
+
 static void printTextScreen(const char * text, uint32_t *g_vram, int *X, int *Y)
 {
 	int c, i, j, l;
@@ -75,13 +116,12 @@ static void printTextScreen(const char * text, uint32_t *g_vram, int *X, int *Y)
 	uint32_t *vram;
 
 	for (c = 0; c < sceClibStrnlen(text, 256); c++) {
-		if (*X + 8 > SCREEN_WIDTH) {
+		if (*X + 8 >= SCREEN_WIDTH) {
 			*Y += 8;
 			*X = 0;
 		}
-		if (*Y + 8 > SCREEN_HEIGHT) {
-			*Y = 0;
-			sceClibMemset(cui_data.base, 0, molecule_logo.size); // clear screen
+		if (*Y >= SCREEN_HEIGHT) {
+			clear_screen();
 		}
 		char ch = text[c];
 		if (ch == '\n') {
@@ -132,14 +172,20 @@ int render_thread(SceSize args, void *argp) {
 	fb.height = SCREEN_HEIGHT;
 	fb.pixelformat = SCE_DISPLAY_PIXELFORMAT_A8B8G8R8;
 	while (1) {
-		ret = sceDisplaySetFrameBuf(&fb, 1);
-		if (ret < 0)
-			LOG("sceDisplaySetFrameBuf: 0x%x\n", ret);
+		if (!g_render_hold) {
+			ret = sceDisplaySetFrameBuf(&fb, 1);
+			if (ret < 0)
+				LOG("sceDisplaySetFrameBuf: 0x%x\n", ret);
+		}
 		sceKernelDelayThread(10 * 1000);
 	}
 }
 
 void draw_rect(int x, int y, int width, int height) {
+	if (y >= SCREEN_HEIGHT) {
+		clear_screen();
+		y = 32;
+	}
 	for (int j = y; j < y + height; ++j)
 		for (int i = x; i < x + width; ++i)
 			((unsigned*)cui_data.base)[j * LINE_SIZE + i] = cui_data.fg_color;
@@ -490,44 +536,14 @@ int _start(SceSize argc, void *argp) {
 	ret = sceKernelGetMemBlockBase(block, &cui_data.base);
 	LOG("sceKernelGetMemBlockBase: 0x%x base 0x%x\n", ret, cui_data.base);
 
-	for (int i = 0; i < FRAMEBUFFER_SIZE; i += 4)
-	{
-		((unsigned int *)cui_data.base)[i/4] = 0xFF000000;
-	}
-
 	// draw logo
-	uint32_t *fb = (uint32_t *)cui_data.base;
-	decompress((char *)molecule_logo.data, cui_data.base, sizeof(molecule_logo.data), molecule_logo.size);
-	uint16_t *logo = (uint16_t *)(cui_data.base);
+	clear_screen();
 
-	cui_data.Y = SCREEN_HEIGHT-molecule_logo.height;
-	cui_data.X = SCREEN_WIDTH-molecule_logo.width;
-
-	for (int y = 0; y < molecule_logo.height; ++y)
-	{
-		for (int x = 0; x < molecule_logo.width; ++x)
-		{
-			uint16_t rgb = logo[x+y*molecule_logo.width];
-
-			uint8_t r = ((((rgb >> 11) & 0x1F) * 527) + 23) >> 6;
-			uint8_t g = ((((rgb >> 5) & 0x3F) * 259) + 33) >> 6;
-			uint8_t b = (((rgb & 0x1F) * 527) + 23) >> 6;
-
-			uint32_t *fb_ptr = fb + (cui_data.X + x) + (cui_data.Y + y)*LINE_SIZE;
-			*fb_ptr = 0xFF000000 | (b << 16) | (g << 8) | r;
-		}
-	}
-
-	// clear uncompressed data
-	sceClibMemset(cui_data.base, 0, molecule_logo.size);
-
+	g_render_hold = 0;
 	int thread = sceKernelCreateThread("", render_thread, 64, 0x1000, 0, 0, 0);
 	LOG("create thread 0x%x\n", thread);
 
 	ret = sceKernelStartThread(thread, 0, NULL);
-
-	cui_data.Y = 32;
-	cui_data.X = 0;
 
 	// done with the bullshit now, let's rock
 	DRAWF("HENkaku R%d%s (" BUILD_VERSION ") built at " BUILD_DATE " by " BUILD_HOST "\n", HENKAKU_RELEASE, BETA_RELEASE ? " Beta" : "");
