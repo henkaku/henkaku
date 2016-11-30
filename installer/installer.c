@@ -81,7 +81,7 @@ static void printTextScreen(const char * text, uint32_t *g_vram, int *X, int *Y)
 		}
 		if (*Y + 8 > SCREEN_HEIGHT) {
 			*Y = 0;
-			// psvDebugScreenClear(g_bg_color);
+			sceClibMemset(cui_data.base, 0, molecule_logo.size); // clear screen
 		}
 		char ch = text[c];
 		if (ch == '\n') {
@@ -408,7 +408,7 @@ int should_reinstall(void) {
 	if (ret < 0) {
 		return 0;
 	}
-	if (buf.buttons & SCE_CTRL_R1) {
+	if (buf.buttons & (SCE_CTRL_R1 | SCE_CTRL_RTRIGGER)) {
 		return 1;
 	} else {
 		return 0;
@@ -537,6 +537,10 @@ int _start(SceSize argc, void *argp) {
 	if (should_reinstall()) {
 		DRAWF("Forcing reinstall of taiHEN and molecularShell, configuration will be reset\n\n");
 		sceIoRemove("ux0:temp/app_work/MLCL00001/rec/config.bin");
+		sceIoRemove("ux0:app/MLCL00001/eboot.bin");
+		sceIoRemove("ux0:app/MLCL00001/henkaku.suprx");
+		sceIoRemove("ux0:app/MLCL00001/henkaku.skprx");
+		sceIoRemove("ux0:tai/taihen.skprx");
 		write_taihen_config();
 	}
 	cui_data.fg_color = 0xFFFFFFFF;
