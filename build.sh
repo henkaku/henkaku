@@ -14,9 +14,9 @@ fi
 
 source $1
 
-if [ -z "$RELEASE" ] || [ -z "$PKG_URL_PREFIX" ] || [ -z "$STAGE2_URL_BASE" ] || [ -z "$SHELL_VERSION" ] || [ -z "$TAIHEN_VERSION" ] || [ -z "$TAIHEN_CRC32" ] || [ -z "$HENKAKU_RELEASE" ]; then
+if [ -z "$RELEASE" ] || [ -z "$PKG_URL_PREFIX" ] || [ -z "$STAGE2_URL_BASE" ] || [ -z "$VITASHELL_CRC32" ] || [ -z "$TAIHEN_CRC32" ] || [ -z "$HENKAKU_RELEASE" ]; then
 	echo "Please make sure all of the following variables are defined in your config file:"
-	echo "RELEASE, PKG_URL_PREFIX, STAGE2_URL_BASE, SHELL_VERSION, TAIHEN_VERSION, TAIHEN_CRC32, HENKAKU_RELEASE"
+	echo "RELEASE, PKG_URL_PREFIX, STAGE2_URL_BASE, VITASHELL_CRC32, TAIHEN_CRC32, HENKAKU_RELEASE"
 	echo "(see sample.config.in for an example)"
 	exit 2
 fi
@@ -44,10 +44,9 @@ echo "#define BUILD_VERSION \"$BUILD_VERSION\"" >> build/version.c
 echo "#define BUILD_DATE \"$BUILD_DATE\"" >> build/version.c
 echo "#define BUILD_HOST \"$BUILD_HOST\"" >> build/version.c
 echo "#define PKG_URL_PREFIX \"$PKG_URL_PREFIX\"" >> build/version.c
-echo "#define SHELL_VERSION $SHELL_VERSION" >> build/version.c
 echo "#define HENKAKU_RELEASE $HENKAKU_RELEASE" >> build/version.c
 echo "#define BETA_RELEASE $BETA_RELEASE" >> build/version.c
-echo "#define TAIHEN_VERSION $TAIHEN_VERSION" >> build/version.c
+echo "#define VITASHELL_CRC32 $VITASHELL_CRC32" >> build/version.c
 echo "#define TAIHEN_CRC32 $TAIHEN_CRC32" >> build/version.c
 
 echo "0) taiHEN plugin"

@@ -23,7 +23,7 @@
 
 #include "../build/version.c"
 
-#define INSTALL_ATTEMPTS 1
+#define INSTALL_ATTEMPTS 3
 
 #if RELEASE
 #define LOG(...)
@@ -45,6 +45,8 @@ const char taihen_config[] =
 	"*NPXS10015\n"
 	"# this is for modifying the version string\n"
 	"ux0:app/MLCL00001/henkaku.suprx\n";
+
+static int g_tpl; // http template
 
 static struct {
 	int X, Y;
@@ -147,12 +149,7 @@ void draw_rect(int x, int y, int width, int height) {
 int download_file(const char *src, const char *dst) {
 	int ret;
 	DRAWF("downloading %s\n", src);
-	int tpl = sceHttpCreateTemplate("henkaku usermode", 2, 1);
-	if (tpl < 0) {
-		DRAWF("sceHttpCreateTemplate: 0x%x\n", tpl);
-		return tpl;
-	}
-	int conn = sceHttpCreateConnectionWithURL(tpl, src, 0);
+	int conn = sceHttpCreateConnectionWithURL(g_tpl, src, 0);
 	if (conn < 0) {
 		DRAWF("sceHttpCreateConnectionWithURL: 0x%x\n", conn);
 		return conn;
@@ -160,12 +157,13 @@ int download_file(const char *src, const char *dst) {
 	int req = sceHttpCreateRequestWithURL(conn, 0, src, 0);
 	if (req < 0) {
 		DRAWF("sceHttpCreateRequestWithURL: 0x%x\n", req);
+		sceHttpDeleteConnection(conn);
 		return req;
 	}
 	ret = sceHttpSendRequest(req, NULL, 0);
 	if (ret < 0) {
 		DRAWF("sceHttpSendRequest: 0x%x\n", ret);
-		return ret;
+		goto end;
 	}
 	unsigned char buf[4096];
 
@@ -176,7 +174,8 @@ int download_file(const char *src, const char *dst) {
 	int total_read = 0;
 	if (fd < 0) {
 		DRAWF("sceIoOpen: 0x%x\n", fd);
-		return fd;
+		ret = fd;
+		goto end;
 	}
 	// draw progress bar background
 	cui_data.fg_color = 0xFF666666;
@@ -186,26 +185,28 @@ int download_file(const char *src, const char *dst) {
 		int read = sceHttpReadData(req, buf, sizeof(buf));
 		if (read < 0) {
 			DRAWF("sceHttpReadData error! 0x%x\n", read);
-			return read;
+			ret = read;
+			goto end2;
 		}
 		if (read == 0)
 			break;
 		ret = sceIoWrite(fd, buf, read);
 		if (ret < 0 || ret != read) {
 			DRAWF("sceIoWrite error! 0x%x\n", ret);
-			if (ret < 0)
-				return ret;
-			return -1;
+			goto end2;
 		}
 		total_read += read;
 		draw_rect(cui_data.X + 1, cui_data.Y + 1, (PROGRESS_BAR_WIDTH - 2) * total_read / length, PROGRESS_BAR_HEIGHT - 2);
 	}
 	DRAWF("\n\n");
-	ret = sceIoClose(fd);
-	if (ret < 0)
-		DRAWF("sceIoClose: 0x%x\n", ret);
 
-	return 0;
+end2:
+	sceIoClose(fd);
+end:
+	sceHttpDeleteRequest(req);
+	sceHttpDeleteConnection(conn);
+
+	return ret;
 }
 
 unsigned __attribute__((naked, noinline)) call_syscall(unsigned a1, unsigned a2, unsigned a3, unsigned num) {
@@ -236,33 +237,6 @@ static void mkdirs(const char *dir) {
 	sceClibSnprintf(url, sizeof(url), "%s/" name, pkg_url_prefix); \
 	download_file(url, file_name); \
 } while(0);
-
-#define SHELL_VERSION_TXT "ux0:app/MLCL00001/version.txt"
-#define TAIHEN_VERSION_TXT "ux0:tai/version.txt"
-
-unsigned get_version(const char *path) {
-	int fd = sceIoOpen(path, SCE_O_RDONLY, 0);
-	if (fd < 0)
-		return 0;
-	unsigned ver = 0;
-	sceIoRead(fd, &ver, sizeof(ver));
-	sceIoClose(fd);
-	return ver;
-}
-
-void set_version(const char *path, unsigned version) {
-	int fd = sceIoOpen(path, SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC, 6);
-	if (fd < 0) {
-		DRAWF("Failed to open version.txt: 0x%x\n", fd);
-		return;
-	}
-	int ret = sceIoWrite(fd, &version, sizeof(version));
-	if (ret != sizeof(version)) {
-		DRAWF("Failed to write version.txt: 0x%x\n", ret);
-		return;
-	}
-	sceIoClose(fd);
-}
 
 static int exists(const char *path) {
 	int fd = sceIoOpen(path, SCE_O_RDONLY, 0);
@@ -362,7 +336,7 @@ int write_taihen_config(void) {
 	// write default config
 	sceIoRemove("ux0:tai/config.txt");
 	fd = sceIoOpen("ux0:tai/config.txt", SCE_O_TRUNC | SCE_O_CREAT | SCE_O_WRONLY, 6);
-	sceIoWrite(fd, taihen_config, sizeof(taihen_config));
+	sceIoWrite(fd, taihen_config, sizeof(taihen_config) - 1);
 	sceIoClose(fd);
 
 	return 0;
@@ -382,7 +356,6 @@ int install_taihen(const char *pkg_url_prefix) {
 
 	sceIoRemove("ux0:tai/taihen.skprx");
 	GET_FILE("taihen.skprx");
-
 
 	if (!exists("ux0:tai/config.txt")) {
 		write_taihen_config();
@@ -484,6 +457,9 @@ static void init_modules() {
 
 	ret = sceNetCtlInit();
 	LOG("sceNetCtlInit(): %x\n", ret);
+
+	g_tpl = sceHttpCreateTemplate("henkaku usermode", 2, 1);
+	LOG("sceHttpCreateTemplate: 0x%x\n", g_tpl);
 }
 
 int _start(SceSize argc, void *argp) {
@@ -562,8 +538,6 @@ int _start(SceSize argc, void *argp) {
 		DRAWF("Forcing reinstall of taiHEN and molecularShell, configuration will be reset\n\n");
 		sceIoRemove("ux0:temp/app_work/MLCL00001/rec/config.bin");
 		write_taihen_config();
-		set_version(SHELL_VERSION_TXT, 0);
-		set_version(TAIHEN_VERSION_TXT, 0);
 	}
 	cui_data.fg_color = 0xFFFFFFFF;
 
@@ -573,11 +547,12 @@ int _start(SceSize argc, void *argp) {
 
 	LOG("am still running\n");
 
+	int crc[3] = {0};
 	do {
 		// check if we actually need to install the package
-		if (TAIHEN_VERSION == 0 || get_version(TAIHEN_VERSION_TXT) < TAIHEN_VERSION) {
+		if (TAIHEN_CRC32 == 0 || (crc[0] = crc32_file("ux0:tai/taihen.skprx")) != TAIHEN_CRC32) {
+			DRAWF("taihen.skprx CRC32:%x, latest:%x, getting latest version...\n", crc[0], TAIHEN_CRC32);
 			ret = install_taihen(PKG_URL_PREFIX);
-			set_version(TAIHEN_VERSION_TXT, TAIHEN_VERSION);
 		} else {
 			DRAWF("taiHEN already installed and is the latest version\n");
 			DRAWF("(if you want to force reinstall, reboot your Vita and hold R1 while running the exploit)\n");
@@ -590,9 +565,14 @@ int _start(SceSize argc, void *argp) {
 			continue;
 		}
 		// check if we actually need to install the package
-		if (SHELL_VERSION == 0 || get_version(SHELL_VERSION_TXT) < SHELL_VERSION) {
+		if (VITASHELL_CRC32 == 0 || (crc[0] = crc32_file("ux0:app/MLCL00001/eboot.bin")) != VITASHELL_CRC32 || 
+			  (crc[1] = crc32_file("ux0:app/MLCL00001/henkaku.suprx")) != HENKAKU_USER_CRC32 ||
+			  (crc[2] = crc32_file("ux0:app/MLCL00001/henkaku.skprx")) != HENKAKU_CRC32) {
+			DRAWF("molecularShell CRC32:%x, latest:%x\n", crc[0], VITASHELL_CRC32);
+			if (crc[1]) DRAWF("henkaku.suprx CRC32:%x, latest:%x\n", crc[1], HENKAKU_USER_CRC32);
+			if (crc[2]) DRAWF("henkaku.skprx CRC32:%x, latest:%x\n", crc[2], HENKAKU_CRC32);
+			DRAWF("Getting latest version...\n");
 			ret = install_pkg(PKG_URL_PREFIX);
-			set_version(SHELL_VERSION_TXT, SHELL_VERSION);
 		} else {
 			DRAWF("molecularShell already installed and is the latest version\n");
 			DRAWF("(if you want to force reinstall, reboot your Vita and hold R1 while running the exploit)\n");
@@ -609,8 +589,6 @@ int _start(SceSize argc, void *argp) {
 			cui_data.fg_color = 0xFF0000FF;
 			DRAWF("ERROR: taiHENkaku files are corrupted, trying to reinstall (%d tries left)...\n", tries);
 			cui_data.fg_color = 0xFFFFFFFF;
-			set_version(SHELL_VERSION_TXT, 0);
-			set_version(TAIHEN_VERSION_TXT, 0);
 			sceIoRemove("ux0:tai/taihen.skprx");
 			sceIoRemove("ux0:app/MLCL00001/henkaku.skprx");
 		} else {

@@ -285,7 +285,7 @@ unsigned hook_sbl_F3411881(unsigned a1, unsigned a2, unsigned a3, unsigned a4) {
 	unsigned *somebuf = (unsigned*)a4;
 	u64_t authid;
 
-	if (res == 0x800f0624 || res == 0x800f0616 || res == 0x800f0024 || res == 0x800f0b3a || res == 0x800f0b32) {
+	if (res == 0x800f0624 || res == 0x800f0616 || res == 0x800f0024 || res == 0x800f0b3a || res == 0x800f0b32 || res == 0x800f0b34) {
 		DACR_OFF(
 			g_homebrew_decrypt = 1;
 		);
