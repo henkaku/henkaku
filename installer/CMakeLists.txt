@@ -25,8 +25,8 @@ add_executable(installer.elf
 target_link_libraries(installer.elf
   gcc
   SceLibKernel_stub
-  SceIoFilemgr_stub
-  SceKernelThreadmgr_stub
+  SceIofilemgr_stub
+  SceKernelThreadMgr_stub
   SceSysmem_stub
   SceProcessmgr_stub
   SceDisplay_stub

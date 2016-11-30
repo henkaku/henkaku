@@ -71,4 +71,4 @@ add_custom_target(henkaku-libs ALL
   COMMAND make -C henkaku-libs
 )
 
-add_dependencies(henkaku-libs henkaku.elf)
+add_dependencies(henkaku-libs kernel.elf)
