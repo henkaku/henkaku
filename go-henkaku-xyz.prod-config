@@ -17,10 +17,10 @@ STAGE2_URL_BASE="http://beta.henkaku.xyz/x"
 
 # Version to show in Settings
 HENKAKU_RELEASE=7
-BETA_RELEASE=5
+BETA_RELEASE=6
 
 # CRC of taihen.skprx, will redownload if mismatch
-TAIHEN_CRC32=0xd134d03f
+TAIHEN_CRC32=0x483c8644
 
 # CRC of molecularShell eboot.bin, will redownload if mismatch
-VITASHELL_CRC32=0x23132266
+VITASHELL_CRC32=0x99c37729

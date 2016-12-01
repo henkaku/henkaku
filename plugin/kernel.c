@@ -1,6 +1,7 @@
 #include <psp2kern/kernel/modulemgr.h>
 #include <psp2kern/kernel/sysmem.h>
 #include <psp2kern/kernel/cpu.h>
+#include <psp2kern/kernel/threadmgr.h>
 #include <psp2kern/io/fcntl.h>
 #include <stdio.h>
 #include <string.h>
@@ -147,9 +148,15 @@ static int load_config_kernel(void) {
 // user export
 int henkaku_reload_config(void) {
   int state;
+  int tid;
   int ret;
   ENTER_SYSCALL(state);
-  ret = load_config_kernel();
+  tid = sceKernelCreateThreadForKernel("configwrite", (SceKernelThreadEntry)load_config_kernel, 64, 0x1000, 0, 0, NULL);
+  LOG("sceKernelCreateThreadForKernel: %x", tid);
+  ret = sceKernelStartThreadForKernel(tid, 0, NULL);
+  LOG("sceKernelStartThreadForKernel: %x", ret);
+  sceKernelWaitThreadEndForKernel(tid, &ret, NULL);
+  sceKernelDeleteThreadForKernel(tid);
   EXIT_SYSCALL(state);
   return ret;
 }

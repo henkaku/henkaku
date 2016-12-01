@@ -42,6 +42,7 @@ target_link_libraries(kernel.elf
   SceIofilemgrForDriver_stub
   SceDebugForDriver_stub
   SceModulemgrForKernel_stub
+  SceThreadmgrForDriver_stub
 )
 
 set_target_properties(kernel.elf
