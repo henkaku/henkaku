@@ -47,7 +47,6 @@ const char taihen_config[] =
 	"ux0:app/MLCL00001/henkaku.suprx\n";
 
 static int g_tpl; // http template
-static volatile int g_render_hold; // set 1 to stop rendering in the meantime
 
 static struct {
 	int X, Y;
@@ -71,8 +70,6 @@ enum {
 static void clear_screen(void) {
 	uint32_t *fb = (uint32_t *)cui_data.base;
 	uint16_t *logo = (uint16_t *)(cui_data.base);
-
-	g_render_hold = 1;
 
 	for (int i = 0; i < FRAMEBUFFER_SIZE; i += 4)
 	{
@@ -104,8 +101,6 @@ static void clear_screen(void) {
 
 	cui_data.Y = 32;
 	cui_data.X = 0;
-
-	g_render_hold = 0;
 }
 
 static void printTextScreen(const char * text, uint32_t *g_vram, int *X, int *Y)
@@ -172,11 +167,9 @@ int render_thread(SceSize args, void *argp) {
 	fb.height = SCREEN_HEIGHT;
 	fb.pixelformat = SCE_DISPLAY_PIXELFORMAT_A8B8G8R8;
 	while (1) {
-		if (!g_render_hold) {
-			ret = sceDisplaySetFrameBuf(&fb, 1);
-			if (ret < 0)
-				LOG("sceDisplaySetFrameBuf: 0x%x\n", ret);
-		}
+		ret = sceDisplaySetFrameBuf(&fb, 1);
+		if (ret < 0)
+			LOG("sceDisplaySetFrameBuf: 0x%x\n", ret);
 		sceKernelDelayThread(10 * 1000);
 	}
 }
@@ -539,7 +532,6 @@ int _start(SceSize argc, void *argp) {
 	// draw logo
 	clear_screen();
 
-	g_render_hold = 0;
 	int thread = sceKernelCreateThread("", render_thread, 64, 0x1000, 0, 0, 0);
 	LOG("create thread 0x%x\n", thread);
 
