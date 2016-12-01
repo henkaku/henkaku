@@ -260,6 +260,7 @@ static module_info_t *appmgr_info = 0;
 static int g_rw_block = 0;
 static int g_rx_block = 0;
 static void *syscall_stub = 0;
+static void **syscall_table = 0;
 
 int hook_SceSblAIMgrForDriver_D78B04A2(void)
 {
@@ -579,6 +580,30 @@ int thread_main(int args, void *argp) {
 	return 0;
 }
 
+int add_syscalls(void) {
+	LOG("syscall 0xff0: %x", syscall_table[0xff0]);
+	if (syscall_table[0xff0] != syscall_stub) {
+		return -1;
+	}
+	LOG("syscall 0xff1: %x", syscall_table[0xff1]);
+	if (syscall_table[0xff1] != syscall_stub) {
+		return -1;
+	}
+	LOG("syscall 0xff2: %x", syscall_table[0xff2]);
+	if (syscall_table[0xff2] != syscall_stub) {
+		return -1;
+	}
+	LOG("syscall 0xff3: %x", syscall_table[0xff3]);
+	if (syscall_table[0xff3] != syscall_stub) {
+		return -1;
+	}
+	SceModulemgrForKernel_0xB427025E_set_syscall(0xff0, load_taihen);
+	SceModulemgrForKernel_0xB427025E_set_syscall(0xff1, remove_pkgpatches);
+	SceModulemgrForKernel_0xB427025E_set_syscall(0xff2, remove_sigpatches);
+	SceModulemgrForKernel_0xB427025E_set_syscall(0xff3, cleanup_memory);
+	return 0;
+}
+
 void resolve_imports(unsigned sysmem_base) {
 	module_info_t *sysmem_info = find_modinfo(sysmem_base, "SceSysmem");
 	u32_t modulemgr_base;
@@ -587,7 +612,7 @@ void resolve_imports(unsigned sysmem_base) {
 	LOG("sysmem base: 0x%08x", sysmem_base);
 	void *sysmem_data = (void*)(*(u32_t*)((u32_t)(sysmem_base) + 0x26a68) - 0xA0);
 	LOG("sysmem data base: 0x%08x", sysmem_data);
-	DACR_OFF(modulemgr_base = (*(u32_t*)((u32_t)(sysmem_data) + 0x438c) - 0x40););
+	modulemgr_base = (*(u32_t*)((u32_t)(sysmem_data) + 0x438c) - 0x40);
 	LOG("modulemgr base: 0x%08x", modulemgr_base);
 	// END 3.60 specific offsets
 
@@ -674,10 +699,9 @@ void resolve_imports(unsigned sysmem_base) {
 	);
 
 	// BEGIN 3.60
-	void **syscall_table = (void **) (*((u32_t*)(modulemgr_data + 0x334)));
+	DACR_OFF(syscall_table = (void **) (*((u32_t*)(modulemgr_data + 0x334))));
+	DACR_OFF(syscall_stub = (void *)(modulemgr_base + 0x8b45));
 	// END 3.60
-	LOG("syscall 0xff0: %x", syscall_table[0xff0]);
-	DACR_OFF(syscall_stub = syscall_table[0xff0]);
 }
 
 void _start() __attribute__ ((weak, alias ("payload")));
@@ -712,11 +736,11 @@ void __attribute__ ((section (".text.start"))) payload(uint32_t sysmem_addr, voi
 	LOG("free: %x", ret);
 
 	LOG("set up syscalls");
-
-	SceModulemgrForKernel_0xB427025E_set_syscall(0xff0, load_taihen);
-	SceModulemgrForKernel_0xB427025E_set_syscall(0xff1, remove_pkgpatches);
-	SceModulemgrForKernel_0xB427025E_set_syscall(0xff2, remove_sigpatches);
-	SceModulemgrForKernel_0xB427025E_set_syscall(0xff3, cleanup_memory);
+	if (add_syscalls() < 0) {
+		LOG("rebooting since syscall slots are taken");
+		// TODO: proper handling of error
+		*(int *)NULL = 0;
+	}
 
 	LOG("adding temporary patches");
 	temp_pkgpatches();
