@@ -501,11 +501,15 @@ static void init_modules() {
 	LOG("sceHttpCreateTemplate: 0x%x\n", g_tpl);
 }
 
-int _start(SceSize argc, void *argp) {
+void _start() __attribute__ ((weak, alias ("module_start")));
+int module_start(SceSize argc, const void *args) {
 	int ret;
+	int syscall_id;
 	int tries = INSTALL_ATTEMPTS;
 
-	LOG("hello world!\n");
+	LOG("hello world! argc: %d\n", argc);
+	syscall_id = *(uint16_t *)args;
+	LOG("syscall_id: %x\n", syscall_id);
 
 	ret = sceShellUtilInitEvents(0);
 	LOG("sceShellUtilInitEvents: %x\n", ret);
@@ -611,18 +615,18 @@ int _start(SceSize argc, void *argp) {
 	DRAWF("\n");
 
 	DRAWF("Removing temporary patches...\n");
-	call_syscall(0, 0, 0, 0xff1);
+	call_syscall(0, 0, 0, syscall_id + 1);
 
 	if (ret >= 0) {
 		DRAWF("Starting taiHEN...\n");
-		ret = call_syscall(0, 0, 0, 0xff0);
+		ret = call_syscall(0, 0, 0, syscall_id + 0);
 	} else {
-		call_syscall(0, 0, 0, 0xff2);
+		call_syscall(0, 0, 0, syscall_id + 2);
 	}
 
 	DRAWF("Cleaning up...\n");
 	sceIoRemove("ux0:data/installer.self");
-	call_syscall(0, 0, 0, 0xff3);
+	call_syscall(0, 0, 0, syscall_id + 3);
 
 	DRAWF("\n\n");
 	if (ret == 0x8002d013) {

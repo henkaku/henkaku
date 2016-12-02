@@ -261,6 +261,7 @@ static int g_rw_block = 0;
 static int g_rx_block = 0;
 static void *syscall_stub = 0;
 static void **syscall_table = 0;
+static int syscall_id = 0;
 
 int hook_SceSblAIMgrForDriver_D78B04A2(void)
 {
@@ -512,10 +513,10 @@ void cleanup_memory(void) {
 	LOG("calling cleanup from %x", lr);\
 	// remove syscalls
 	LOG("removing syscalls");
-	SceModulemgrForKernel_0xB427025E_set_syscall(0xff0, syscall_stub);
-	SceModulemgrForKernel_0xB427025E_set_syscall(0xff1, syscall_stub);
-	SceModulemgrForKernel_0xB427025E_set_syscall(0xff2, syscall_stub);
-	SceModulemgrForKernel_0xB427025E_set_syscall(0xff3, syscall_stub);
+	SceModulemgrForKernel_0xB427025E_set_syscall(syscall_id + 0, syscall_stub);
+	SceModulemgrForKernel_0xB427025E_set_syscall(syscall_id + 1, syscall_stub);
+	SceModulemgrForKernel_0xB427025E_set_syscall(syscall_id + 2, syscall_stub);
+	SceModulemgrForKernel_0xB427025E_set_syscall(syscall_id + 3, syscall_stub);
 	LOG("freeing memory");
 	sceKernelFreeMemBlockForKernel(g_rw_block); // free stage 2 stack
 	LOG("freeing executable memory");
@@ -524,10 +525,11 @@ void cleanup_memory(void) {
 
 /* Install path and arguments */
 const char launch_path[] = "ux0:data/installer.self";
-const char launch_args[] = "-nonsuspendable\0-livearea_off\0";
+const char launch_args[] = "\0\0\0-nonsuspendable\0-livearea_off\0";
 
 int thread_main(int args, void *argp) {
 	char buffer[INSTALLER_SIZE_ALIGNED];
+	char real_args[sizeof(launch_args)];
 	int opt[52/4];
 	int ctx[16/4];
 	const char *start;
@@ -538,6 +540,9 @@ int thread_main(int args, void *argp) {
 	__asm__ volatile ("mov %0, lr" : "=r" (lr));
 
 	LOG("Main kernel thread, called from %x!", lr);
+
+	memcpy(real_args, launch_args, sizeof(launch_args));
+	*(uint16_t *)&real_args[0] = syscall_id;
 
 	LOG("Inflating installer...");
 	ret = SceKernelUtilsForDriver_inflate_check_hdr(build_installer_installer_deflate, 0, 0, 0, &start);
@@ -562,7 +567,7 @@ int thread_main(int args, void *argp) {
 		}
 		opt[0] = sizeof(opt);
 		LOG("Launching installer...");
-		ret = SceAppMgrForDriver_launchbypath(launch_path, launch_args, sizeof(launch_args), 0, opt, NULL);
+		ret = SceAppMgrForDriver_launchbypath(launch_path, real_args, sizeof(launch_args), 0, opt, NULL);
 		LOG("SceAppMgrForDriver_launchbypath: %x", ret);
 	}
 	if (ret < 0) {
@@ -581,26 +586,10 @@ int thread_main(int args, void *argp) {
 }
 
 int add_syscalls(void) {
-	LOG("syscall 0xff0: %x", syscall_table[0xff0]);
-	if (syscall_table[0xff0] != syscall_stub) {
-		return -1;
-	}
-	LOG("syscall 0xff1: %x", syscall_table[0xff1]);
-	if (syscall_table[0xff1] != syscall_stub) {
-		return -1;
-	}
-	LOG("syscall 0xff2: %x", syscall_table[0xff2]);
-	if (syscall_table[0xff2] != syscall_stub) {
-		return -1;
-	}
-	LOG("syscall 0xff3: %x", syscall_table[0xff3]);
-	if (syscall_table[0xff3] != syscall_stub) {
-		return -1;
-	}
-	SceModulemgrForKernel_0xB427025E_set_syscall(0xff0, load_taihen);
-	SceModulemgrForKernel_0xB427025E_set_syscall(0xff1, remove_pkgpatches);
-	SceModulemgrForKernel_0xB427025E_set_syscall(0xff2, remove_sigpatches);
-	SceModulemgrForKernel_0xB427025E_set_syscall(0xff3, cleanup_memory);
+	SceModulemgrForKernel_0xB427025E_set_syscall(syscall_id + 0, load_taihen);
+	SceModulemgrForKernel_0xB427025E_set_syscall(syscall_id + 1, remove_pkgpatches);
+	SceModulemgrForKernel_0xB427025E_set_syscall(syscall_id + 2, remove_sigpatches);
+	SceModulemgrForKernel_0xB427025E_set_syscall(syscall_id + 3, cleanup_memory);
 	return 0;
 }
 
@@ -699,8 +688,13 @@ void resolve_imports(unsigned sysmem_base) {
 	);
 
 	// BEGIN 3.60
-	DACR_OFF(syscall_table = (void **) (*((u32_t*)(modulemgr_data + 0x334))));
-	DACR_OFF(syscall_stub = (void *)(modulemgr_base + 0x8b45));
+	int *syscall_lo = (int *)(modulemgr_data + 0x338);
+	DACR_OFF(
+		syscall_table = (void **) (*((u32_t*)(modulemgr_data + 0x334)));
+		syscall_id = (*syscall_lo & 0xFFF) | 1; // id must not be x00
+		syscall_stub = (void *)(modulemgr_base + 0x8b45);
+	);
+	*syscall_lo = syscall_id + 5;
 	// END 3.60
 }
 
@@ -735,12 +729,8 @@ void __attribute__ ((section (".text.start"))) payload(uint32_t sysmem_addr, voi
 	ret = sceKernelFreeMemBlockForKernel(ret);
 	LOG("free: %x", ret);
 
-	LOG("set up syscalls");
-	if (add_syscalls() < 0) {
-		LOG("rebooting since syscall slots are taken");
-		// TODO: proper handling of error
-		*(int *)NULL = 0;
-	}
+	LOG("set up syscalls starting at id: %x", syscall_id);
+	add_syscalls();
 
 	LOG("adding temporary patches");
 	temp_pkgpatches();
