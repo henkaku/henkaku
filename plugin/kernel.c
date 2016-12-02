@@ -151,12 +151,12 @@ int henkaku_reload_config(void) {
   int tid;
   int ret;
   ENTER_SYSCALL(state);
-  tid = sceKernelCreateThreadForKernel("configwrite", (SceKernelThreadEntry)load_config_kernel, 64, 0x1000, 0, 0, NULL);
-  LOG("sceKernelCreateThreadForKernel: %x", tid);
-  ret = sceKernelStartThreadForKernel(tid, 0, NULL);
-  LOG("sceKernelStartThreadForKernel: %x", ret);
-  sceKernelWaitThreadEndForKernel(tid, &ret, NULL);
-  sceKernelDeleteThreadForKernel(tid);
+  tid = sceKernelCreateThreadForDriver("configwrite", (SceKernelThreadEntry)load_config_kernel, 64, 0x1000, 0, 0, NULL);
+  LOG("sceKernelCreateThreadForDriver: %x", tid);
+  ret = sceKernelStartThreadForDriver(tid, 0, NULL);
+  LOG("sceKernelStartThreadForDriver: %x", ret);
+  sceKernelWaitThreadEndForDriver(tid, &ret, NULL);
+  sceKernelDeleteThreadForDriver(tid);
   EXIT_SYSCALL(state);
   return ret;
 }
