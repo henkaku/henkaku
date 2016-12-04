@@ -5,8 +5,6 @@
 
 #include "../build/version.c"
 
-#define INSTALLER_SIZE_ALIGNED ((INSTALLER_SIZE + 0xFFF) & ~0xFFF)
-
 // ALL 3.60 SPECIFIC SECTIONS ARE MARKED WITH "// BEGIN 3.60"
 
 #if !RELEASE
@@ -234,8 +232,6 @@ static int (*sceKernelGetModuleListForKernel)() = 0;
 static int (*sceKernelGetModuleInfoForKernel)() = 0;
 static void (*SceCpuForDriver_19f17bd0_flush_icache)(uint32_t addr, uint32_t size) = 0;
 static int (*SceCpuForDriver_9CB9F0CE_flush_dcache)(uint32_t addr, int len) = 0;
-static int (*SceKernelUtilsForDriver_inflate_check_hdr)(const unsigned char *buf, char *cmf, char *flg, int *dict, const char **start) = 0;
-static int (*SceKernelUtilsForDriver_inflate)(char *output, int outsz, const char *input, void *, void *ctx) = 0;
 static int (*sceIoOpenForDriver)(const char *, int, int) = 0;
 static int (*sceIoWriteForDriver)(int, char *, int) = 0;
 static int (*sceIoCloseForDriver)(int) = 0;
@@ -308,7 +304,7 @@ unsigned hook_sbl_F3411881(unsigned a1, unsigned a2, unsigned a3, unsigned a4) {
 unsigned hook_sbl_89CCDA2C(unsigned a1, unsigned a2) {
 	LOG("sbl_89CCDA2C(0x%x, 0x%x) hb=0x%x", a1, a2, g_homebrew_decrypt);
 	if (g_homebrew_decrypt == 1)
-		return 1;
+		return 2; // always compressed!
 	return hook_resume_sbl_89CCDA2C(a1, a2);
 }
 
@@ -528,7 +524,6 @@ const char launch_path[] = "ux0:data/installer.self";
 const char launch_args[] = "\0\0\0-nonsuspendable\0-livearea_off\0";
 
 int thread_main(int args, void *argp) {
-	char buffer[INSTALLER_SIZE_ALIGNED];
 	char real_args[sizeof(launch_args)];
 	int opt[52/4];
 	int ctx[16/4];
@@ -544,21 +539,11 @@ int thread_main(int args, void *argp) {
 	memcpy(real_args, launch_args, sizeof(launch_args));
 	*(uint16_t *)&real_args[0] = syscall_id;
 
-	LOG("Inflating installer...");
-	ret = SceKernelUtilsForDriver_inflate_check_hdr(build_installer_installer_deflate, 0, 0, 0, &start);
-	LOG("inflate_check_hdr: %x, start: %x", ret, start);
-	for (int i = 0; i < sizeof(ctx)/4; i++) {
-		ctx[i] = 0;
-	}
-	ctx[0] = sizeof(ctx);
-	ret = SceKernelUtilsForDriver_inflate(buffer, INSTALLER_SIZE_ALIGNED, start, NULL, &ctx);
-	LOG("inflate: %x", ret);
-
 	LOG("Loading installer to system");
 	ret = fd = sceIoOpenForDriver(launch_path, 0x603, 0x6);
 	LOG("sceIoOpenForDriver: %x", fd);
 	if (fd >= 0) {
-		ret = sceIoWriteForDriver(fd, buffer, INSTALLER_SIZE);
+		ret = sceIoWriteForDriver(fd, build_installer_installer_self, build_installer_installer_self_len);
 		LOG("sceIoWriteForDriver: %x", ret);
 		sceIoCloseForDriver(fd);
 
@@ -674,8 +659,6 @@ void resolve_imports(unsigned sysmem_base) {
 		sceIoCloseForDriver = find_export(iofilemgr_info, 0xf99dd8a3);
 		sceIoWriteForDriver = find_export(iofilemgr_info, 0x21ee91f0);
 		SceAppMgrForDriver_launchbypath = find_export(appmgr_info, 0xB0A37065);
-		SceKernelUtilsForDriver_inflate = find_export(sysmem_info, 0x3D74CCDF);
-		SceKernelUtilsForDriver_inflate_check_hdr = find_export(sysmem_info, 0x5B9BCD75);
 		sceKernelLoadModuleWithoutStartForDriver = find_export(modulemgr_info, 0x86D8D634);
 		sceKernelStartModuleForDriver = find_export(modulemgr_info, 0x0675B682);
 		SceModulemgrForKernel_0xB427025E_set_syscall = find_export(modulemgr_info, 0xB427025E);
@@ -744,7 +727,7 @@ void __attribute__ ((section (".text.start"))) payload(uint32_t sysmem_addr, voi
 
 	int tid;
 	LOG("starting kernel thread");
-	tid = sceKernelCreateThreadForKernel("stage2", thread_main, 64, INSTALLER_SIZE_ALIGNED + 0x1000, 0, 0, 0);
+	tid = sceKernelCreateThreadForKernel("stage2", thread_main, 64, 0x1000, 0, 0, 0);
 	LOG("create tid: %x", tid);
 	ret = sceKernelStartThread_089(tid, 0, NULL);
 	LOG("start thread: %x", ret);

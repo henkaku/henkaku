@@ -73,10 +73,7 @@ pushd build/installer
 cmake -DRELEASE=$RELEASE ../../installer
 make
 popd
-INSTALLER_SIZE=$(ls -l build/installer/installer.self | awk '{ print $5 }')
-python -c "import zlib,sys;print zlib.compress(sys.stdin.read())" < build/installer/installer.self > build/installer/installer.deflate
-xxd -i build/installer/installer.deflate > build/installer.h
-echo "#define INSTALLER_SIZE $INSTALLER_SIZE" >> build/version.c
+xxd -i build/installer/installer.self > build/installer.h
 
 echo "2) Payload"
 
