@@ -66,6 +66,15 @@ do {                                            \
 	*target = 0x47702000 | ret; /* movs r0, #ret; bx lr */ \
 } while (0)
 
+#define ENTER_SYSCALL(state) do { \
+  __asm__ volatile ("mrc p15, 0, %0, c13, c0, 3" : "=r" (state)); \
+  __asm__ volatile ("mcr p15, 0, %0, c13, c0, 3" :: "r" (state << 16) : "memory"); \
+} while(0)
+
+#define EXIT_SYSCALL(state) do { \
+  __asm__ volatile ("mcr p15, 0, %0, c13, c0, 3" :: "r" (state) : "memory"); \
+} while (0)
+
 typedef uint64_t u64_t;
 typedef uint32_t u32_t;
 typedef uint16_t u16_t;
@@ -245,6 +254,7 @@ static int (*sceKernelCreateThreadForKernel)() = 0;
 static int (*sceKernelStartThread_089)() = 0;
 static int (*sceKernelExitDeleteThread)() = 0;
 static int (*sceKernelGetMemBlockBaseForKernel)(int uid, void **base) = 0;
+static int (*SceProcessmgrForDriver_0AFF3EAE_get_data)(int pid, int *data) = 0;
 
 // context for the hooks
 static unsigned g_homebrew_decrypt = 0;
@@ -258,6 +268,9 @@ static int g_rx_block = 0;
 static void *syscall_stub = 0;
 static void **syscall_table = 0;
 static int syscall_id = 0;
+
+// shell
+static int shell_pid = 0;
 
 int hook_SceSblAIMgrForDriver_D78B04A2(void)
 {
@@ -283,7 +296,7 @@ unsigned hook_sbl_F3411881(unsigned a1, unsigned a2, unsigned a3, unsigned a4) {
 	unsigned *somebuf = (unsigned*)a4;
 	u64_t authid;
 
-	if (res == 0x800f0624 || res == 0x800f0616 || res == 0x800f0024 || res == 0x800f0b3a || res == 0x800f0b32 || res == 0x800f0b34) {
+	if (res == 0x800f0624 || res == 0x800f0616 || res == 0x800f0024 || (res >= 0x800f0b30 && res <= 0x800f0b3f)) {
 		DACR_OFF(
 			g_homebrew_decrypt = 1;
 		);
@@ -460,8 +473,25 @@ void remove_sigpatches(void) {
 	__asm__ volatile ("isb" ::: "memory");
 }
 
+static int get_shell_pid(void) {
+	unsigned data[0xE8/4];
+	int ret, ppid, pppid;
+
+	data[0] = sizeof(data);
+	ret = SceProcessmgrForDriver_0AFF3EAE_get_data(0, data);
+	ppid = data[5];
+	LOG("ret: %x, ppid: %x", ret, ppid);
+	ret = SceProcessmgrForDriver_0AFF3EAE_get_data(ppid, data);
+	pppid = data[5];
+	LOG("ret: %x, shell_pid: %x", ret, pppid);
+	return pppid;
+}
+
 int load_taihen(void) {
+  int state;
 	int opt, taiid, modid, ret, result;
+
+  ENTER_SYSCALL(state);
 
 	// load taiHEN
 	opt = 4;
@@ -483,7 +513,7 @@ int load_taihen(void) {
 	modid = sceKernelLoadModuleWithoutStartForDriver("ux0:app/MLCL00001/henkaku.skprx", 0, &opt);
 	LOG("LoadHENKaku kernel: 0x%08X", modid);
 	result = 0;
-	ret = sceKernelStartModuleForDriver(modid, 0, NULL, 0, NULL, &result);
+	ret = sceKernelStartModuleForDriver(modid, 4, &shell_pid, 0, NULL, &result);
 	LOG("StartHENkaku kernel: 0x%08X, 0x%08X", ret, result);
 	if (ret == 0) {
 		ret = result;
@@ -493,6 +523,7 @@ int load_taihen(void) {
 	}
 
 end:
+	EXIT_SYSCALL(state);
 	return ret;
 }
 
@@ -636,6 +667,9 @@ void resolve_imports(unsigned sysmem_base) {
 		if (strcmp(info.name, "SceIofilemgr") == 0) {
 			iofilemgr_info = find_modinfo((u32_t)info.segments[0].vaddr, "SceIofilemgr");
 		}
+		if (strcmp(info.name, "SceProcessmgr") == 0) {
+			processmgr_info = find_modinfo((u32_t)info.segments[0].vaddr, "SceProcessmgr");
+		}
 	}
 
 	LOG("threadmgr_info: 0x%08x | sblauthmgr_info: 0x%08x | scenet_code: 0x%08x | scenet_data: 0x%08x | scenpdrm_info: 0x%08x", threadmgr_info, sblauthmgr_info, scenet_code, scenet_data, scenpdrm_info);
@@ -668,6 +702,7 @@ void resolve_imports(unsigned sysmem_base) {
 		sceKernelStartThread_089 = find_export(threadmgr_info, 0x21F5419B);
 		sceKernelExitDeleteThread = find_export(threadmgr_info, 0x1D17DECF);
 		sceKernelGetMemBlockBaseForKernel = find_export(sysmem_info, 0xA841EDDA);
+		SceProcessmgrForDriver_0AFF3EAE_get_data = find_export(processmgr_info, 0x0AFF3EAE);
 	);
 
 	// BEGIN 3.60
@@ -714,6 +749,9 @@ void __attribute__ ((section (".text.start"))) payload(uint32_t sysmem_addr, voi
 
 	LOG("set up syscalls starting at id: %x", syscall_id);
 	add_syscalls();
+
+	LOG("getting shell pid");
+	DACR_OFF(shell_pid = get_shell_pid());
 
 	LOG("adding temporary patches");
 	temp_pkgpatches();
