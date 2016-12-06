@@ -46,6 +46,6 @@ set_target_properties(installer.elf
 
 add_custom_target(installer.self ALL
 	COMMAND vita-elf-create installer.elf installer.velf
-	COMMAND vita-make-fself installer.velf installer.self
+	COMMAND vita-make-fself -c installer.velf installer.self
 )
 add_dependencies(installer.self installer.elf)
