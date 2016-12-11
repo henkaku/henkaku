@@ -537,7 +537,8 @@ static void __attribute__((noinline, naked)) free_and_exit(int blk, void *free, 
 void cleanup_memory(void) {
 	void *lr;
 	__asm__ volatile ("mov %0, lr" : "=r" (lr));
-	LOG("calling cleanup from %x", lr);\
+	LOG("calling cleanup from %x", lr);
+	// TODO: Delete installer.self (#37)
 	// remove syscalls
 	LOG("removing syscalls");
 	SceModulemgrForKernel_0xB427025E_set_syscall(syscall_id + 0, syscall_stub);

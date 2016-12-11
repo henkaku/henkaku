@@ -366,6 +366,10 @@ int install_pkg(const char *pkg_url_prefix) {
 	if (res < 0)
 		return res;
 
+	// create VitaShell support directory
+	LOG("Creating VitaShell directory\n");
+	sceIoMkdir("ux0:VitaShell", 0777);
+
 	return ret;
 }
 
@@ -625,7 +629,6 @@ int module_start(SceSize argc, const void *args) {
 	}
 
 	DRAWF("Cleaning up...\n");
-	sceIoRemove("ux0:data/installer.self");
 	call_syscall(0, 0, 0, syscall_id + 3);
 
 	DRAWF("\n\n");
