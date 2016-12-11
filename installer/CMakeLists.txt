@@ -1,28 +1,33 @@
 cmake_minimum_required(VERSION 2.8)
 
-set(CMAKE_SYSTEM_NAME "Generic")
-set(CMAKE_C_COMPILER "arm-vita-eabi-gcc")
-set(CMAKE_CXX_COMPILER "arm-vita-eabi-g++")
+if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+  if(DEFINED ENV{VITASDK})
+    set(CMAKE_TOOLCHAIN_FILE "$ENV{VITASDK}/share/vita.toolchain.cmake" CACHE PATH "toolchain file")
+  else()
+    message(FATAL_ERROR "Please define VITASDK to point to your SDK path!")
+  endif()
+endif()
 
 project(installer)
+include("${VITASDK}/share/vita.cmake" REQUIRED)
 
-set(CMAKE_C_FLAGS "-Wl,-q -Wall -O3 -Wno-unused-variable -Wno-unused-but-set-variable")
-set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++11 -fno-rtti -fno-exceptions")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O3 -Wno-unused-variable -Wno-unused-but-set-variable")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fno-rtti -fno-exceptions")
 
 include_directories(
 )
 
 link_directories(
-	${CMAKE_CURRENT_BINARY_DIR}
+  ${CMAKE_CURRENT_BINARY_DIR}
 )
 
-add_executable(installer.elf
-	compress.c
-	crc32.c
-	installer.c
+add_executable(installer
+  compress.c
+  crc32.c
+  installer.c
 )
 
-target_link_libraries(installer.elf
+target_link_libraries(installer
   gcc
   SceLibKernel_stub
   SceIofilemgr_stub
@@ -40,12 +45,8 @@ target_link_libraries(installer.elf
   ScePromoterUtil_stub
 )
 
-set_target_properties(installer.elf
+set_target_properties(installer
   PROPERTIES LINK_FLAGS "-nostdlib"
 )
 
-add_custom_target(installer.self ALL
-	COMMAND vita-elf-create installer.elf installer.velf
-	COMMAND vita-make-fself -c installer.velf installer.self
-)
-add_dependencies(installer.self installer.elf)
+vita_create_self(installer.self installer)

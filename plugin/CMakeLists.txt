@@ -1,41 +1,46 @@
 cmake_minimum_required(VERSION 2.8)
 
-set(CMAKE_SYSTEM_NAME "Generic")
-set(CMAKE_C_COMPILER "arm-vita-eabi-gcc")
-set(CMAKE_CXX_COMPILER "arm-vita-eabi-g++")
+if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+  if(DEFINED ENV{VITASDK})
+    set(CMAKE_TOOLCHAIN_FILE "$ENV{VITASDK}/share/vita.toolchain.cmake" CACHE PATH "toolchain file")
+  else()
+    message(FATAL_ERROR "Please define VITASDK to point to your SDK path!")
+  endif()
+endif()
 
 project(HENkaku)
+include("${VITASDK}/share/vita.cmake" REQUIRED)
 
-set(CMAKE_C_FLAGS "-Wl,-q -Wall -O3 -std=gnu99")
-set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++11 -fno-rtti -fno-exceptions")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wl,-q -Wall -O3 -std=gnu99")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fno-rtti -fno-exceptions")
 
 include_directories(
 )
 
 link_directories(
-	${CMAKE_CURRENT_BINARY_DIR}
+  ${CMAKE_CURRENT_BINARY_DIR}
 )
 
 if (NOT ${RELEASE})
   add_definitions(-DENABLE_LOGGING)
 endif()
 
-add_executable(user.elf
-	user.c
+add_executable(user
+  user.c
 )
 
-add_executable(kernel.elf
-	kernel.c
+add_executable(kernel
+  kernel.c
 )
 
-target_link_libraries(user.elf
+target_link_libraries(user
   taihen_stub
   SceLibKernel_stub
   SceIofilemgr_stub
 )
 
-target_link_libraries(kernel.elf
-	gcc
+target_link_libraries(kernel
+  gcc
   taihenForKernel_stub
   SceSysmemForDriver_stub
   SceSysclibForDriver_stub
@@ -45,31 +50,26 @@ target_link_libraries(kernel.elf
   SceThreadmgrForDriver_stub
 )
 
-set_target_properties(kernel.elf
+set_target_properties(kernel
   PROPERTIES LINK_FLAGS "-nostdlib"
-	COMPILE_FLAGS "-D__VITA_KERNEL__"
+  COMPILE_FLAGS "-D__VITA_KERNEL__"
 )
 
-set_target_properties(user.elf
+set_target_properties(user
   PROPERTIES LINK_FLAGS "-nostdlib"
 )
 
-add_custom_target(henkaku.skprx ALL
-	COMMAND vita-elf-create -e ${CMAKE_SOURCE_DIR}/kernel.yml kernel.elf kernel.velf ${CMAKE_SOURCE_DIR}/taihen.json
-	COMMAND vita-make-fself -c kernel.velf henkaku.skprx
+vita_create_self(henkaku.skprx kernel
+  CONFIG ${CMAKE_SOURCE_DIR}/kernel.yml
 )
-add_dependencies(henkaku.skprx kernel.elf)
-
-add_custom_target(henkaku.suprx ALL
-	COMMAND vita-elf-create -e ${CMAKE_SOURCE_DIR}/user.yml user.elf user.velf ${CMAKE_SOURCE_DIR}/taihen.json
-	COMMAND vita-make-fself -c user.velf henkaku.suprx
+vita_create_stubs(henkaku-stubs kernel ${CMAKE_SOURCE_DIR}/kernel.yml
+  KERNEL
 )
-add_dependencies(henkaku.suprx user.elf)
-
-add_custom_target(henkaku-libs ALL
-  COMMAND vita-elf-export kernel kernel.elf ${CMAKE_SOURCE_DIR}/kernel.yml exports.yml
-  COMMAND vita-libs-gen exports.yml henkaku-libs
-  COMMAND make -C henkaku-libs
+vita_create_self(henkaku.suprx user
+  CONFIG ${CMAKE_SOURCE_DIR}/user.yml
 )
 
-add_dependencies(henkaku-libs kernel.elf)
+install(DIRECTORY ${CMAKE_BINARY_DIR}/henkaku-stubs/
+  DESTINATION lib
+  FILES_MATCHING PATTERN "*.a"
+)
