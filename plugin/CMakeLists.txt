@@ -60,12 +60,14 @@ set_target_properties(user
 )
 
 vita_create_self(henkaku.skprx kernel
+  UNSAFE
   CONFIG ${CMAKE_SOURCE_DIR}/kernel.yml
 )
 vita_create_stubs(henkaku-stubs kernel ${CMAKE_SOURCE_DIR}/kernel.yml
   KERNEL
 )
 vita_create_self(henkaku.suprx user
+  UNSAFE
   CONFIG ${CMAKE_SOURCE_DIR}/user.yml
 )
 

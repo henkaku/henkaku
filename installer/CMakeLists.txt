@@ -49,4 +49,4 @@ set_target_properties(installer
   PROPERTIES LINK_FLAGS "-nostdlib"
 )
 
-vita_create_self(installer.self installer)
+vita_create_self(installer.self installer UNSAFE)
