@@ -10,6 +10,7 @@
 #include "../build/version.c"
 
 #define OFFSET_PATCH_ARG (168)
+#define OFFSET_PATCH_AUTHID (152)
 
 typedef struct {
   uint32_t magic;                 /* 53434500 = SCE\0 */
@@ -56,9 +57,16 @@ static int parse_headers_patched(int ctx, const void *headers, size_t len, void 
     if (self->appinfo_offset <= len - sizeof(app_info_t)) {
       info = (app_info_t *)(headers + self->appinfo_offset);
       LOG("authid: 0x%llx\n", info->authid);
-      if ((info->authid & 0xFFFFFFFFFFFFFFFDLL) == 0x2F00000000000001LL) {
-        if (config.allow_unsafe_hb) {
+      if (config.allow_unsafe_hb) {
+        if ((info->authid & 0xFFFFFFFFFFFFFFFCLL) == 0x2F00000000000000LL) {
+          if (info->authid & 1) {
+            // we just give extended permissions
+            *(uint32_t *)(args + OFFSET_PATCH_ARG) = 0x40;
+          }
+        } else {
+          // we give authid + extended permissions
           *(uint32_t *)(args + OFFSET_PATCH_ARG) = 0x40;
+          *(uint64_t *)(args + OFFSET_PATCH_AUTHID) = info->authid;
         }
       }
     }
