@@ -57,7 +57,8 @@ static int parse_headers_patched(int ctx, const void *headers, size_t len, void 
     if (self->appinfo_offset <= len - sizeof(app_info_t)) {
       info = (app_info_t *)(headers + self->appinfo_offset);
       LOG("authid: 0x%llx\n", info->authid);
-      if (config.allow_unsafe_hb) {
+      if (ret < 0 && config.allow_unsafe_hb) {
+        LOG("is homebrew!");
         if ((info->authid & 0xFFFFFFFFFFFFFFFCLL) == 0x2F00000000000000LL) {
           if (info->authid & 1) {
             // we just give extended permissions
