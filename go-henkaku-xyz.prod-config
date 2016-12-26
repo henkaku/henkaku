@@ -9,15 +9,15 @@ KROP_PREBUILT=./krop.rop
 # package files will be downloaded from here
 # place these files in the `pkg` directory: eboot.bin, head.bin, param.sfo
 # the directory structure will be created by the exploit
-PKG_URL_PREFIX="http://beta.henkaku.xyz/pkg"
+PKG_URL_PREFIX="http://go.henkaku.xyz/pkg"
 
 # Args will be appended to the URL, in format "?a1=0x123&a2=0x345"
 # You only need this for the dynamic version of the exploit (which is recommended)
-STAGE2_URL_BASE="http://beta.henkaku.xyz/x"
+STAGE2_URL_BASE="http://go.henkaku.xyz/x"
 
 # Version to show in Settings
 HENKAKU_RELEASE=7
-BETA_RELEASE=8
+BETA_RELEASE=0
 
 # CRC of taihen.skprx, will redownload if mismatch
 TAIHEN_CRC32=0x08c08f53
