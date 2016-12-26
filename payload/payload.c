@@ -237,23 +237,23 @@ static int (*hook_resume_sbl_F3411881)() = 0;
 static int (*hook_resume_sbl_89CCDA2C)() = 0;
 static int (*hook_resume_sbl_BC422443)() = 0;
 
-static int (*sceKernelGetModuleListForKernel)() = 0;
-static int (*sceKernelGetModuleInfoForKernel)() = 0;
+static int (*ksceKernelGetModuleList)() = 0;
+static int (*ksceKernelGetModuleInfo)() = 0;
 static void (*SceCpuForDriver_19f17bd0_flush_icache)(uint32_t addr, uint32_t size) = 0;
 static int (*SceCpuForDriver_9CB9F0CE_flush_dcache)(uint32_t addr, int len) = 0;
-static int (*sceIoOpenForDriver)(const char *, int, int) = 0;
-static int (*sceIoWriteForDriver)(int, char *, int) = 0;
-static int (*sceIoCloseForDriver)(int) = 0;
+static int (*ksceIoOpen)(const char *, int, int) = 0;
+static int (*ksceIoWrite)(int, char *, int) = 0;
+static int (*ksceIoClose)(int) = 0;
 static int (*SceAppMgrForDriver_launchbypath)(const char *name, const char *cmd, int cmdlen, int, void *, void *) = 0;
-static int (*sceKernelLoadModuleWithoutStartForDriver)(const char *path, int flags, int *opt) = 0;
-static int (*sceKernelStartModuleForDriver)(int modid, int argc, void *args, int flags, void *opt, int *res) = 0;
+static int (*ksceKernelLoadModuleWithoutStart)(const char *path, int flags, int *opt) = 0;
+static int (*ksceKernelStartModule)(int modid, int argc, void *args, int flags, void *opt, int *res) = 0;
 static void (*SceModulemgrForKernel_0xB427025E_set_syscall)(u32_t num, void *function) = 0;
-static int (*sceKernelFreeMemBlockForKernel)(int blkid) = 0;
-static int (*sceKernelFindMemBlockByAddrForDriver)(void *base, int) = 0;
-static int (*sceKernelCreateThreadForKernel)() = 0;
-static int (*sceKernelStartThread_089)() = 0;
-static int (*sceKernelExitDeleteThread)() = 0;
-static int (*sceKernelGetMemBlockBaseForKernel)(int uid, void **base) = 0;
+static int (*ksceKernelFreeMemBlock)(int blkid) = 0;
+static int (*ksceKernelFindMemBlockByAddr)(void *base, int) = 0;
+static int (*ksceKernelCreateThread)() = 0;
+static int (*ksceKernelStartThread)() = 0;
+static int (*ksceKernelExitDeleteThread)() = 0;
+static int (*ksceKernelGetMemBlockBase)(int uid, void **base) = 0;
 static int (*SceProcessmgrForDriver_0AFF3EAE_get_data)(int pid, int *data) = 0;
 
 // context for the hooks
@@ -495,12 +495,12 @@ int load_taihen(void) {
 
 	// load taiHEN
 	opt = 4;
-	taiid = sceKernelLoadModuleWithoutStartForDriver("ux0:tai/taihen.skprx", 0, &opt);
+	taiid = ksceKernelLoadModuleWithoutStart("ux0:tai/taihen.skprx", 0, &opt);
 	LOG("LoadTaiHEN: 0x%08X", taiid);
 	remove_sigpatches();
 	LOG("Removed temp patches");
 	result = 0;
-	ret = sceKernelStartModuleForDriver(taiid, 0, NULL, 0, NULL, &result);
+	ret = ksceKernelStartModule(taiid, 0, NULL, 0, NULL, &result);
 	LOG("StartTaiHEN: 0x%08X, 0x%08X", ret, result);
 	if (ret == 0) {
 		ret = result;
@@ -510,10 +510,10 @@ int load_taihen(void) {
 	}
 
 	// load henkaku kernel
-	modid = sceKernelLoadModuleWithoutStartForDriver("ux0:app/MLCL00001/henkaku.skprx", 0, &opt);
+	modid = ksceKernelLoadModuleWithoutStart("ux0:app/MLCL00001/henkaku.skprx", 0, &opt);
 	LOG("LoadHENKaku kernel: 0x%08X", modid);
 	result = 0;
-	ret = sceKernelStartModuleForDriver(modid, 4, &shell_pid, 0, NULL, &result);
+	ret = ksceKernelStartModule(modid, 4, &shell_pid, 0, NULL, &result);
 	LOG("StartHENkaku kernel: 0x%08X, 0x%08X", ret, result);
 	if (ret == 0) {
 		ret = result;
@@ -546,9 +546,9 @@ void cleanup_memory(void) {
 	SceModulemgrForKernel_0xB427025E_set_syscall(syscall_id + 2, syscall_stub);
 	SceModulemgrForKernel_0xB427025E_set_syscall(syscall_id + 3, syscall_stub);
 	LOG("freeing memory");
-	sceKernelFreeMemBlockForKernel(g_rw_block); // free stage 2 stack
+	ksceKernelFreeMemBlock(g_rw_block); // free stage 2 stack
 	LOG("freeing executable memory");
-	return free_and_exit(g_rx_block, sceKernelFreeMemBlockForKernel, lr);
+	return free_and_exit(g_rx_block, ksceKernelFreeMemBlock, lr);
 }
 
 /* Install path and arguments */
@@ -572,12 +572,12 @@ int thread_main(int args, void *argp) {
 	*(uint16_t *)&real_args[0] = syscall_id;
 
 	LOG("Loading installer to system");
-	ret = fd = sceIoOpenForDriver(launch_path, 0x603, 0x6);
-	LOG("sceIoOpenForDriver: %x", fd);
+	ret = fd = ksceIoOpen(launch_path, 0x603, 0x6);
+	LOG("ksceIoOpen: %x", fd);
 	if (fd >= 0) {
-		ret = sceIoWriteForDriver(fd, build_installer_installer_self, build_installer_installer_self_len);
-		LOG("sceIoWriteForDriver: %x", ret);
-		sceIoCloseForDriver(fd);
+		ret = ksceIoWrite(fd, build_installer_installer_self, build_installer_installer_self_len);
+		LOG("ksceIoWrite: %x", ret);
+		ksceIoClose(fd);
 
 		for (int i = 0; i < sizeof(opt)/4; i++) {
 			opt[i] = 0;
@@ -626,11 +626,11 @@ void resolve_imports(unsigned sysmem_base) {
 	LOG("modulemgr modinfo: 0x%08x", modulemgr_info);
 
 	DACR_OFF(
-		sceKernelGetModuleListForKernel = find_export(modulemgr_info, 0x97CF7B4E);
-		sceKernelGetModuleInfoForKernel = find_export(modulemgr_info, 0xD269F915);
+		ksceKernelGetModuleList = find_export(modulemgr_info, 0x97CF7B4E);
+		ksceKernelGetModuleInfo = find_export(modulemgr_info, 0xD269F915);
 	);
-	LOG("sceKernelGetModuleListForKernel: %08x", sceKernelGetModuleListForKernel);
-	LOG("sceKernelGetModuleInfoForKernel: %08x", sceKernelGetModuleInfoForKernel);
+	LOG("ksceKernelGetModuleList: %08x", ksceKernelGetModuleList);
+	LOG("ksceKernelGetModuleInfo: %08x", ksceKernelGetModuleInfo);
 
 	int *modlist[MOD_LIST_SIZE];
 	int modlist_records;
@@ -638,14 +638,14 @@ void resolve_imports(unsigned sysmem_base) {
 	int ret;
 
 	modlist_records = MOD_LIST_SIZE;
-	ret = sceKernelGetModuleListForKernel(0x10005, 0x7FFFFFFF, 1, modlist, &modlist_records);
+	ret = ksceKernelGetModuleList(0x10005, 0x7FFFFFFF, 1, modlist, &modlist_records);
 	LOG("sceKernelGetModuleList() returned 0x%x", ret);
 	LOG("modlist_records: %d", modlist_records);
 	module_info_t *threadmgr_info = 0, *sblauthmgr_info = 0, *processmgr_info = 0, *display_info = 0, *iofilemgr_info = 0;
 	u32_t scenet_code = 0, scenet_data = 0, modulemgr_data = 0;
 	for (int i = 0; i < modlist_records; ++i) {
 		info.size = sizeof(info);
-		ret = sceKernelGetModuleInfoForKernel(0x10005, modlist[i], &info);
+		ret = ksceKernelGetModuleInfo(0x10005, modlist[i], &info);
 		if (strcmp(info.name, "SceKernelThreadMgr") == 0) {
 			threadmgr_info = find_modinfo((u32_t)info.segments[0].vaddr, "SceKernelThreadMgr");
 		}
@@ -690,19 +690,19 @@ void resolve_imports(unsigned sysmem_base) {
 
 		SceCpuForDriver_19f17bd0_flush_icache = find_export(sysmem_info, 0x19f17bd0);
 		SceCpuForDriver_9CB9F0CE_flush_dcache = find_export(sysmem_info, 0x9CB9F0CE);
-		sceIoOpenForDriver = find_export(iofilemgr_info, 0x75192972);
-		sceIoCloseForDriver = find_export(iofilemgr_info, 0xf99dd8a3);
-		sceIoWriteForDriver = find_export(iofilemgr_info, 0x21ee91f0);
+		ksceIoOpen = find_export(iofilemgr_info, 0x75192972);
+		ksceIoClose = find_export(iofilemgr_info, 0xf99dd8a3);
+		ksceIoWrite = find_export(iofilemgr_info, 0x21ee91f0);
 		SceAppMgrForDriver_launchbypath = find_export(appmgr_info, 0xB0A37065);
-		sceKernelLoadModuleWithoutStartForDriver = find_export(modulemgr_info, 0x86D8D634);
-		sceKernelStartModuleForDriver = find_export(modulemgr_info, 0x0675B682);
+		ksceKernelLoadModuleWithoutStart = find_export(modulemgr_info, 0x86D8D634);
+		ksceKernelStartModule = find_export(modulemgr_info, 0x0675B682);
 		SceModulemgrForKernel_0xB427025E_set_syscall = find_export(modulemgr_info, 0xB427025E);
-		sceKernelFreeMemBlockForKernel = find_export(sysmem_info, 0x9e1c61);
-		sceKernelFindMemBlockByAddrForDriver = find_export(sysmem_info, 0x8a1742f6);
-		sceKernelCreateThreadForKernel = find_export(threadmgr_info, 0xC6674E7D);
-		sceKernelStartThread_089 = find_export(threadmgr_info, 0x21F5419B);
-		sceKernelExitDeleteThread = find_export(threadmgr_info, 0x1D17DECF);
-		sceKernelGetMemBlockBaseForKernel = find_export(sysmem_info, 0xA841EDDA);
+		ksceKernelFreeMemBlock = find_export(sysmem_info, 0x9e1c61);
+		ksceKernelFindMemBlockByAddr = find_export(sysmem_info, 0x8a1742f6);
+		ksceKernelCreateThread = find_export(threadmgr_info, 0xC6674E7D);
+		ksceKernelStartThread = find_export(threadmgr_info, 0x21F5419B);
+		ksceKernelExitDeleteThread = find_export(threadmgr_info, 0x1D17DECF);
+		ksceKernelGetMemBlockBase = find_export(sysmem_info, 0xA841EDDA);
 		SceProcessmgrForDriver_0AFF3EAE_get_data = find_export(processmgr_info, 0x0AFF3EAE);
 	);
 
@@ -743,9 +743,9 @@ void __attribute__ ((section (".text.start"))) payload(uint32_t sysmem_addr, voi
 	resolve_imports(sysmem_base);
 
 	LOG("cleanup stage 1");
-	ret = sceKernelFindMemBlockByAddrForDriver(stage1, 0);
+	ret = ksceKernelFindMemBlockByAddr(stage1, 0);
 	LOG("stage 1: %x", ret);
-	ret = sceKernelFreeMemBlockForKernel(ret);
+	ret = ksceKernelFreeMemBlock(ret);
 	LOG("free: %x", ret);
 
 	LOG("set up syscalls starting at id: %x", syscall_id);
@@ -760,19 +760,19 @@ void __attribute__ ((section (".text.start"))) payload(uint32_t sysmem_addr, voi
 
 	LOG("flush changes");
 	void *base;
-	ret = sceKernelGetMemBlockBaseForKernel(rx_block, &base);
-	LOG("sceKernelGetMemBlockBaseForKernel: %x, %x", ret, base);
+	ret = ksceKernelGetMemBlockBase(rx_block, &base);
+	LOG("ksceKernelGetMemBlockBase: %x, %x", ret, base);
 	SceCpuForDriver_9CB9F0CE_flush_dcache(base, (rx_size + 0x1f) & ~0x1f);
 
 	int tid;
 	LOG("starting kernel thread");
-	tid = sceKernelCreateThreadForKernel("stage2", thread_main, 64, 0x1000, 0, 0, 0);
+	tid = ksceKernelCreateThread("stage2", thread_main, 64, 0x1000, 0, 0, 0);
 	LOG("create tid: %x", tid);
-	ret = sceKernelStartThread_089(tid, 0, NULL);
+	ret = ksceKernelStartThread(tid, 0, NULL);
 	LOG("start thread: %x", ret);
 
 	LOG("killing self");
-	sceKernelExitDeleteThread(0);
+	ksceKernelExitDeleteThread(0);
 
 	LOG("should not be here!");
 	while(1) {}

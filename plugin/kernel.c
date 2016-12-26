@@ -117,17 +117,17 @@ static int SceSblSsUpdateMgr_8E3EC2E1_patched(int r0, uintptr_t out) {
   int ret;
   ret = TAI_CONTINUE(int, g_SceSblSsUpdateMgr_8E3EC2E1_hook, r0, out);
   ver = config.spoofed_version;
-  sceKernelMemcpyKernelToUser(out+4, &ver, 4);
+  ksceKernelMemcpyKernelToUser(out+4, &ver, 4);
   return ret;
 }
 
 static int load_config_kernel(void) {
   SceUID fd;
   int rd;
-  fd = sceIoOpenForDriver(CONFIG_PATH, SCE_O_RDONLY, 0);
+  fd = ksceIoOpen(CONFIG_PATH, SCE_O_RDONLY, 0);
   if (fd >= 0) {
-    rd = sceIoReadForDriver(fd, &config, sizeof(config));
-    sceIoCloseForDriver(fd);
+    rd = ksceIoRead(fd, &config, sizeof(config));
+    ksceIoClose(fd);
     if (rd == sizeof(config)) {
       if (config.magic == HENKAKU_CONFIG_MAGIC) {
         if (config.version >= 8) {
@@ -160,12 +160,12 @@ int henkaku_reload_config(void) {
   int tid;
   int ret;
   ENTER_SYSCALL(state);
-  tid = sceKernelCreateThreadForDriver("configwrite", (SceKernelThreadEntry)load_config_kernel, 64, 0x1000, 0, 0, NULL);
-  LOG("sceKernelCreateThreadForDriver: %x", tid);
-  ret = sceKernelStartThreadForDriver(tid, 0, NULL);
-  LOG("sceKernelStartThreadForDriver: %x", ret);
-  sceKernelWaitThreadEndForDriver(tid, &ret, NULL);
-  sceKernelDeleteThreadForDriver(tid);
+  tid = ksceKernelCreateThread("configwrite", (SceKernelThreadEntry)load_config_kernel, 64, 0x1000, 0, 0, NULL);
+  LOG("ksceKernelCreateThread: %x", tid);
+  ret = ksceKernelStartThread(tid, 0, NULL);
+  LOG("ksceKernelStartThread: %x", ret);
+  ksceKernelWaitThreadEnd(tid, &ret, NULL);
+  ksceKernelDeleteThread(tid);
   EXIT_SYSCALL(state);
   return ret;
 }

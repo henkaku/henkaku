@@ -11,12 +11,12 @@ void __attribute__((noreturn)) loader(uint32_t sysmem_addr, void *second_payload
 	// BEGIN 3.60
 	void (*SceDebugForKernel_F857CDD6_set_crash_flag)(int) = (void *)(sysmem_base + 0x1990d);
 	void (*debug_print_local)(char *s, ...) = (void*)(sysmem_base + 0x1A155);
-	uint32_t (*sceKernelAllocMemBlockForKernel)(const char *s, uint32_t type, uint32_t size, void *pargs) = (void*)(sysmem_base + 0xA521);
+	uint32_t (*ksceKernelAllocMemBlock)(const char *s, uint32_t type, uint32_t size, void *pargs) = (void*)(sysmem_base + 0xA521);
 	uint32_t (*getbase_0xA841EDDA)(uint32_t blkid, void **base) = (void*)(sysmem_base + 0x1F15);
 	// void (*sysmem_remap)(uint32_t blkid, uint32_t type) = (void*)(sysmem_base + 0xA74D);
 	// void (*flush_cache)(void *addr, uint32_t size) = (void*)(sysmem_base + 0x22FCD);
 	void (*dacr_memcpy)() = (void*)(sysmem_base + 0x23095);
-	void (*sceKernelMemcpyUserToKernel)(void *dst, void *src, uint32_t sz) = (void*)(sysmem_base + 0x825D);
+	void (*ksceKernelMemcpyUserToKernel)(void *dst, void *src, uint32_t sz) = (void*)(sysmem_base + 0x825D);
 	//void (*aes_setkey_0xf12b6451)(void *ctx, uint32_t blocksize, uint32_t keysize, void *key) = (void*)(sysmem_base + 0x1d8d9);
 	//void (*aes_decrypt_0xd8678061)(void *ctx, void *src, void *dst) = (void*)(sysmem_base + 0x1baf5);
 	// END 3.60
@@ -28,13 +28,13 @@ void __attribute__((noreturn)) loader(uint32_t sysmem_addr, void *second_payload
 	__asm__ volatile ("cpsid aif"); // disable interrupts
 
 	char empty_string = 0;
-	uint32_t rw_block = sceKernelAllocMemBlockForKernel(&empty_string, 0x1020D006, RW_BLOCK_SIZE, NULL);
-	uint32_t rx_block = sceKernelAllocMemBlockForKernel(&empty_string, 0x1020D005, RX_BLOCK_SIZE, NULL);
+	uint32_t rw_block = ksceKernelAllocMemBlock(&empty_string, 0x1020D006, RW_BLOCK_SIZE, NULL);
+	uint32_t rx_block = ksceKernelAllocMemBlock(&empty_string, 0x1020D005, RX_BLOCK_SIZE, NULL);
 	void *rw_base;
 	void *rx_base;
 	getbase_0xA841EDDA(rw_block, &rw_base);
 	getbase_0xA841EDDA(rx_block, &rx_base);
-	sceKernelMemcpyUserToKernel(rw_base, second_payload, PAYLOAD_SIZE);
+	ksceKernelMemcpyUserToKernel(rw_base, second_payload, PAYLOAD_SIZE);
 
 	dacr_memcpy(rx_base, rw_base, PAYLOAD_SIZE);
 
