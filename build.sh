@@ -68,12 +68,12 @@ echo "#define HENKAKU_CRC32 0x$HENKAKU_CRC32" >> build/version.c
 echo "#define HENKAKU_USER_CRC32 0x$HENKAKU_USER_CRC32" >> build/version.c
 
 # user payload is injected into web browser process
-mkdir build/installer
-pushd build/installer
-cmake -DRELEASE=$RELEASE ../../installer
+mkdir build/bootstrap
+pushd build/bootstrap
+cmake -DRELEASE=$RELEASE ../../bootstrap
 make
 popd
-xxd -i build/installer/installer.self > build/installer.h
+xxd -i build/bootstrap/bootstrap.self > build/bootstrap.h
 
 echo "2) Payload"
 

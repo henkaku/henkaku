@@ -8,7 +8,7 @@ if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
   endif()
 endif()
 
-project(installer)
+project(bootstrap)
 include("${VITASDK}/share/vita.cmake" REQUIRED)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O3 -Wno-unused-variable -Wno-unused-but-set-variable")
@@ -21,13 +21,13 @@ link_directories(
   ${CMAKE_CURRENT_BINARY_DIR}
 )
 
-add_executable(installer
+add_executable(bootstrap
   compress.c
   crc32.c
-  installer.c
+  bootstrap.c
 )
 
-target_link_libraries(installer
+target_link_libraries(bootstrap
   gcc
   SceLibKernel_stub
   SceIofilemgr_stub
@@ -45,8 +45,8 @@ target_link_libraries(installer
   ScePromoterUtil_stub
 )
 
-set_target_properties(installer
+set_target_properties(bootstrap
   PROPERTIES LINK_FLAGS "-nostdlib"
 )
 
-vita_create_self(installer.self installer UNSAFE)
+vita_create_self(bootstrap.self bootstrap UNSAFE)

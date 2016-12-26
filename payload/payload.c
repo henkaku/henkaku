@@ -1,7 +1,7 @@
 #include <inttypes.h>
 
-// the installer self is packaged in
-#include "../build/installer.h"
+// the bootstrap self is packaged in
+#include "../build/bootstrap.h"
 
 #include "../build/version.c"
 
@@ -538,7 +538,7 @@ void cleanup_memory(void) {
 	void *lr;
 	__asm__ volatile ("mov %0, lr" : "=r" (lr));
 	LOG("calling cleanup from %x", lr);
-	// TODO: Delete installer.self (#37)
+	// TODO: Delete bootstrap.self (#37)
 	// remove syscalls
 	LOG("removing syscalls");
 	SceModulemgrForKernel_0xB427025E_set_syscall(syscall_id + 0, syscall_stub);
@@ -552,7 +552,7 @@ void cleanup_memory(void) {
 }
 
 /* Install path and arguments */
-const char launch_path[] = "ux0:data/installer.self";
+const char launch_path[] = "ux0:data/bootstrap.self";
 const char launch_args[] = "\0\0\0-nonsuspendable\0-livearea_off\0";
 
 int thread_main(int args, void *argp) {
@@ -571,11 +571,11 @@ int thread_main(int args, void *argp) {
 	memcpy(real_args, launch_args, sizeof(launch_args));
 	*(uint16_t *)&real_args[0] = syscall_id;
 
-	LOG("Loading installer to system");
+	LOG("Loading bootstrap to system");
 	ret = fd = ksceIoOpen(launch_path, 0x603, 0x6);
 	LOG("ksceIoOpen: %x", fd);
 	if (fd >= 0) {
-		ret = ksceIoWrite(fd, build_installer_installer_self, build_installer_installer_self_len);
+		ret = ksceIoWrite(fd, build_bootstrap_bootstrap_self, build_bootstrap_bootstrap_self_len);
 		LOG("ksceIoWrite: %x", ret);
 		ksceIoClose(fd);
 
@@ -583,12 +583,12 @@ int thread_main(int args, void *argp) {
 			opt[i] = 0;
 		}
 		opt[0] = sizeof(opt);
-		LOG("Launching installer...");
+		LOG("Launching bootstrap...");
 		ret = SceAppMgrForDriver_launchbypath(launch_path, real_args, sizeof(launch_args), 0, opt, NULL);
 		LOG("SceAppMgrForDriver_launchbypath: %x", ret);
 	}
 	if (ret < 0) {
-		LOG("unable to write installer!");
+		LOG("unable to write bootstrap!");
 		remove_sigpatches();
 		remove_pkgpatches();
 		__asm__ volatile ("mov lr, %0\n"
