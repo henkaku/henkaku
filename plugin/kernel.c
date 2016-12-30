@@ -111,11 +111,11 @@ static int sceKernelGetSystemSwVersion_patched(SceKernelFwInfo *info) {
   return ret;
 }
 
-static tai_hook_ref_t g_SceSblSsUpdateMgr_8E3EC2E1_hook;
-static int SceSblSsUpdateMgr_8E3EC2E1_patched(int r0, uintptr_t out) {
+static tai_hook_ref_t g_sceSblUsGetSpkgInfo_hook;
+static int sceSblUsGetSpkgInfo_patched(int r0, uintptr_t out) {
   int ver;
   int ret;
-  ret = TAI_CONTINUE(int, g_SceSblSsUpdateMgr_8E3EC2E1_hook, r0, out);
+  ret = TAI_CONTINUE(int, g_sceSblUsGetSpkgInfo_hook, r0, out);
   ver = config.spoofed_version;
   ksceKernelMemcpyKernelToUser(out+4, &ver, 4);
   return ret;
@@ -218,12 +218,12 @@ int module_start(SceSize argc, const void *args) {
     LOG("sceKernelGetSystemSwVersion_hook: %x", g_hooks[4]);
     // this hook spoofs the system version for internal access
     g_hooks[5] = taiHookFunctionExportForKernel(KERNEL_PID, 
-                                                &g_SceSblSsUpdateMgr_8E3EC2E1_hook, 
+                                                &g_sceSblUsGetSpkgInfo_hook, 
                                                 "SceSblUpdateMgr", 
                                                 0x31406C49, // SceSblSsUpdateMgr
                                                 0x8E3EC2E1, 
-                                                SceSblSsUpdateMgr_8E3EC2E1_patched);
-    LOG("SceSblSsUpdateMgr_8E3EC2E1_hook: %x", g_hooks[5]);
+                                                sceSblUsGetSpkgInfo_patched);
+    LOG("sceSblUsGetSpkgInfo_hook: %x", g_hooks[5]);
   } else {
     LOG("skipping version spoofing");
   }
@@ -246,7 +246,7 @@ int module_stop(SceSize argc, const void *args) {
   taiHookReleaseForKernel(g_hooks[3], g_some_power_auth_check_hook);
   if (config.use_spoofed_version) {
     taiHookReleaseForKernel(g_hooks[4], g_sceKernelGetSystemSwVersion_hook);
-    taiHookReleaseForKernel(g_hooks[5], g_SceSblSsUpdateMgr_8E3EC2E1_hook);
+    taiHookReleaseForKernel(g_hooks[5], g_sceSblUsGetSpkgInfo_hook);
   }
   return SCE_KERNEL_STOP_SUCCESS;
 }
