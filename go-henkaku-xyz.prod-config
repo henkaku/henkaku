@@ -23,4 +23,4 @@ BETA_RELEASE=0
 TAIHEN_CRC32=0x08c08f53
 
 # CRC of molecularShell eboot.bin, will redownload if mismatch
-VITASHELL_CRC32=0x61c0c918
+VITASHELL_CRC32=0xac0ad71c
