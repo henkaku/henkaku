@@ -521,7 +521,7 @@ int module_start(SceSize argc, const void *args) {
 	LOG("sceShellUtilLock: %x\n", ret);
 
 	LOG("killing parent\n");
-	ret = sceAppMgrDestroyOtherApp(-2);
+	ret = sceAppMgrDestroyOtherApp();
 	LOG("sceAppMgrDestroyOtherApp: %x\n", ret);
 
 	init_modules();
