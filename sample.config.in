@@ -24,3 +24,6 @@ TAIHEN_CRC32=0
 
 # CRC of molecularShell eboot.bin, will redownload if mismatch
 VITASHELL_CRC32=0
+
+# PSN "X-I-5-Passphrase" for spoofing, leave empty to disable
+PSN_PASSPHRASE=""

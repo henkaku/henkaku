@@ -39,15 +39,14 @@ CFLAGS="-fPIE -fno-zero-initialized-in-bss -std=c99 -mcpu=cortex-a9 -Os -mthumb 
 # generate version stuffs
 BUILD_VERSION=$(git describe --dirty --always --tags)
 BUILD_DATE=$(date)
-BUILD_HOST=$(hostname)
 echo "#define BUILD_VERSION \"$BUILD_VERSION\"" >> build/version.c
 echo "#define BUILD_DATE \"$BUILD_DATE\"" >> build/version.c
-echo "#define BUILD_HOST \"$BUILD_HOST\"" >> build/version.c
 echo "#define PKG_URL_PREFIX \"$PKG_URL_PREFIX\"" >> build/version.c
 echo "#define HENKAKU_RELEASE $HENKAKU_RELEASE" >> build/version.c
 echo "#define BETA_RELEASE $BETA_RELEASE" >> build/version.c
 echo "#define VITASHELL_CRC32 $VITASHELL_CRC32" >> build/version.c
 echo "#define TAIHEN_CRC32 $TAIHEN_CRC32" >> build/version.c
+echo "#define PSN_PASSPHRASE \"$PSN_PASSPHRASE\"" >> build/version.c
 
 echo "0) taiHEN plugin"
 

@@ -8,7 +8,7 @@
 
 static henkaku_config_t config;
 
-static SceUID g_hooks[4];
+static SceUID g_hooks[5];
 
 static tai_hook_ref_t g_sceKernelGetSystemSwVersion_SceSettings_hook;
 static int sceKernelGetSystemSwVersion_SceSettings_patched(SceKernelFwInfo *info) {
@@ -38,6 +38,14 @@ static int game_update_check_patched(int newver, int *needsupdate) {
   TAI_CONTINUE(int, g_game_update_check_hook, newver, needsupdate);
   *needsupdate = 0;
   return 0;
+}
+
+static tai_hook_ref_t g_passphrase_decrypt_hook;
+static void passphrase_decrypt_patched(void *dat0, void *dat1, void *dat2, char *passphrase, int *result) {
+  TAI_CONTINUE(void, g_passphrase_decrypt_hook, dat0, dat1, dat2, passphrase, result);
+  if (PSN_PASSPHRASE[0] != '\0' && *result == 1) {
+    sceClibMemcpy(passphrase, PSN_PASSPHRASE, sizeof(PSN_PASSPHRASE));
+  }
 }
 
 static tai_hook_ref_t g_app_start_hook;
@@ -133,6 +141,12 @@ int module_start(SceSize argc, const void *args) {
                                              0x37beda,  // offset
                                              1,         // thumb
                                              game_update_check_patched);
+          g_hooks[4] = taiHookFunctionOffset(&g_passphrase_decrypt_hook, 
+                                             info.modid, 
+                                             0,         // segidx
+                                             0x325230,  // offset
+                                             1,         // thumb
+                                             passphrase_decrypt_patched);
           break;
         }
         case 0x6CB01295: { // PDEL 3.60 SceShell thanks to anonymous for offsets
@@ -148,6 +162,12 @@ int module_start(SceSize argc, const void *args) {
                                              0x36df3e,  // offset
                                              1,         // thumb
                                              game_update_check_patched);
+          g_hooks[4] = taiHookFunctionOffset(&g_passphrase_decrypt_hook, 
+                                             info.modid, 
+                                             0,         // segidx
+                                             0x317384,  // offset
+                                             1,         // thumb
+                                             passphrase_decrypt_patched);
           break;
         }
         default: {
@@ -168,5 +188,6 @@ int module_stop(SceSize argc, const void *args) {
   if (g_hooks[1] >= 0) taiHookRelease(g_hooks[1], g_sceKernelGetSystemSwVersion_SceSettings_hook);
   if (g_hooks[2] >= 0) taiHookRelease(g_hooks[2], g_update_check_hook);
   if (g_hooks[3] >= 0) taiHookRelease(g_hooks[3], g_game_update_check_hook);
+  if (g_hooks[4] >= 0) taiHookRelease(g_hooks[4], g_passphrase_decrypt_hook);
   return SCE_KERNEL_STOP_SUCCESS;
 }

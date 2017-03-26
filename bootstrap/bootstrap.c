@@ -546,7 +546,7 @@ int module_start(SceSize argc, const void *args) {
 	ret = sceKernelStartThread(thread, 0, NULL);
 
 	// done with the bullshit now, let's rock
-	DRAWF("HENkaku R%d%s (" BUILD_VERSION ") built at " BUILD_DATE " by " BUILD_HOST "\n", HENKAKU_RELEASE, BETA_RELEASE ? " Beta" : "");
+	DRAWF("HENkaku R%d%s (" BUILD_VERSION ") built at " BUILD_DATE "\n", HENKAKU_RELEASE, BETA_RELEASE ? " Beta" : "");
 	DRAWF("Please demand a refund if you paid for this free software either on its own or as part of a bundle!\n\n");
 
 	cui_data.fg_color = 0xFFFF00FF;
