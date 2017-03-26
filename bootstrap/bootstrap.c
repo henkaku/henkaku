@@ -99,7 +99,7 @@ static void clear_screen(void) {
 	// clear uncompressed data
 	sceClibMemset(cui_data.base, 0, molecule_logo.size);
 
-	cui_data.Y = 32;
+	cui_data.Y = 0;
 	cui_data.X = 0;
 }
 
@@ -527,8 +527,6 @@ int module_start(SceSize argc, const void *args) {
 	init_modules();
 
 	cui_data.fg_color = 0xFFFFFFFF;
-	cui_data.Y = 36; // make sure text starts below the status bar
-	cui_data.X = 191;
 	sceKernelDelayThread(1000 * 1000);
 
 	// allocate graphics and start render thread
