@@ -43,7 +43,7 @@ static int game_update_check_patched(int newver, int *needsupdate) {
 static tai_hook_ref_t g_passphrase_decrypt_hook;
 static void passphrase_decrypt_patched(void *dat0, void *dat1, void *dat2, char *passphrase, int *result) {
   TAI_CONTINUE(void, g_passphrase_decrypt_hook, dat0, dat1, dat2, passphrase, result);
-  if (PSN_PASSPHRASE[0] != '\0' && *result == 1) {
+  if (config.use_psn_spoofing && PSN_PASSPHRASE[0] != '\0' && *result == 1) {
     sceClibMemcpy(passphrase, PSN_PASSPHRASE, sizeof(PSN_PASSPHRASE));
   }
 }
