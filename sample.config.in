@@ -11,9 +11,8 @@ KROP_PREBUILT=
 # the directory structure will be created by the exploit
 PKG_URL_PREFIX="http://your_url_here.com/pkg/"
 
-# Args will be appended to the URL, in format "?a1=0x123&a2=0x345"
-# You only need this for the dynamic version of the exploit (which is recommended)
-STAGE2_URL_BASE="http://your_url_here.com/stage2.php"
+# Url to henkaku.bin
+HENKAKU_BIN_URL="http://your_url_here.com/henkaku.bin"
 
 # Version to show in Settings
 HENKAKU_RELEASE=7

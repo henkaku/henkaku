@@ -32,7 +32,12 @@ data
 
 	variable dbg_fd;
 
+#ifdef OFFLINE
 	#include "../build/offline/size.rop"
+#else
+	#include "../build/size.rop"
+	#include "../build/config.rop"
+#endif
 }
 
 code : entry
@@ -58,6 +63,8 @@ code : entry
 	sceKernelGetMemBlockBase([memblock], memblock_base);
 	PRINTF("base 0x%x\n", [memblock_base]);
 
+#ifdef OFFLINE
+	PRINTF("offline loader\n");
 	sceIoOpen("photo0:henkaku.bin", 1);
 	store(&return, fd);
 	PRINTF("open henkaku.bin: 0x%x\n", [fd]);
@@ -65,6 +72,16 @@ code : entry
 	PRINTF("read: 0x%x\n", &return);
 	sceIoClose([fd]);
 	PRINTF("close: 0x%x\n", &return);
+#else
+	PRINTF("online loader\n");
+	sceHttpInit(0x10000);
+	sceHttpCreateTemplate("ldr", 2, 1);
+	sceHttpCreateConnectionWithURL(&return, stage2_url_base, 0);
+	sceHttpCreateRequestWithURL(&return, 0, stage2_url_base, 0, 0, 0);
+	store(&return, http_uid);
+	sceHttpSendRequest([http_uid], 0, 0);
+	sceHttpReadData([http_uid], [memblock_base], memblock_size);
+#endif
 
 	// prepare relocation array, same layout as with normal loader, but here relocations are done in rop
 	<% i = -1 %>

@@ -4,7 +4,7 @@
 # output: final files only, for distribution
 rm -rf build output
 mkdir build output
-mkdir output/static output/dynamic
+mkdir output/web output/offline
 
 
 if [ -z "$1" ]; then
@@ -14,9 +14,9 @@ fi
 
 source $1
 
-if [ -z "$RELEASE" ] || [ -z "$PKG_URL_PREFIX" ] || [ -z "$STAGE2_URL_BASE" ] || [ -z "$VITASHELL_CRC32" ] || [ -z "$TAIHEN_CRC32" ] || [ -z "$HENKAKU_RELEASE" ]; then
+if [ -z "$RELEASE" ] || [ -z "$PKG_URL_PREFIX" ] || [ -z "$HENKAKU_BIN_URL" ] || [ -z "$VITASHELL_CRC32" ] || [ -z "$TAIHEN_CRC32" ] || [ -z "$HENKAKU_RELEASE" ]; then
 	echo "Please make sure all of the following variables are defined in your config file:"
-	echo "RELEASE, PKG_URL_PREFIX, STAGE2_URL_BASE, VITASHELL_CRC32, TAIHEN_CRC32, HENKAKU_RELEASE"
+	echo "RELEASE, PKG_URL_PREFIX, HENKAKU_BIN_URL, VITASHELL_CRC32, TAIHEN_CRC32, HENKAKU_RELEASE"
 	echo "(see sample.config.in for an example)"
 	exit 2
 fi
@@ -111,7 +111,7 @@ else
 fi
 
 echo "4) User ROP"
-echo "symbol stage2_url_base = \"$STAGE2_URL_BASE\";" > build/config.rop
+echo "symbol stage2_url_base = \"$HENKAKU_BIN_URL\";" > build/config.rop
 
 ./urop/make_rop_array.py build/loader.enc kx_loader build/kx_loader.rop
 ./urop/make_rop_array.py build/payload.bin second_payload build/second_payload.rop
@@ -120,31 +120,23 @@ $PREPROCESS urop/exploit.rop.in -o build/exploit.rop.in
 erb build/exploit.rop.in > build/exploit.rop
 roptool -s build/exploit.rop -t urop/webkit-360-pkg -o build/exploit.rop.bin >/dev/null
 
-$PREPROCESS urop/loader.rop.in -o build/loader.rop.in
+./webkit/preprocess.py build/exploit.rop.bin build/stage2.bin
+./urop/offline_stage2.py build/stage2.bin output/web/henkaku.bin build/size.rop
+
+$PREPROCESS urop/offline_loader.rop.in -o build/loader.rop.in
 erb build/loader.rop.in > build/loader.rop
 roptool -s build/loader.rop -t urop/webkit-360-pkg -o build/loader.rop.bin >/dev/null
 
 echo "5) Webkit"
-# Static website
-$PREPROCESS webkit/exploit.js -DSTATIC=1 -o build/exploit.static.js
-uglifyjs build/exploit.static.js -m "toplevel" > build/exploit.js
-touch output/static/exploit.html
-printf "<script>" >> output/static/exploit.html
-cat build/exploit.js >> output/static/exploit.html
-printf "</script>" >> output/static/exploit.html
-./webkit/preprocess.py build/exploit.rop.bin output/static/payload.bin
+# Hosted version
+$PREPROCESS webkit/exploit.js -DSTATIC=0 -o build/exploit.web.js
+uglifyjs build/exploit.web.js -m "toplevel" > build/exploit.js
+touch output/web/exploit.html
+printf "<noscript>Go to browser settings and check \"Enable JavaScript\", then reload this page.</noscript><script src='payload.js'></script><script>" >> output/web/exploit.html
+cat build/exploit.js >> output/web/exploit.html
+printf "</script>" >> output/web/exploit.html
 
-# Dynamic website
-$PREPROCESS webkit/exploit.js -DSTATIC=0 -o build/exploit.dynamic.js
-uglifyjs build/exploit.dynamic.js -m "toplevel" > build/exploit.js
-touch output/dynamic/exploit.html
-printf "<noscript>Go to browser settings and check \"Enable JavaScript\", then reload this page.</noscript><script src='payload.js'></script><script>" >> output/dynamic/exploit.html
-cat build/exploit.js >> output/dynamic/exploit.html
-printf "</script>" >> output/dynamic/exploit.html
-cp output/static/payload.bin output/dynamic/stage2.bin
-./webkit/preprocess.py build/loader.rop.bin output/dynamic/payload.js
-cp webkit/stage2.php output/dynamic/stage2.php
-cp webkit/stage2.go output/dynamic/stage2.go
+./webkit/preprocess.py build/loader.rop.bin output/web/payload.js
 
 echo "6) Offline"
 mkdir -p build/offline output/offline
@@ -166,7 +158,7 @@ roptool -s build/offline/exploit.rop -t urop/webkit-360-pkg -o build/offline/exp
 cp build/offline/henkaku.bin output/offline/
 
 # offline rop loader
-$PREPROCESS urop/offline_loader.rop.in -o build/offline/loader.rop.in
+$PREPROCESS urop/offline_loader.rop.in -o build/offline/loader.rop.in -DOFFLINE=1
 erb build/offline/loader.rop.in > build/offline/loader.rop
 roptool -s build/offline/loader.rop -t urop/webkit-360-pkg -o build/offline/loader.rop.bin -v
 
