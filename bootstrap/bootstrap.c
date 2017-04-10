@@ -446,15 +446,27 @@ int should_reinstall(void) {
 	SceCtrlData buf;
 	int ret;
 
-	ret = sceCtrlPeekBufferPositive(0, &buf, 1);
-	LOG("sceCtrlPeekBufferPositive: 0x%x, 0x%x\n", ret, buf.buttons);
-	if (ret < 0) {
-		return 0;
-	}
-	if (buf.buttons & (SCE_CTRL_R1 | SCE_CTRL_RTRIGGER)) {
-		return 1;
-	} else {
-		return 0;
+	uint64_t start = sceKernelGetSystemTimeWide();
+	while (1) {
+		ret = sceCtrlPeekBufferPositive(0, &buf, 1);
+		LOG("sceCtrlPeekBufferPositive: 0x%x, 0x%x\n", ret, buf.buttons);
+		if (ret < 0) {
+			return 0;
+		}
+
+		if (buf.buttons) {
+			if (buf.buttons & (SCE_CTRL_R1 | SCE_CTRL_RTRIGGER)) {
+				return 1;
+			} else {
+				return 0;
+			}
+		}
+
+		if (sceKernelGetSystemTimeWide() - start >= (2 * 1000 * 1000)) {
+			return 0;
+		}
+
+		sceKernelDelayThread(10 * 1000);
 	}
 }
 
@@ -546,6 +558,9 @@ int module_start(SceSize argc, const void *args) {
 	// done with the bullshit now, let's rock
 	DRAWF("HENkaku R%d%s (" BUILD_VERSION ") built at " BUILD_DATE "\n", HENKAKU_RELEASE, BETA_RELEASE ? " Beta" : "");
 	DRAWF("Please demand a refund if you paid for this free software either on its own or as part of a bundle!\n\n");
+
+	DRAWF("Press R1 now to reset HENkaku settings, or press any other key to continue\n");
+	DRAWF("(the application will continue automatically in 2s)\n\n");
 
 	cui_data.fg_color = 0xFFFF00FF;
 	if (should_reinstall()) {
