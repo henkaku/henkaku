@@ -553,7 +553,7 @@ void cleanup_memory(void) {
 
 /* Install path and arguments */
 const char launch_path[] = "ux0:data/bootstrap.self";
-const char launch_args[] = "\0\0\0-nonsuspendable\0-livearea_off\0";
+const char launch_args[] = "\0\0\0\0-nonsuspendable\0-livearea_off\0";
 
 int thread_main(int args, void *argp) {
 	char real_args[sizeof(launch_args)];
@@ -570,6 +570,9 @@ int thread_main(int args, void *argp) {
 
 	memcpy(real_args, launch_args, sizeof(launch_args));
 	*(uint16_t *)&real_args[0] = syscall_id;
+#ifdef OFFLINE
+	*(uint8_t *)&real_args[2] = 1;
+#endif
 
 	LOG("Loading bootstrap to system");
 	ret = fd = ksceIoOpen(launch_path, 0x603, 0x6);

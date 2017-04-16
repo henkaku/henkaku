@@ -521,11 +521,13 @@ void _start() __attribute__ ((weak, alias ("module_start")));
 int module_start(SceSize argc, const void *args) {
 	int ret;
 	int syscall_id;
+	int offline;
 	int tries = INSTALL_ATTEMPTS;
 
 	LOG("hello world! argc: %d\n", argc);
 	syscall_id = *(uint16_t *)args;
 	LOG("syscall_id: %x\n", syscall_id);
+	offline = ((uint8_t *)args)[2];
 
 	ret = sceShellUtilInitEvents(0);
 	LOG("sceShellUtilInitEvents: %x\n", ret);
@@ -539,7 +541,6 @@ int module_start(SceSize argc, const void *args) {
 	init_modules();
 
 	cui_data.fg_color = 0xFFFFFFFF;
-	sceKernelDelayThread(1000 * 1000);
 
 	// allocate graphics and start render thread
 	int block = sceKernelAllocMemBlock("display", SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW, FRAMEBUFFER_SIZE, NULL);
@@ -559,20 +560,22 @@ int module_start(SceSize argc, const void *args) {
 	DRAWF("HENkaku R%d%s (" BUILD_VERSION ") built at " BUILD_DATE "\n", HENKAKU_RELEASE, BETA_RELEASE ? " Beta" : "");
 	DRAWF("Please demand a refund if you paid for this free software either on its own or as part of a bundle!\n\n");
 
-	DRAWF("Press R1 now to reset HENkaku settings, or press any other key to continue\n");
-	DRAWF("(the application will continue automatically in 2s)\n\n");
+	if (!offline) {
+		DRAWF("Press R1 now to reset HENkaku settings, or press any other key to continue\n");
+		DRAWF("(the application will continue automatically in 2s)\n\n");
 
-	cui_data.fg_color = 0xFFFF00FF;
-	if (should_reinstall()) {
-		DRAWF("Forcing reinstall of taiHEN and molecularShell, configuration will be reset\n\n");
-		sceIoRemove("ux0:temp/app_work/MLCL00001/rec/config.bin");
-		sceIoRemove("ux0:app/MLCL00001/eboot.bin");
-		sceIoRemove("ux0:app/MLCL00001/henkaku.suprx");
-		sceIoRemove("ux0:app/MLCL00001/henkaku.skprx");
-		sceIoRemove("ux0:tai/taihen.skprx");
-		write_taihen_config();
+		cui_data.fg_color = 0xFFFF00FF;
+		if (should_reinstall()) {
+			DRAWF("Forcing reinstall of taiHEN and molecularShell, configuration will be reset\n\n");
+			sceIoRemove("ux0:temp/app_work/MLCL00001/rec/config.bin");
+			sceIoRemove("ux0:app/MLCL00001/eboot.bin");
+			sceIoRemove("ux0:app/MLCL00001/henkaku.suprx");
+			sceIoRemove("ux0:app/MLCL00001/henkaku.skprx");
+			sceIoRemove("ux0:tai/taihen.skprx");
+			write_taihen_config();
+		}
+		cui_data.fg_color = 0xFFFFFFFF;
 	}
-	cui_data.fg_color = 0xFFFFFFFF;
 
 	DRAWF("starting...\n");
 
@@ -581,14 +584,15 @@ int module_start(SceSize argc, const void *args) {
 	LOG("am still running\n");
 
 	int crc[3] = {0};
-	do {
+	const char *force_reinstall = "(if you want to force reinstall, reboot your Vita and press R1 when asked to)\n";
+	while (tries-- > 0 && !offline) {
 		// check if we actually need to install the package
 		if (TAIHEN_CRC32 == 0 || (crc[0] = crc32_file("ux0:tai/taihen.skprx")) != TAIHEN_CRC32) {
 			DRAWF("taihen.skprx CRC32:%x, latest:%x, getting latest version...\n", crc[0], TAIHEN_CRC32);
 			ret = install_taihen(PKG_URL_PREFIX);
 		} else {
 			DRAWF("taiHEN already installed and is the latest version\n");
-			DRAWF("(if you want to force reinstall, reboot your Vita and hold R1 while running the exploit)\n");
+			DRAWF(force_reinstall);
 			ret = 0;
 		}
 		if (ret < 0) {
@@ -608,7 +612,7 @@ int module_start(SceSize argc, const void *args) {
 			ret = install_pkg(PKG_URL_PREFIX);
 		} else {
 			DRAWF("molecularShell already installed and is the latest version\n");
-			DRAWF("(if you want to force reinstall, reboot your Vita and hold R1 while running the exploit)\n");
+			DRAWF(force_reinstall);
 			ret = 0;
 		}
 		if (ret < 0) {
@@ -627,7 +631,7 @@ int module_start(SceSize argc, const void *args) {
 		} else {
 			break;
 		}
-	} while (tries-- > 0);
+	}
 
 	DRAWF("\n");
 
