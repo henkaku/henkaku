@@ -61,22 +61,24 @@ enum {
 	FRAMEBUFFER_SIZE = 2 * 1024 * 1024,
 	FRAMEBUFFER_ALIGNMENT = 256 * 1024,
 	PROGRESS_BAR_WIDTH = 400,
-	PROGRESS_BAR_HEIGHT = 10,
+	PROGRESS_BAR_HEIGHT = 20,
+	GLYPH_SIZE = 16,
 };
 
 // Draw functions
 #include "font.c"
 
+uint16_t logo[512 * 1024];
+
 static void clear_screen(void) {
 	uint32_t *fb = (uint32_t *)cui_data.base;
-	uint16_t *logo = (uint16_t *)(cui_data.base);
 
 	for (int i = 0; i < FRAMEBUFFER_SIZE; i += 4)
 	{
 		((unsigned int *)cui_data.base)[i/4] = 0xFF000000;
 	}
 
-	decompress((char *)molecule_logo.data, cui_data.base, sizeof(molecule_logo.data), molecule_logo.size);
+	decompress((char *)molecule_logo.data, logo, sizeof(molecule_logo.data), molecule_logo.size);
 
 	cui_data.Y = SCREEN_HEIGHT-molecule_logo.height;
 	cui_data.X = SCREEN_WIDTH-molecule_logo.width;
@@ -96,23 +98,20 @@ static void clear_screen(void) {
 		}
 	}
 
-	// clear uncompressed data
-	sceClibMemset(cui_data.base, 0, molecule_logo.size);
-
 	cui_data.Y = 0;
 	cui_data.X = 0;
 }
 
 static void printTextScreen(const char * text, uint32_t *g_vram, int *X, int *Y)
 {
-	int c, i, j, l;
+	int c, i, j;
 	unsigned char *font;
 	uint32_t *vram_ptr;
 	uint32_t *vram;
 
 	for (c = 0; c < sceClibStrnlen(text, 256); c++) {
-		if (*X + 8 >= SCREEN_WIDTH) {
-			*Y += 8;
+		if (*X + GLYPH_SIZE >= SCREEN_WIDTH) {
+			*Y += GLYPH_SIZE;
 			*X = 0;
 		}
 		if (*Y >= SCREEN_HEIGHT) {
@@ -121,7 +120,7 @@ static void printTextScreen(const char * text, uint32_t *g_vram, int *X, int *Y)
 		char ch = text[c];
 		if (ch == '\n') {
 			*X = 0;
-			*Y += 8;
+			*Y += GLYPH_SIZE;
 			continue;
 		} else if (ch == '\r') {
 			*X = 0;
@@ -131,16 +130,18 @@ static void printTextScreen(const char * text, uint32_t *g_vram, int *X, int *Y)
 		vram = g_vram + (*X) + (*Y) * LINE_SIZE;
 
 		font = &msx[ (int)ch * 8];
-		for (i = l = 0; i < 8; i++, l += 8, font++) {
+		for (i = 0; i < GLYPH_SIZE; i++) {
 			vram_ptr  = vram;
-			for (j = 0; j < 8; j++) {
-				if ((*font & (128 >> j))) *vram_ptr = cui_data.fg_color;
+			for (j = 0; j < GLYPH_SIZE; j++) {
+				if ((*font & (128 >> (j / 2)))) *vram_ptr = cui_data.fg_color;
 				else *vram_ptr = 0;
 				vram_ptr++;
 			}
 			vram += LINE_SIZE;
+			if (i % 2 != 0)
+				font++;
 		}
-		*X += 8;
+		*X += GLYPH_SIZE;
 	}
 }
 
