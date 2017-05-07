@@ -449,7 +449,6 @@ int should_reinstall(void) {
 	uint64_t start = sceKernelGetSystemTimeWide();
 	while (1) {
 		ret = sceCtrlPeekBufferPositive(0, &buf, 1);
-		LOG("sceCtrlPeekBufferPositive: 0x%x, 0x%x\n", ret, buf.buttons);
 		if (ret < 0) {
 			return 0;
 		}
