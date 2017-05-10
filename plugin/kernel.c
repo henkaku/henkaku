@@ -116,8 +116,10 @@ static int sceSblUsGetSpkgInfo_patched(int r0, uintptr_t out) {
   int ver;
   int ret;
   ret = TAI_CONTINUE(int, g_sceSblUsGetSpkgInfo_hook, r0, out);
-  ver = config.spoofed_version;
-  ksceKernelMemcpyKernelToUser(out+4, &ver, 4);
+  if (r0 == 1 || r0 == 9 || r0 == 10 || r0 == 21 || r0 == 22) {
+    ver = config.spoofed_version;
+    ksceKernelMemcpyKernelToUser(out+4, &ver, 4);
+  }
   return ret;
 }
 
