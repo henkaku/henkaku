@@ -70,7 +70,7 @@ static void save_config_user(void) {
       LOG("config not right size: %d", rd);
     }
   } else {
-    LOG("could not wriet config file");
+    LOG("could not write config file");
   }
 }
 
@@ -122,7 +122,6 @@ static int sceRegMgrGetKeyInt_SceSystemSettingsCore_patched(const char *category
     }
     return 0;
   }
-
   return TAI_CONTINUE(int, g_sceRegMgrGetKeyInt_SceSystemSettingsCore_hook, category, name, value);
 }
 
@@ -140,7 +139,6 @@ static int sceRegMgrSetKeyInt_SceSystemSettingsCore_patched(const char *category
     henkaku_reload_config();
     return 0;
   }
-
   return TAI_CONTINUE(int, g_sceRegMgrSetKeyInt_SceSystemSettingsCore_hook, category, name, value);
 }
 
@@ -170,9 +168,7 @@ static int sceRegMgrGetKeyStr_SceSystemSettingsCore_patched(const char *category
     if (sceClibStrncmp(name, "spoofed_version", 15) == 0) {
       if (string != NULL) {
         load_config_user();
-        sceClibMemset(string, 0, length);
-        if (!build_version_string(config.spoofed_version, string, length))
-          build_version_string(SPOOF_VERSION, string, length);
+        build_version_string(config.spoofed_version ? config.spoofed_version : SPOOF_VERSION, string, length);
       }
     }
     return 0;
@@ -239,7 +235,7 @@ static int scePafLoadXmlLayout_SceSettings_patched(int a1, void *xml_buf, int xm
 
 static SceUID g_system_settings_core_modid = -1;
 static tai_hook_ref_t g_sceKernelLoadStartModule_SceSettings_hook;
-SceUID sceKernelLoadStartModule_SceSettings_patched(char *path, SceSize args, void *argp, int flags, SceKernelLMOption *option, int *status) {
+static SceUID sceKernelLoadStartModule_SceSettings_patched(char *path, SceSize args, void *argp, int flags, SceKernelLMOption *option, int *status) {
   SceUID ret = TAI_CONTINUE(SceUID, g_sceKernelLoadStartModule_SceSettings_hook, path, args, argp, flags, option, status);
   if (ret >= 0 && sceClibStrncmp(path, "vs0:app/NPXS10015/system_settings_core.suprx", 44) == 0) {
     g_system_settings_core_modid = ret;
@@ -278,7 +274,7 @@ SceUID sceKernelLoadStartModule_SceSettings_patched(char *path, SceSize args, vo
 }
 
 static tai_hook_ref_t g_sceKernelStopUnloadModule_SceSettings_hook;
-int sceKernelStopUnloadModule_SceSettings_patched(SceUID modid, SceSize args, void *argp, int flags, SceKernelULMOption *option, int *status) {
+static int sceKernelStopUnloadModule_SceSettings_patched(SceUID modid, SceSize args, void *argp, int flags, SceKernelULMOption *option, int *status) {
   if (modid == g_system_settings_core_modid) {
     g_system_settings_core_modid = -1;
     if (g_hooks[6] >= 0) taiHookRelease(g_hooks[6], g_scePafLoadXmlLayout_SceSettings_hook);
