@@ -142,12 +142,13 @@ static int sceRegMgrSetKeyInt_SceSystemSettingsCore_patched(const char *category
   return TAI_CONTINUE(int, g_sceRegMgrSetKeyInt_SceSystemSettingsCore_hook, category, name, value);
 }
 
-static int build_version_string(int version, char *string, int length) {
-  if (version) {
+static void build_version_string(int version, char *string, int length) {
+  if (version && string && length >= 6) {
     char a = (version >> 24) & 0xF;
     char b = (version >> 20) & 0xF;
     char c = (version >> 16) & 0xF;
     char d = (version >> 12) & 0xF;
+    sceClibMemset(string, 0, length);
     string[0] = '0' + a;
     string[1] = '.';
     string[2] = '0' + b;
@@ -157,9 +158,7 @@ static int build_version_string(int version, char *string, int length) {
       string[4] = '0' + d;
       string[5] = '\0';
     }
-    return 1;
   }
-  return 0;
 }
 
 static tai_hook_ref_t g_sceRegMgrGetKeyStr_SceSystemSettingsCore_hook;
