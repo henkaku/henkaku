@@ -25,7 +25,30 @@ if (NOT ${RELEASE})
   add_definitions(-DENABLE_LOGGING)
 endif()
 
+# Builds
+FUNCTION(ADD_RESOURCES out_var)
+  SET(result)
+  FOREACH(in_f ${ARGN})
+    SET(out_f "${CMAKE_CURRENT_BINARY_DIR}/${in_f}.o")
+    GET_FILENAME_COMPONENT(out_dir ${out_f} DIRECTORY)
+    ADD_CUSTOM_COMMAND(OUTPUT ${out_f}
+      COMMAND ${CMAKE_COMMAND} -E make_directory ${out_dir}
+      COMMAND ${CMAKE_LINKER} -r -b binary -o ${out_f} ${in_f}
+      DEPENDS ${in_f}
+      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+      COMMENT "Building resource ${out_f}"
+      VERBATIM
+      )
+    LIST(APPEND result ${out_f})
+  ENDFOREACH()
+  SET(${out_var} "${result}" PARENT_SCOPE)
+ENDFUNCTION()
+
+file(GLOB res_files RELATIVE ${CMAKE_SOURCE_DIR} *.xml)
+add_resources(xml_res ${res_files})
+
 add_executable(user
+  ${xml_res}
   user.c
 )
 
@@ -35,6 +58,7 @@ add_executable(kernel
 
 target_link_libraries(user
   taihen_stub
+  HENkaku_stub
   SceLibKernel_stub
   SceIofilemgr_stub
 )
