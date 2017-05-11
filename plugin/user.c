@@ -227,10 +227,10 @@ static int sceRegMgrGetKeysInfo_SceSystemSettingsCore_patched(const char *catego
 
 static tai_hook_ref_t g_ScePafMisc_19FE55A8_SceSettings_hook;
 static int ScePafMisc_19FE55A8_SceSettings_patched(int a1, void *xml_buf, int xml_size, int a4) {
-  if (sceClibStrncmp(xml_buf+82, "system_settings_plugin", 22) == 0 && (82+22) < xml_size) {
+  if ((82+22) < xml_size && sceClibStrncmp(xml_buf+82, "system_settings_plugin", 22) == 0) {
     xml_buf = (void *)&_binary_system_settings_xml_start;
     xml_size = (int)&_binary_system_settings_xml_size;
-  } else if (sceClibStrncmp(xml_buf+79, "idu_settings_plugin", 19) == 0 && (79+19) < xml_size) {
+  } else if ((79+19) < xml_size && sceClibStrncmp(xml_buf+79, "idu_settings_plugin", 19) == 0) {
     xml_buf = (void *)&_binary_henkaku_settings_xml_start;
     xml_size = (int)&_binary_henkaku_settings_xml_size;
   }
