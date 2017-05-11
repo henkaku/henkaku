@@ -10,6 +10,8 @@
 int sceClibPrintf(const char *fmt, ...);
 int sceClibSnprintf(char *buf, size_t len, const char *fmt, ...);
 
+int henkaku_reload_config(void);
+
 /** Logging function */
 #ifdef ENABLE_LOGGING
 #ifdef __VITA_KERNEL__
