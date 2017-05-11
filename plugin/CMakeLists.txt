@@ -26,12 +26,12 @@ if (NOT ${RELEASE})
 endif()
 
 # Builds
-FUNCTION(ADD_RESOURCES out_var)
-  SET(result)
-  FOREACH(in_f ${ARGN})
-    SET(out_f "${CMAKE_CURRENT_BINARY_DIR}/${in_f}.o")
-    GET_FILENAME_COMPONENT(out_dir ${out_f} DIRECTORY)
-    ADD_CUSTOM_COMMAND(OUTPUT ${out_f}
+function(ADD_RESOURCES out_var)
+  set(result)
+  foreach(in_f ${ARGN})
+    set(out_f "${CMAKE_CURRENT_BINARY_DIR}/${in_f}.o")
+    get_filename_component(out_dir ${out_f} DIRECTORY)
+    add_custom_command(OUTPUT ${out_f}
       COMMAND ${CMAKE_COMMAND} -E make_directory ${out_dir}
       COMMAND ${CMAKE_LINKER} -r -b binary -o ${out_f} ${in_f}
       DEPENDS ${in_f}
@@ -39,10 +39,10 @@ FUNCTION(ADD_RESOURCES out_var)
       COMMENT "Building resource ${out_f}"
       VERBATIM
       )
-    LIST(APPEND result ${out_f})
-  ENDFOREACH()
-  SET(${out_var} "${result}" PARENT_SCOPE)
-ENDFUNCTION()
+    list(APPEND result ${out_f})
+  endforeach()
+  set(${out_var} "${result}" PARENT_SCOPE)
+endfunction()
 
 file(GLOB res_files RELATIVE ${CMAKE_SOURCE_DIR} *.xml)
 add_resources(xml_res ${res_files})

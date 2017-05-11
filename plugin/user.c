@@ -1,6 +1,7 @@
 #include <psp2/kernel/clib.h>
 #include <psp2/kernel/modulemgr.h>
 #include <psp2/io/fcntl.h>
+#include <psp2/io/stat.h>
 #include <taihen.h>
 #include "henkaku.h"
 #include "../build/version.c"
@@ -54,7 +55,7 @@ static void passphrase_decrypt_patched(void *dat0, void *dat1, void *dat2, char 
   }
 }
 
-static int save_config_user(void) {
+static void save_config_user(void) {
   SceUID fd;
   int rd;
   sceIoMkdir("ux0:temp", 6);
@@ -69,9 +70,8 @@ static int save_config_user(void) {
       LOG("config not right size: %d", rd);
     }
   } else {
-    LOG("config file not found");
+    LOG("could not wriet config file");
   }
-  return 0;
 }
 
 static int load_config_user(void) {
@@ -214,9 +214,9 @@ static int sceRegMgrGetKeysInfo_SceSystemSettingsCore_patched(const char *catego
   if (sceClibStrncmp(category, "/CONFIG/HENKAKU", 15) == 0) {
     if (info) {
       if (sceClibStrncmp(info->name, "spoofed_version", 15) == 0) {
-        info->type = 0x00030001;
+        info->type = 0x00030001; // type string
       } else {
-        info->type = 0x00040000;
+        info->type = 0x00040000; // type integer
       }
     }
 
@@ -225,8 +225,8 @@ static int sceRegMgrGetKeysInfo_SceSystemSettingsCore_patched(const char *catego
   return TAI_CONTINUE(int, g_sceRegMgrGetKeysInfo_SceSystemSettingsCore_hook, category, info, unk);
 }
 
-static tai_hook_ref_t g_ScePafMisc_19FE55A8_SceSettings_hook;
-static int ScePafMisc_19FE55A8_SceSettings_patched(int a1, void *xml_buf, int xml_size, int a4) {
+static tai_hook_ref_t g_scePafLoadXmlLayout_SceSettings_hook;
+static int scePafLoadXmlLayout_SceSettings_patched(int a1, void *xml_buf, int xml_size, int a4) {
   if ((82+22) < xml_size && sceClibStrncmp(xml_buf+82, "system_settings_plugin", 22) == 0) {
     xml_buf = (void *)&_binary_system_settings_xml_start;
     xml_size = (int)&_binary_system_settings_xml_size;
@@ -234,7 +234,7 @@ static int ScePafMisc_19FE55A8_SceSettings_patched(int a1, void *xml_buf, int xm
     xml_buf = (void *)&_binary_henkaku_settings_xml_start;
     xml_size = (int)&_binary_henkaku_settings_xml_size;
   }
-  return TAI_CONTINUE(int, g_ScePafMisc_19FE55A8_SceSettings_hook, a1, xml_buf, xml_size, a4);
+  return TAI_CONTINUE(int, g_scePafLoadXmlLayout_SceSettings_hook, a1, xml_buf, xml_size, a4);
 }
 
 static SceUID g_system_settings_core_modid = -1;
@@ -243,11 +243,11 @@ SceUID sceKernelLoadStartModule_SceSettings_patched(char *path, SceSize args, vo
   SceUID ret = TAI_CONTINUE(SceUID, g_sceKernelLoadStartModule_SceSettings_hook, path, args, argp, flags, option, status);
   if (ret >= 0 && sceClibStrncmp(path, "vs0:app/NPXS10015/system_settings_core.suprx", 44) == 0) {
     g_system_settings_core_modid = ret;
-    g_hooks[6] = taiHookFunctionImport(&g_ScePafMisc_19FE55A8_SceSettings_hook, 
+    g_hooks[6] = taiHookFunctionImport(&g_scePafLoadXmlLayout_SceSettings_hook, 
                                         "SceSettings", 
                                         0x3D643CE8, // ScePafMisc
                                         0x19FE55A8, 
-                                        ScePafMisc_19FE55A8_SceSettings_patched);
+                                        scePafLoadXmlLayout_SceSettings_patched);
     g_hooks[7] = taiHookFunctionImport(&g_sceRegMgrGetKeyInt_SceSystemSettingsCore_hook, 
                                         "SceSystemSettingsCore", 
                                         0xC436F916, // SceRegMgr
@@ -281,7 +281,7 @@ static tai_hook_ref_t g_sceKernelStopUnloadModule_SceSettings_hook;
 int sceKernelStopUnloadModule_SceSettings_patched(SceUID modid, SceSize args, void *argp, int flags, SceKernelULMOption *option, int *status) {
   if (modid == g_system_settings_core_modid) {
     g_system_settings_core_modid = -1;
-    if (g_hooks[6] >= 0) taiHookRelease(g_hooks[6], g_ScePafMisc_19FE55A8_SceSettings_hook);
+    if (g_hooks[6] >= 0) taiHookRelease(g_hooks[6], g_scePafLoadXmlLayout_SceSettings_hook);
     if (g_hooks[7] >= 0) taiHookRelease(g_hooks[7], g_sceRegMgrGetKeyInt_SceSystemSettingsCore_hook);
     if (g_hooks[8] >= 0) taiHookRelease(g_hooks[8], g_sceRegMgrSetKeyInt_SceSystemSettingsCore_hook);
     if (g_hooks[9] >= 0) taiHookRelease(g_hooks[9], g_sceRegMgrGetKeyStr_SceSystemSettingsCore_hook);
