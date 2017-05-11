@@ -57,6 +57,10 @@ static void passphrase_decrypt_patched(void *dat0, void *dat1, void *dat2, char 
 static int save_config_user(void) {
   SceUID fd;
   int rd;
+  sceIoMkdir("ux0:temp", 6);
+  sceIoMkdir("ux0:temp/app_work", 6);
+  sceIoMkdir("ux0:temp/app_work/MLCL00001", 6);
+  sceIoMkdir("ux0:temp/app_work/MLCL00001/rec", 6);
   fd = sceIoOpen(CONFIG_PATH, SCE_O_TRUNC | SCE_O_CREAT | SCE_O_WRONLY, 6);
   if (fd >= 0) {
     rd = sceIoWrite(fd, &config, sizeof(config));
