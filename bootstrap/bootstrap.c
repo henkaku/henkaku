@@ -46,8 +46,14 @@ const char taihen_config[] =
 	"# this is for modifying the version string\n"
 	"ux0:app/MLCL00001/henkaku.suprx\n"
 	"*NPXS10016\n"
-	"# this is for modifying the version string\n"
+	"# this is for modifying the version string in settings widget\n"
 	"ux0:app/MLCL00001/henkaku.suprx\n";
+
+// if the crc matches, we update the config file
+const uint32_t old_config_crcs[] = {
+	0xf30cb812,
+	0xbaa32a34
+};
 
 static int g_tpl; // http template
 
@@ -429,6 +435,21 @@ static uint32_t crc32_file(const char *path) {
 	return crc;
 }
 
+int update_taihen_config(void) {
+	uint32_t crc;
+
+	crc = crc32_file("ux0:tai/config.txt");
+	for (int i = 0; i < sizeof(old_config_crcs)/sizeof(uint32_t); i++) {
+		if (crc == old_config_crcs[i]) {
+			LOG("Updating taiHEN config...\n");
+			write_taihen_config();
+			break;
+		}
+	}
+
+	return 0;
+}
+
 int verify_taihen(void) {
 	uint32_t crc;
 	if (TAIHEN_CRC32 > 0) { // 0 skips checks
@@ -623,6 +644,8 @@ int module_start(SceSize argc, const void *args) {
 			cui_data.fg_color = 0xFFFFFFFF;
 			continue;
 		}
+		// update config if needed
+		update_taihen_config();
 		// verify installation
 		if (verify_taihen() < 0) {
 			cui_data.fg_color = 0xFF0000FF;
