@@ -103,7 +103,7 @@
     <!-- HENkaku Settings -->
     <link id="henkaku_settings"
           file="idu_settings.xml"
-          title="HENkaku Settings"
+          title="msg_henkaku_settings"
           icon="tex_spanner"/>
 
     <!-- システム -->

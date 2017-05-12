@@ -1,45 +1,45 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <system_settings version="1.0" plugin="idu_settings_plugin">
 
   <setting_list id="idu_settings" title="HENkaku Settings" icon="tex_spanner">
 
     <!-- Enable PSN Spoofing -->
     <toggle_switch id="id_enable_psn_spoofing"
-                   title="Enable PSN Spoofing"
+                   title="msg_enable_psn_spoofing"
                    icon="tex_spanner"
                    key="/CONFIG/HENKAKU/enable_psn_spoofing"/>
 
     <!-- Enable Unsafe Homebrew -->
     <toggle_switch id="id_enable_unsafe_homebrew"
-                   title="Enable Unsafe Homebrew"
-                   description="Unsafe homebrews can damage your device permanently, if they are misused, misconfigured, or malicious. Please take caution when installing them."
+                   title="msg_enable_unsafe_homebrew"
+                   description="msg_unsafe_homebrew_description"
                    icon="tex_spanner"
                    key="/CONFIG/HENKAKU/enable_unsafe_homebrew"/>
 
     <!-- Enable PSN Spoofing -->
     <toggle_switch id="id_enable_version_spoofing"
-                   title="Enable Version Spoofing"
+                   title="msg_enable_version_spoofing"
                    icon="tex_spanner"
                    key="/CONFIG/HENKAKU/enable_version_spoofing"/>
 
     <!-- Spoofed version -->
     <text_field id="id_spoofed_version"
-                title="Spoofed Version"
+                title="msg_spoofed_version"
                 icon="tex_spanner"
                 key="/CONFIG/HENKAKU/spoofed_version"
                 keyboard_type="extended_numeral"
                 max_length="5"/>
 
     <!-- ○ Button Behavior -->
-    <list id="id_system_button_behavior"
-          title="○ Button Behavior"
+    <list id="id_button_behaviour"
+          title="msg_button_behaviour"
           icon="tex_spanner"
           key="/CONFIG/SYSTEM/button_assign">
-      <list_item id="id_tool_button_behavior_enter"
-                 title="Enter"
+      <list_item id="id_button_behaviour_enter"
+                 title="msg_button_enter"
                  value="0"/>
-      <list_item id="id_tool_button_behavior_back"
-                 title="Back"
+      <list_item id="id_button_behaviour_cancel"
+                 title="msg_button_cancel"
                  value="1"/>
     </list>
 

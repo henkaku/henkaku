@@ -2,8 +2,11 @@
 #include <psp2/kernel/modulemgr.h>
 #include <psp2/io/fcntl.h>
 #include <psp2/io/stat.h>
+#include <psp2/registrymgr.h>
+#include <psp2/system_param.h>
 #include <taihen.h>
 #include "henkaku.h"
+#include "language.h"
 #include "../build/version.c"
 
 #define DISPLAY_VERSION (0x3600000)
@@ -14,8 +17,8 @@ extern unsigned char _binary_henkaku_settings_xml_start;
 extern unsigned char _binary_henkaku_settings_xml_size;
 
 static henkaku_config_t config;
-
-static SceUID g_hooks[12];
+static language_container_t *language_container;
+static SceUID g_hooks[13];
 
 static tai_hook_ref_t g_sceKernelGetSystemSwVersion_SceSettings_hook;
 static int sceKernelGetSystemSwVersion_SceSettings_patched(SceKernelFwInfo *info) {
@@ -232,6 +235,36 @@ static int scePafLoadXmlLayout_SceSettings_patched(int a1, void *xml_buf, int xm
   return TAI_CONTINUE(int, g_scePafLoadXmlLayout_SceSettings_hook, a1, xml_buf, xml_size, a4);
 }
 
+static tai_hook_ref_t g_scePafGetText_SceSystemSettingsCore_hook;
+static int scePafGetText_SceSystemSettingsCore_patched(int a1, char *msg, int a3) {
+  int language = -1;
+  sceRegMgrGetKeyInt("/CONFIG/SYSTEM", "language", &language);
+  switch (language) {
+    case SCE_SYSTEM_PARAM_LANG_ENGLISH_US: language_container = &language_english; break;
+    default: language_container = &language_english; break;
+  }
+  if (sceClibStrncmp(msg, "msg_henkaku_settings", 20) == 0) {
+    msg = language_container->msg_henkaku_settings;
+  } else if (sceClibStrncmp(msg, "msg_enable_psn_spoofing", 23) == 0) {
+    msg = language_container->msg_enable_psn_spoofing;
+  } else if (sceClibStrncmp(msg, "msg_enable_unsafe_homebrew", 26) == 0) {
+    msg = language_container->msg_enable_unsafe_homebrew;
+  } else if (sceClibStrncmp(msg, "msg_unsafe_homebrew_description", 31) == 0) {
+    msg = language_container->msg_unsafe_homebrew_description;
+  } else if (sceClibStrncmp(msg, "msg_enable_version_spoofing", 27) == 0) {
+    msg = language_container->msg_enable_version_spoofing;
+  } else if (sceClibStrncmp(msg, "msg_spoofed_version", 19) == 0) {
+    msg = language_container->msg_spoofed_version;
+  } else if (sceClibStrncmp(msg, "msg_button_behaviour", 20) == 0) {
+    msg = language_container->msg_button_behaviour;
+  } else if (sceClibStrncmp(msg, "msg_button_enter", 16) == 0) {
+    msg = language_container->msg_button_enter;
+  } else if (sceClibStrncmp(msg, "msg_button_cancel", 17) == 0) {
+    msg = language_container->msg_button_cancel;
+  }
+  return TAI_CONTINUE(int, g_scePafGetText_SceSystemSettingsCore_hook, a1, msg, a3);
+}
+
 static SceUID g_system_settings_core_modid = -1;
 static tai_hook_ref_t g_sceKernelLoadStartModule_SceSettings_hook;
 static SceUID sceKernelLoadStartModule_SceSettings_patched(char *path, SceSize args, void *argp, int flags, SceKernelLMOption *option, int *status) {
@@ -268,6 +301,11 @@ static SceUID sceKernelLoadStartModule_SceSettings_patched(char *path, SceSize a
                                         0xC436F916, // SceRegMgr
                                         0x58421DD1, 
                                         sceRegMgrGetKeysInfo_SceSystemSettingsCore_patched);
+    g_hooks[12] = taiHookFunctionImport(&g_scePafGetText_SceSystemSettingsCore_hook, 
+                                        "SceSystemSettingsCore", 
+                                        0x3D643CE8, // ScePafMisc
+                                        0xC11CB5E4, 
+                                        scePafGetText_SceSystemSettingsCore_patched);
   }
   return ret;
 }
@@ -282,6 +320,7 @@ static int sceKernelStopUnloadModule_SceSettings_patched(SceUID modid, SceSize a
     if (g_hooks[9] >= 0) taiHookRelease(g_hooks[9], g_sceRegMgrGetKeyStr_SceSystemSettingsCore_hook);
     if (g_hooks[10] >= 0) taiHookRelease(g_hooks[10], g_sceRegMgrSetKeyStr_SceSystemSettingsCore_hook);
     if (g_hooks[11] >= 0) taiHookRelease(g_hooks[11], g_sceRegMgrGetKeysInfo_SceSystemSettingsCore_hook);
+    if (g_hooks[12] >= 0) taiHookRelease(g_hooks[12], g_scePafGetText_SceSystemSettingsCore_hook);
   }
   return TAI_CONTINUE(int, g_sceKernelStopUnloadModule_SceSettings_hook, modid, args, argp, flags, option, status);
 }
