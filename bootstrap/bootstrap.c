@@ -43,6 +43,8 @@ const char taihen_config[] =
 	"# main is a special titleid for SceShell\n"
 	"ux0:app/MLCL00001/henkaku.suprx\n"
 	"*NPXS10015\n"
+	"# this is for modifying the version string\n"
+	"ux0:app/MLCL00001/henkaku.suprx\n"
 	"*NPXS10016\n"
 	"# this is for modifying the version string\n"
 	"ux0:app/MLCL00001/henkaku.suprx\n";
