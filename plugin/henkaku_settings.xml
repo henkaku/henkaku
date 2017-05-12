@@ -31,14 +31,14 @@
                 max_length="5"/>
 
     <!-- ○ Button Behavior -->
-    <list id="id_button_behaviour"
-          title="msg_button_behaviour"
+    <list id="id_button_behavior"
+          title="msg_button_behavior"
           icon="tex_spanner"
           key="/CONFIG/SYSTEM/button_assign">
-      <list_item id="id_button_behaviour_enter"
+      <list_item id="id_button_behavior_enter"
                  title="msg_button_enter"
                  value="0"/>
-      <list_item id="id_button_behaviour_cancel"
+      <list_item id="id_button_behavior_cancel"
                  title="msg_button_cancel"
                  value="1"/>
     </list>

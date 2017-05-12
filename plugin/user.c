@@ -17,7 +17,7 @@ extern unsigned char _binary_henkaku_settings_xml_start;
 extern unsigned char _binary_henkaku_settings_xml_size;
 
 static henkaku_config_t config;
-static language_container_t *language_container;
+
 static SceUID g_hooks[13];
 
 static tai_hook_ref_t g_sceKernelGetSystemSwVersion_SceSettings_hook;
@@ -237,6 +237,7 @@ static int scePafLoadXmlLayout_SceSettings_patched(int a1, void *xml_buf, int xm
 
 static tai_hook_ref_t g_scePafGetText_SceSystemSettingsCore_hook;
 static int scePafGetText_SceSystemSettingsCore_patched(int a1, char *msg, int a3) {
+  language_container_t *language_container;
   int language = -1;
   sceRegMgrGetKeyInt("/CONFIG/SYSTEM", "language", &language);
   switch (language) {
@@ -255,8 +256,8 @@ static int scePafGetText_SceSystemSettingsCore_patched(int a1, char *msg, int a3
     msg = language_container->msg_enable_version_spoofing;
   } else if (sceClibStrncmp(msg, "msg_spoofed_version", 19) == 0) {
     msg = language_container->msg_spoofed_version;
-  } else if (sceClibStrncmp(msg, "msg_button_behaviour", 20) == 0) {
-    msg = language_container->msg_button_behaviour;
+  } else if (sceClibStrncmp(msg, "msg_button_behavior", 19) == 0) {
+    msg = language_container->msg_button_behavior;
   } else if (sceClibStrncmp(msg, "msg_button_enter", 16) == 0) {
     msg = language_container->msg_button_enter;
   } else if (sceClibStrncmp(msg, "msg_button_cancel", 17) == 0) {

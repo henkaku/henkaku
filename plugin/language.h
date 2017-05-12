@@ -11,7 +11,7 @@ typedef struct {
   char *msg_unsafe_homebrew_description;
   char *msg_enable_version_spoofing;
   char *msg_spoofed_version;
-  char *msg_button_behaviour;
+  char *msg_button_behavior;
   char *msg_button_enter;
   char *msg_button_cancel;
 } language_container_t;
