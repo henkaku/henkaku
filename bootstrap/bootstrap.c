@@ -591,6 +591,7 @@ int module_start(SceSize argc, const void *args) {
 		if (should_reinstall()) {
 			DRAWF("Forcing reinstall of taiHEN and molecularShell, configuration will be reset\n\n");
 			sceIoRemove("ux0:temp/app_work/MLCL00001/rec/config.bin");
+			sceIoRemove("ux0:temp/app_work/MLCL00001/rec/first_boot.bin");
 			sceIoRemove("ux0:app/MLCL00001/eboot.bin");
 			sceIoRemove("ux0:app/MLCL00001/henkaku.suprx");
 			sceIoRemove("ux0:app/MLCL00001/henkaku.skprx");
