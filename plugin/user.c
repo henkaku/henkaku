@@ -255,7 +255,7 @@ static int scePafGetText_SceSystemSettingsCore_patched(int a1, char *msg, int a3
     case SCE_SYSTEM_PARAM_LANG_CHINESE_S:     language_container = &language_chinese_s;     break;
     case SCE_SYSTEM_PARAM_LANG_FINNISH:       language_container = &language_finnish;       break;
     case SCE_SYSTEM_PARAM_LANG_SWEDISH:       language_container = &language_swedish;       break;
-    // case SCE_SYSTEM_PARAM_LANG_DANISH:        language_container = &language_danish;        break;
+    case SCE_SYSTEM_PARAM_LANG_DANISH:        language_container = &language_danish;        break;
     // case SCE_SYSTEM_PARAM_LANG_NORWEGIAN:     language_container = &language_norwegian;     break;
     case SCE_SYSTEM_PARAM_LANG_POLISH:        language_container = &language_polish;        break;
     case SCE_SYSTEM_PARAM_LANG_PORTUGUESE_BR: language_container = &language_portuguese_br; break;

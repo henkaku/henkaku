@@ -55,12 +55,12 @@ language_container_t language_french = {
   "Annuler"
 };
 
-// by EricWeichhart
+// by EricWeichhart & iamn0tdev
 language_container_t language_spanish = {
   "Ajustes de HENkaku",
   "Activar Spoofing para PSN",
   "Activar Homebrew inseguro",
-  "Homebrews inseguros pueden dañar tu dispositivo manera permanentemente si son maliciosos, erróneamente usados o configurados incorrectamente. Por favor, tenga precaución al instalarlos.",
+  "Homebrews inseguros pueden dañar tu dispositivo permanentemente si son maliciosos, erróneamente usados o configurados incorrectamente. Por favor, tenga precaución al instalarlos.",
   "Activar Spoofing de versión",
   "Versión para Spoofing",
   "Comportamiento del botón ○",
@@ -126,9 +126,9 @@ language_container_t language_russian = {
   "Включить спуфинг PSN",
   "Включить небезопасные приложения",
   "Небезопасные приложения могут повредить ваше устройство навсегда, если они используются неправильно, неправильно настроены или вредоносны. Пожалуйста, проявляйте осторожность при их установке.",
-  "Включить подмену версий",
+  "Включить подмену версии",
   "Поддельная версия",
-  "Поведение кнопки ○",
+  "Поведение кнопки ○ ",
   "Ввод",
   "Отмена"
 };
@@ -198,6 +198,19 @@ language_container_t language_swedish = {
   "Avbryt"
 };
 
+// by coestergaard
+language_container_t language_danish = {
+  "HENkaku indstillinger",
+  "Aktiver PSN spoofing",
+  "Tillad usikre homebrews",
+  "Usikre homebrews kan skade din enhed permanent, hvis de bruges forkert, er fejlkonfigurerede eller indeholder skadelig kode. Vær forsigtig når du installerer disse.",
+  "Aktiver version spoofing",
+  "Spoofed version",
+  "○ knap funktion",
+  "Vælg",
+  "Afbryd"
+};
+
 // by Grzybojad & szczuru
 language_container_t language_polish = {
   "Ustawienia HENkaku",
@@ -211,14 +224,14 @@ language_container_t language_polish = {
   "Anuluj"
 };
 
-// by GrayJack
-language_container_t language_portuguese_br = {
+// by GrayJack & haouingvalt
+language_container_t language_portuguese = {
   "Configurações do HENkaku",
-  "Habilitar spoofing da PSN ",
-  "Habilitar Homebrew Inseguro",
-  "Homebrews inseguros podem danificar o seu aparelho permanentemente se eles forem usados de forma incorreta, configurados incorretamente ou maliciosos. Por favor, tenha cuidado ao instalá-los.",
-  "Habilitar Spoofing da Versão do sistema",
-  "Versão de Spoof",
+  "Habilitar mimetização da PSN ",
+  "Habilitar softwares 'homebrew' inseguros",
+  "Softwares 'homebrew' inseguros podem danificar o seu aparelho permanentemente caso sejam usados ou configurados incorretamente, ou até mesmo maliciosos. Por favor, tenha cuidado ao instalá-los.",
+  "Habilitar mimetização de Versão",
+  "Versão a mimetizar",
   "Ação do botão ○",
   "Entrar",
   "Cancelar"
