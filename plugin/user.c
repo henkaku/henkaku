@@ -217,7 +217,6 @@ static int sceRegMgrGetKeysInfo_SceSystemSettingsCore_patched(const char *catego
         info->type = 0x00040000; // type integer
       }
     }
-
     return 0;
   }
   return TAI_CONTINUE(int, g_sceRegMgrGetKeysInfo_SceSystemSettingsCore_hook, category, info, unk);
@@ -256,31 +255,33 @@ static int scePafGetText_SceSystemSettingsCore_patched(int a1, char *msg, int a3
     case SCE_SYSTEM_PARAM_LANG_FINNISH:       language_container = &language_finnish;       break;
     case SCE_SYSTEM_PARAM_LANG_SWEDISH:       language_container = &language_swedish;       break;
     case SCE_SYSTEM_PARAM_LANG_DANISH:        language_container = &language_danish;        break;
-    // case SCE_SYSTEM_PARAM_LANG_NORWEGIAN:     language_container = &language_norwegian;     break;
+    case SCE_SYSTEM_PARAM_LANG_NORWEGIAN:     language_container = &language_norwegian;     break;
     case SCE_SYSTEM_PARAM_LANG_POLISH:        language_container = &language_polish;        break;
     case SCE_SYSTEM_PARAM_LANG_PORTUGUESE_BR: language_container = &language_portuguese_br; break;
     case SCE_SYSTEM_PARAM_LANG_ENGLISH_GB:    language_container = &language_english_gb;    break;
     case SCE_SYSTEM_PARAM_LANG_TURKISH:       language_container = &language_turkish;       break;
     default:                                  language_container = &language_english_us;    break;
   }
-  if (sceClibStrncmp(msg, "msg_henkaku_settings", 20) == 0) {
-    msg = language_container->msg_henkaku_settings;
-  } else if (sceClibStrncmp(msg, "msg_enable_psn_spoofing", 23) == 0) {
-    msg = language_container->msg_enable_psn_spoofing;
-  } else if (sceClibStrncmp(msg, "msg_enable_unsafe_homebrew", 26) == 0) {
-    msg = language_container->msg_enable_unsafe_homebrew;
-  } else if (sceClibStrncmp(msg, "msg_unsafe_homebrew_description", 31) == 0) {
-    msg = language_container->msg_unsafe_homebrew_description;
-  } else if (sceClibStrncmp(msg, "msg_enable_version_spoofing", 27) == 0) {
-    msg = language_container->msg_enable_version_spoofing;
-  } else if (sceClibStrncmp(msg, "msg_spoofed_version", 19) == 0) {
-    msg = language_container->msg_spoofed_version;
-  } else if (sceClibStrncmp(msg, "msg_button_behavior", 19) == 0) {
-    msg = language_container->msg_button_behavior;
-  } else if (sceClibStrncmp(msg, "msg_button_enter", 16) == 0) {
-    msg = language_container->msg_button_enter;
-  } else if (sceClibStrncmp(msg, "msg_button_cancel", 17) == 0) {
-    msg = language_container->msg_button_cancel;
+  if (sceClibStrncmp(msg, "msg_", 4) == 0) {
+    if (sceClibStrncmp(msg, "msg_henkaku_settings", 20) == 0) {
+      msg = language_container->msg_henkaku_settings;
+    } else if (sceClibStrncmp(msg, "msg_enable_psn_spoofing", 23) == 0) {
+      msg = language_container->msg_enable_psn_spoofing;
+    } else if (sceClibStrncmp(msg, "msg_enable_unsafe_homebrew", 26) == 0) {
+      msg = language_container->msg_enable_unsafe_homebrew;
+    } else if (sceClibStrncmp(msg, "msg_unsafe_homebrew_description", 31) == 0) {
+      msg = language_container->msg_unsafe_homebrew_description;
+    } else if (sceClibStrncmp(msg, "msg_enable_version_spoofing", 27) == 0) {
+      msg = language_container->msg_enable_version_spoofing;
+    } else if (sceClibStrncmp(msg, "msg_spoofed_version", 19) == 0) {
+      msg = language_container->msg_spoofed_version;
+    } else if (sceClibStrncmp(msg, "msg_button_behavior", 19) == 0) {
+      msg = language_container->msg_button_behavior;
+    } else if (sceClibStrncmp(msg, "msg_button_enter", 16) == 0) {
+      msg = language_container->msg_button_enter;
+    } else if (sceClibStrncmp(msg, "msg_button_cancel", 17) == 0) {
+      msg = language_container->msg_button_cancel;
+    }
   }
   return TAI_CONTINUE(int, g_scePafGetText_SceSystemSettingsCore_hook, a1, msg, a3);
 }

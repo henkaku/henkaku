@@ -211,6 +211,19 @@ language_container_t language_danish = {
   "Afbryd"
 };
 
+// by baniel105
+language_container_t language_norwegian = {
+  "HENkaku Instillinger",
+  "Aktiver forfalsket PSN-innlogging",
+  "Tillat usikker Homebrew",
+  "Usikre Homebrews kan ødelegge enhenten din permanent, hvis de er misbrukt, feilkonfigerert, eller inneholder skadelig programvare. Vær forsiktig ved installasjon.",
+  "Aktiver forfalsket versjon",
+  "Forfalsket versjon",
+  "Funksjon på ○-knapp",
+  "Velg",
+  "Avbryt"
+};
+
 // by Grzybojad & szczuru
 language_container_t language_polish = {
   "Ustawienia HENkaku",
@@ -225,7 +238,7 @@ language_container_t language_polish = {
 };
 
 // by GrayJack & haouingvalt
-language_container_t language_portuguese = {
+language_container_t language_portuguese_br = {
   "Configurações do HENkaku",
   "Habilitar mimetização da PSN ",
   "Habilitar softwares 'homebrew' inseguros",

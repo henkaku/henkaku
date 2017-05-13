@@ -5,6 +5,12 @@
   <setting_list id="system_settings" 
                 title="msg_settings">
 
+    <!-- HENkaku Settings -->
+    <link id="henkaku_settings"
+          file="idu_settings.xml"
+          title="msg_henkaku_settings"
+          icon="tex_spanner"/>
+
     <!-- Sandbox Settings -->
     <link id="sandbox_settings"
           file="sandbox_settings.xml"
@@ -99,12 +105,6 @@
           file="accessibility.xml"
           title="msg_accessibility"
           icon="tex_accessibility"/>
-
-    <!-- HENkaku Settings -->
-    <link id="henkaku_settings"
-          file="idu_settings.xml"
-          title="msg_henkaku_settings"
-          icon="tex_spanner"/>
 
     <!-- システム -->
     <link id="console_info"
