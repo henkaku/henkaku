@@ -241,8 +241,27 @@ static int scePafGetText_SceSystemSettingsCore_patched(int a1, char *msg, int a3
   int language = -1;
   sceRegMgrGetKeyInt("/CONFIG/SYSTEM", "language", &language);
   switch (language) {
-    case SCE_SYSTEM_PARAM_LANG_ENGLISH_US: language_container = &language_english; break;
-    default: language_container = &language_english; break;
+    case SCE_SYSTEM_PARAM_LANG_JAPANESE:      language_container = &language_japanese;      break;
+    case SCE_SYSTEM_PARAM_LANG_ENGLISH_US:    language_container = &language_english_us;    break;
+    case SCE_SYSTEM_PARAM_LANG_FRENCH:        language_container = &language_french;        break;
+    case SCE_SYSTEM_PARAM_LANG_SPANISH:       language_container = &language_spanish;       break;
+    case SCE_SYSTEM_PARAM_LANG_GERMAN:        language_container = &language_german;        break;
+    case SCE_SYSTEM_PARAM_LANG_ITALIAN:       language_container = &language_italian;       break;
+    case SCE_SYSTEM_PARAM_LANG_DUTCH:         language_container = &language_dutch;         break;
+    case SCE_SYSTEM_PARAM_LANG_PORTUGUESE_PT: language_container = &language_portuguese_pt; break;
+    case SCE_SYSTEM_PARAM_LANG_RUSSIAN:       language_container = &language_russian;       break;
+    case SCE_SYSTEM_PARAM_LANG_KOREAN:        language_container = &language_korean;        break;
+    case SCE_SYSTEM_PARAM_LANG_CHINESE_T:     language_container = &language_chinese_t;     break;
+    case SCE_SYSTEM_PARAM_LANG_CHINESE_S:     language_container = &language_chinese_s;     break;
+    case SCE_SYSTEM_PARAM_LANG_FINNISH:       language_container = &language_finnish;       break;
+    case SCE_SYSTEM_PARAM_LANG_SWEDISH:       language_container = &language_swedish;       break;
+    // case SCE_SYSTEM_PARAM_LANG_DANISH:        language_container = &language_danish;        break;
+    // case SCE_SYSTEM_PARAM_LANG_NORWEGIAN:     language_container = &language_norwegian;     break;
+    case SCE_SYSTEM_PARAM_LANG_POLISH:        language_container = &language_polish;        break;
+    case SCE_SYSTEM_PARAM_LANG_PORTUGUESE_BR: language_container = &language_portuguese_br; break;
+    case SCE_SYSTEM_PARAM_LANG_ENGLISH_GB:    language_container = &language_english_gb;    break;
+    case SCE_SYSTEM_PARAM_LANG_TURKISH:       language_container = &language_turkish;       break;
+    default:                                  language_container = &language_english_us;    break;
   }
   if (sceClibStrncmp(msg, "msg_henkaku_settings", 20) == 0) {
     msg = language_container->msg_henkaku_settings;
