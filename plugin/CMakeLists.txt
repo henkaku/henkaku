@@ -61,6 +61,7 @@ target_link_libraries(user
   HENkaku_stub
   SceLibKernel_stub
   SceIofilemgr_stub
+  SceRegistryMgr_stub
 )
 
 target_link_libraries(kernel

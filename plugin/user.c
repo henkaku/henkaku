@@ -2,8 +2,11 @@
 #include <psp2/kernel/modulemgr.h>
 #include <psp2/io/fcntl.h>
 #include <psp2/io/stat.h>
+#include <psp2/registrymgr.h>
+#include <psp2/system_param.h>
 #include <taihen.h>
 #include "henkaku.h"
+#include "language.h"
 #include "../build/version.c"
 
 #define DISPLAY_VERSION (0x3600000)
@@ -15,7 +18,7 @@ extern unsigned char _binary_henkaku_settings_xml_size;
 
 static henkaku_config_t config;
 
-static SceUID g_hooks[12];
+static SceUID g_hooks[13];
 
 static tai_hook_ref_t g_sceKernelGetSystemSwVersion_SceSettings_hook;
 static int sceKernelGetSystemSwVersion_SceSettings_patched(SceKernelFwInfo *info) {
@@ -214,7 +217,6 @@ static int sceRegMgrGetKeysInfo_SceSystemSettingsCore_patched(const char *catego
         info->type = 0x00040000; // type integer
       }
     }
-
     return 0;
   }
   return TAI_CONTINUE(int, g_sceRegMgrGetKeysInfo_SceSystemSettingsCore_hook, category, info, unk);
@@ -230,6 +232,58 @@ static int scePafLoadXmlLayout_SceSettings_patched(int a1, void *xml_buf, int xm
     xml_size = (int)&_binary_henkaku_settings_xml_size;
   }
   return TAI_CONTINUE(int, g_scePafLoadXmlLayout_SceSettings_hook, a1, xml_buf, xml_size, a4);
+}
+
+static tai_hook_ref_t g_scePafGetText_SceSystemSettingsCore_hook;
+static int scePafGetText_SceSystemSettingsCore_patched(int a1, char *msg, int a3) {
+  language_container_t *language_container;
+  int language = -1;
+  sceRegMgrGetKeyInt("/CONFIG/SYSTEM", "language", &language);
+  switch (language) {
+    case SCE_SYSTEM_PARAM_LANG_JAPANESE:      language_container = &language_japanese;      break;
+    case SCE_SYSTEM_PARAM_LANG_ENGLISH_US:    language_container = &language_english_us;    break;
+    case SCE_SYSTEM_PARAM_LANG_FRENCH:        language_container = &language_french;        break;
+    case SCE_SYSTEM_PARAM_LANG_SPANISH:       language_container = &language_spanish;       break;
+    case SCE_SYSTEM_PARAM_LANG_GERMAN:        language_container = &language_german;        break;
+    case SCE_SYSTEM_PARAM_LANG_ITALIAN:       language_container = &language_italian;       break;
+    case SCE_SYSTEM_PARAM_LANG_DUTCH:         language_container = &language_dutch;         break;
+    case SCE_SYSTEM_PARAM_LANG_PORTUGUESE_PT: language_container = &language_portuguese_pt; break;
+    case SCE_SYSTEM_PARAM_LANG_RUSSIAN:       language_container = &language_russian;       break;
+    case SCE_SYSTEM_PARAM_LANG_KOREAN:        language_container = &language_korean;        break;
+    case SCE_SYSTEM_PARAM_LANG_CHINESE_T:     language_container = &language_chinese_t;     break;
+    case SCE_SYSTEM_PARAM_LANG_CHINESE_S:     language_container = &language_chinese_s;     break;
+    case SCE_SYSTEM_PARAM_LANG_FINNISH:       language_container = &language_finnish;       break;
+    case SCE_SYSTEM_PARAM_LANG_SWEDISH:       language_container = &language_swedish;       break;
+    case SCE_SYSTEM_PARAM_LANG_DANISH:        language_container = &language_danish;        break;
+    case SCE_SYSTEM_PARAM_LANG_NORWEGIAN:     language_container = &language_norwegian;     break;
+    case SCE_SYSTEM_PARAM_LANG_POLISH:        language_container = &language_polish;        break;
+    case SCE_SYSTEM_PARAM_LANG_PORTUGUESE_BR: language_container = &language_portuguese_br; break;
+    case SCE_SYSTEM_PARAM_LANG_ENGLISH_GB:    language_container = &language_english_gb;    break;
+    case SCE_SYSTEM_PARAM_LANG_TURKISH:       language_container = &language_turkish;       break;
+    default:                                  language_container = &language_english_us;    break;
+  }
+  if (sceClibStrncmp(msg, "msg_", 4) == 0) {
+    if (sceClibStrncmp(msg, "msg_henkaku_settings", 20) == 0) {
+      msg = language_container->msg_henkaku_settings;
+    } else if (sceClibStrncmp(msg, "msg_enable_psn_spoofing", 23) == 0) {
+      msg = language_container->msg_enable_psn_spoofing;
+    } else if (sceClibStrncmp(msg, "msg_enable_unsafe_homebrew", 26) == 0) {
+      msg = language_container->msg_enable_unsafe_homebrew;
+    } else if (sceClibStrncmp(msg, "msg_unsafe_homebrew_description", 31) == 0) {
+      msg = language_container->msg_unsafe_homebrew_description;
+    } else if (sceClibStrncmp(msg, "msg_enable_version_spoofing", 27) == 0) {
+      msg = language_container->msg_enable_version_spoofing;
+    } else if (sceClibStrncmp(msg, "msg_spoofed_version", 19) == 0) {
+      msg = language_container->msg_spoofed_version;
+    } else if (sceClibStrncmp(msg, "msg_button_behavior", 19) == 0) {
+      msg = language_container->msg_button_behavior;
+    } else if (sceClibStrncmp(msg, "msg_button_enter", 16) == 0) {
+      msg = language_container->msg_button_enter;
+    } else if (sceClibStrncmp(msg, "msg_button_cancel", 17) == 0) {
+      msg = language_container->msg_button_cancel;
+    }
+  }
+  return TAI_CONTINUE(int, g_scePafGetText_SceSystemSettingsCore_hook, a1, msg, a3);
 }
 
 static SceUID g_system_settings_core_modid = -1;
@@ -268,6 +322,11 @@ static SceUID sceKernelLoadStartModule_SceSettings_patched(char *path, SceSize a
                                         0xC436F916, // SceRegMgr
                                         0x58421DD1, 
                                         sceRegMgrGetKeysInfo_SceSystemSettingsCore_patched);
+    g_hooks[12] = taiHookFunctionImport(&g_scePafGetText_SceSystemSettingsCore_hook, 
+                                        "SceSystemSettingsCore", 
+                                        0x3D643CE8, // ScePafMisc
+                                        0xC11CB5E4, 
+                                        scePafGetText_SceSystemSettingsCore_patched);
   }
   return ret;
 }
@@ -282,6 +341,7 @@ static int sceKernelStopUnloadModule_SceSettings_patched(SceUID modid, SceSize a
     if (g_hooks[9] >= 0) taiHookRelease(g_hooks[9], g_sceRegMgrGetKeyStr_SceSystemSettingsCore_hook);
     if (g_hooks[10] >= 0) taiHookRelease(g_hooks[10], g_sceRegMgrSetKeyStr_SceSystemSettingsCore_hook);
     if (g_hooks[11] >= 0) taiHookRelease(g_hooks[11], g_sceRegMgrGetKeysInfo_SceSystemSettingsCore_hook);
+    if (g_hooks[12] >= 0) taiHookRelease(g_hooks[12], g_scePafGetText_SceSystemSettingsCore_hook);
   }
   return TAI_CONTINUE(int, g_sceKernelStopUnloadModule_SceSettings_hook, modid, args, argp, flags, option, status);
 }
