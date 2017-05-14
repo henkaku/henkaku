@@ -16,18 +16,18 @@ typedef struct {
   char *msg_button_cancel;
 } language_container_t;
 
-// by mamosuke & mochgreg
-language_container_t language_japanese = {
-  "HENkaku設定",
-  "PSN偽装を有効にする",
-  "Unsafe Homebrewを有効にする",
-  "Unsafe Homebrewは誤った操作や設定、または悪意のあるコードにより端末に修復不可能なダメージを与えることがあります。これらをインストールする際は注意してください。",
-  "バージョン偽装を有効にする",
-  "偽装バージョン",
-  "○ボタンの動作",
+// by Nzaki0716 & SnyFbSx
+language_container_t language_japanese = {  
+  "HENkakuの設定",
+  "PSNの偽装を有効化",
+  "リスクのあるユーザープログラムを有効化",
+  "リスクのあるユーザープログラムは誤った操作や設定、または悪意のあるコードにより端末に修復不可能なダメージを与えることがあります。これらをインストールする際は注意してください。",
+  "バージョンの偽装を有効化",
+  "偽装バージョンの確認",
+  "○ボタンの動作設定",
   "決定",
   "キャンセル"
-}; 
+};
 
 // by molecule
 language_container_t language_english_us = {
