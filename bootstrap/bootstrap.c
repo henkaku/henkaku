@@ -24,6 +24,7 @@
 #include "../build/version.c"
 
 #define INSTALL_ATTEMPTS 3
+#define TAIHEN_CONFIG_FILE "ux0:tai/config.txt"
 
 #if RELEASE
 #define LOG(...)
@@ -44,16 +45,12 @@ const char taihen_config[] =
 	"ux0:app/MLCL00001/henkaku.suprx\n"
 	"*NPXS10015\n"
 	"# this is for modifying the version string\n"
-	"ux0:app/MLCL00001/henkaku.suprx\n"
+	"ux0:app/MLCL00001/henkaku.suprx\n";
+
+const char taihen_config_update[] = 
 	"*NPXS10016\n"
 	"# this is for modifying the version string in settings widget\n"
 	"ux0:app/MLCL00001/henkaku.suprx\n";
-
-// if the crc matches, we update the config file
-const uint32_t old_config_crcs[] = {
-	0xf30cb812,
-	0xbaa32a34
-};
 
 static int g_tpl; // http template
 
@@ -386,9 +383,10 @@ int write_taihen_config(void) {
 	int fd;
 
 	// write default config
-	sceIoRemove("ux0:tai/config.txt");
-	fd = sceIoOpen("ux0:tai/config.txt", SCE_O_TRUNC | SCE_O_CREAT | SCE_O_WRONLY, 6);
+	sceIoRemove(TAIHEN_CONFIG_FILE);
+	fd = sceIoOpen(TAIHEN_CONFIG_FILE, SCE_O_TRUNC | SCE_O_CREAT | SCE_O_WRONLY, 6);
 	sceIoWrite(fd, taihen_config, sizeof(taihen_config) - 1);
+	sceIoWrite(fd, taihen_config_update, sizeof(taihen_config_update) - 1);
 	sceIoClose(fd);
 
 	return 0;
@@ -409,7 +407,7 @@ int install_taihen(const char *pkg_url_prefix) {
 	sceIoRemove("ux0:tai/taihen.skprx");
 	GET_FILE("taihen.skprx");
 
-	if (!exists("ux0:tai/config.txt")) {
+	if (!exists(TAIHEN_CONFIG_FILE)) {
 		write_taihen_config();
 	}
 
@@ -435,16 +433,54 @@ static uint32_t crc32_file(const char *path) {
 	return crc;
 }
 
-int update_taihen_config(void) {
-	uint32_t crc;
+static int find_NPXS10016_titleid_fsm(const char *data, int len, int state) {
+	int i = 0;
+	while (i < len) {
+		switch (state) {
+			case  0: state = (data[i++] == '*') ? 1 : 0; break;
+			case  1: state = (data[i++] == 'N') ? 2 : 0; break;
+			case  2: state = (data[i++] == 'P') ? 3 : 0; break;
+			case  3: state = (data[i++] == 'X') ? 4 : 0; break;
+			case  4: state = (data[i++] == 'S') ? 5 : 0; break;
+			case  5: state = (data[i++] == '1') ? 6 : 0; break;
+			case  6: state = (data[i++] == '0') ? 7 : 0; break;
+			case  7: state = (data[i++] == '0') ? 8 : 0; break;
+			case  8: state = (data[i++] == '1') ? 9 : 0; break;
+			case  9: state = (data[i++] == '6') ? 10 : 0; break;
+			case 10: state = (data[i++] == '\r' || data[i-1] == '\n') ? 11 : 0; break;
+			default: i++; break;
+		}
+	}
+	return state;
+}
 
-	crc = crc32_file("ux0:tai/config.txt");
-	for (int i = 0; i < sizeof(old_config_crcs)/sizeof(uint32_t); i++) {
-		if (crc == old_config_crcs[i]) {
-			LOG("Updating taiHEN config...\n");
-			write_taihen_config();
+static int find_NPXS10016_titleid(const char *file) {
+	char buf[256];
+	int len;
+	int state;
+	int fd;
+
+	fd = sceIoOpen(file, SCE_O_RDONLY, 0);
+	state = 0;
+	while ((len = sceIoRead(fd, buf, 256)) > 0) {
+		if ((state = find_NPXS10016_titleid_fsm(buf, len, state)) >= 10) {
 			break;
 		}
+	}
+	sceIoClose(fd);
+
+	return (state >= 10);
+}
+
+int update_taihen_config(void) {
+	int fd;
+
+	if (!find_NPXS10016_titleid(TAIHEN_CONFIG_FILE)) {
+		DRAWF("Updating taiHEN config.txt\n");
+		fd = sceIoOpen(TAIHEN_CONFIG_FILE, SCE_O_WRONLY | SCE_O_APPEND, 0);
+		sceIoWrite(fd, "\n", 1);
+		sceIoWrite(fd, taihen_config_update, sizeof(taihen_config_update) - 1);
+		sceIoClose(fd);
 	}
 
 	return 0;
