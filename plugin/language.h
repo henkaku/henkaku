@@ -44,11 +44,11 @@ language_container_t language_english_us = {
 
 // by jokira & devnoname120 & CelesteBlue-dev & chronoss09
 language_container_t language_french = {
-  "Paramètres HENkaku",
-  "Activer le spoof PSN",
-  "Autoriser l'installation des homebrews non sécurisés",
+  "Paramètres de HENkaku",
+  "Activer le spoof du PSN",
+  "Autoriser l'installation de homebrews non sécurisés",
   "Les homebrews non sécurisés peuvent endommager votre système de façon permanente s'ils sont mal utilisés, mal configurés, ou malveillants. Prenez garde en activant ce paramètre.",
-  "Activer la version spoofée",
+  "Activer le spoof de version",
   "Version spoofée",
   "Action du bouton ○",
   "Valider",
