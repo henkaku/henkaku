@@ -148,7 +148,7 @@ language_container_t language_korean = {
 
 // by iTZQing
 language_container_t language_chinese_t = {
-  "HENkaku 設置",
+  "HENkaku設置",
   "啟用PSN偽裝",
   "啟用不安全自制軟件",
   "如果不安全自制軟件被誤用、配置出現錯誤或軟件本身是惡意程序，可能會永久性損壞你的設備。請謹慎安裝！",
@@ -161,7 +161,7 @@ language_container_t language_chinese_t = {
 
 // by iTZQing
 language_container_t language_chinese_s = {
-  "HENkaku 设置",
+  "HENkaku设置",
   "启用PSN伪装",
   "启用不安全自制软件",
   "如果不安全自制软件被误用、配置出现错误或软件本身是恶意程序，可能会永久性损坏你的设备。请谨慎安装！",
