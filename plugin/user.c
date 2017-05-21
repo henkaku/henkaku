@@ -376,9 +376,9 @@ int module_start(SceSize argc, const void *args) {
                                       sceKernelGetSystemSwVersion_SceSettings_patched);
   LOG("sceKernelGetSystemSwVersion hook: %x", g_hooks[2]);
   g_hooks[3] = g_hooks[4] = g_hooks[5] = -1;
-  if (config.use_psn_spoofing) {
-    info.size = sizeof(info);
-    if (taiGetModuleInfo("SceShell", &info) >= 0) {
+  info.size = sizeof(info);
+  if (taiGetModuleInfo("SceShell", &info) >= 0) {
+    if (config.use_psn_spoofing) {
       // we don't have a nice clean way of doing PSN spoofing (update prompt disable) so 
       // we are stuck with hard coding offsets. Since module NID is different for each 
       // version and retail/dex/test unit, this should allow us to specify different 
@@ -430,13 +430,13 @@ int module_start(SceSize argc, const void *args) {
           LOG("SceShell NID %X not recognized, skipping PSN spoofing patches", info.module_nid);
         }
       }
-      // add patch to skip id.dat checks (only works if plugin loads before start)
-      g_hooks[6] = taiHookFunctionImport(&g_SceVshBridge_333875AB_SceShell_hook, 
-                                          "SceShell", 
-                                          0x35C5ACD4, // SceVshBridge
-                                          0x333875AB, 
-                                          SceVshBridge_333875AB_SceShell_patched);
     }
+    // add patch to skip id.dat checks (only works if plugin loads before start)
+    g_hooks[6] = taiHookFunctionImport(&g_SceVshBridge_333875AB_SceShell_hook, 
+                                        "SceShell", 
+                                        0x35C5ACD4, // SceVshBridge
+                                        0x333875AB, 
+                                        SceVshBridge_333875AB_SceShell_patched);
   } else {
     LOG("skipping psn spoofing patches");
   }
