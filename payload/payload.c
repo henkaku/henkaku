@@ -495,7 +495,7 @@ int load_taihen(void) {
 
 	// load taiHEN
 	opt = 4;
-	taiid = ksceKernelLoadModuleWithoutStart("ux0:tai/taihen.skprx", 0, &opt);
+	taiid = ksceKernelLoadModuleWithoutStart("ur0:tai/taihen.skprx", 0, &opt);
 	LOG("LoadTaiHEN: 0x%08X", taiid);
 	remove_sigpatches();
 	LOG("Removed temp patches");
@@ -510,7 +510,7 @@ int load_taihen(void) {
 	}
 
 	// load henkaku kernel
-	modid = ksceKernelLoadModuleWithoutStart("ux0:app/MLCL00001/henkaku.skprx", 0, &opt);
+	modid = ksceKernelLoadModuleWithoutStart("ur0:tai/henkaku.skprx", 0, &opt);
 	LOG("LoadHENKaku kernel: 0x%08X", modid);
 	result = 0;
 	ret = ksceKernelStartModule(modid, 4, &shell_pid, 0, NULL, &result);
@@ -552,7 +552,7 @@ void cleanup_memory(void) {
 }
 
 /* Install path and arguments */
-const char launch_path[] = "ux0:data/bootstrap.self";
+const char launch_path[] = "ur0:henkaku-bootstrap.self";
 const char launch_args[] = "\0\0\0\0-nonsuspendable\0-livearea_off\0";
 
 int thread_main(int args, void *argp) {

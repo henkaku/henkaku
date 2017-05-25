@@ -25,6 +25,10 @@
 
 #define INSTALL_ATTEMPTS 3
 #define TAIHEN_CONFIG_FILE "ux0:tai/config.txt"
+#define TAIHEN_RECOVERY_CONFIG_FILE "ur0:tai/config.txt"
+#define TAIHEN_SKPRX_FILE "ur0:tai/taihen.skprx"
+#define HENKAKU_SUPRX_FILE "ur0:tai/henkaku.suprx"
+#define HENKAKU_SKPRX_FILE "ur0:tai/henkaku.skprx"
 
 #if RELEASE
 #define LOG(...)
@@ -35,22 +39,34 @@
 #define DRAWF(fmt, ...) do { psvDebugScreenPrintf(cui_data.base, &cui_data.X, &cui_data.Y, fmt, ##__VA_ARGS__); LOG(fmt, ##__VA_ARGS__); } while (0);
 
 uint32_t crc32(uint32_t crc, const void *buf, size_t size);
+typedef int (*search_fsm_t)(const char *data, int len, int state);
+
+const char taihen_config_recovery_header[] =
+	"# This file is used as an alternative if ux0:tai/config.txt is not found.\n";
+
+const char taihen_config_updated_msg[] =
+	"# henkaku.suprx and henkaku.skprx has moved to ur0:tai, you may remove\n"
+	"# the old entries above.\n";
+
+const char taihen_config_header[] = 
+	"# For users plugins, you must refresh taiHEN from molecularShell for\n"
+	"# changes to take place.\n"
+	"# For kernel plugins, you must reboot for changes to take place.\n";
 
 const char taihen_config[] = 
-	"# You must reboot for changes to take place.\n"
 	"*KERNEL\n"
 	"# henkaku.skprx is hard-coded to load and is not listed here\n"
 	"*main\n"
 	"# main is a special titleid for SceShell\n"
-	"ux0:app/MLCL00001/henkaku.suprx\n"
+	HENKAKU_SUPRX_FILE "\n"
 	"*NPXS10015\n"
 	"# this is for modifying the version string\n"
-	"ux0:app/MLCL00001/henkaku.suprx\n";
+	HENKAKU_SKPRX_FILE "\n";
 
 const char taihen_config_update[] = 
 	"*NPXS10016\n"
 	"# this is for modifying the version string in settings widget\n"
-	"ux0:app/MLCL00001/henkaku.suprx\n";
+	HENKAKU_SUPRX_FILE "\n";
 
 static int g_tpl; // http template
 
@@ -291,6 +307,14 @@ static int exists(const char *path) {
 	return 1;
 }
 
+static int dev_exists(const char *dev) {
+	int fd = sceIoOpen(dev, SCE_O_RDONLY, 0);
+	if (fd == 0x80010013)
+		return 0;
+	sceIoClose(fd);
+	return 1;
+}
+
 /*
 static int mark_world_readable(const char *path) {
 	SceIoStat stat;
@@ -321,8 +345,6 @@ int install_pkg(const char *pkg_url_prefix) {
 	mkdirs(file_name);
 
 	GET_FILE("eboot.bin");
-	GET_FILE("henkaku.skprx");
-	GET_FILE("henkaku.suprx");
 	GET_FILE("sce_sys/param.sfo");
 	GET_FILE("sce_sys/icon0.png");
 	GET_FILE("sce_sys/package/head.bin");
@@ -379,12 +401,16 @@ int install_pkg(const char *pkg_url_prefix) {
 	return ret;
 }
 
-int write_taihen_config(void) {
+int write_taihen_config(const char *path, int recovery) {
 	int fd;
 
 	// write default config
-	sceIoRemove(TAIHEN_CONFIG_FILE);
-	fd = sceIoOpen(TAIHEN_CONFIG_FILE, SCE_O_TRUNC | SCE_O_CREAT | SCE_O_WRONLY, 6);
+	sceIoRemove(path);
+	fd = sceIoOpen(path, SCE_O_TRUNC | SCE_O_CREAT | SCE_O_WRONLY, 6);
+	if (recovery) {
+		sceIoWrite(fd, taihen_config_recovery_header, sizeof(taihen_config_recovery_header) - 1);
+	}
+	sceIoWrite(fd, taihen_config_header, sizeof(taihen_config_header) - 1);
 	sceIoWrite(fd, taihen_config, sizeof(taihen_config) - 1);
 	sceIoWrite(fd, taihen_config_update, sizeof(taihen_config_update) - 1);
 	sceIoClose(fd);
@@ -394,7 +420,7 @@ int write_taihen_config(void) {
 
 int install_taihen(const char *pkg_url_prefix) {
 	int ret;
-	const char *pkg_path = "ux0:tai";
+	const char *pkg_path = "ur0:tai";
 	char file_name[0x400];
 	char url[0x400];
 
@@ -404,14 +430,23 @@ int install_taihen(const char *pkg_url_prefix) {
 	// create directory structure
 	mkdirs(pkg_path);
 
-	sceIoRemove("ux0:tai/taihen.skprx");
+	sceIoRemove(TAIHEN_SKPRX_FILE);
+	sceIoRemove(HENKAKU_SKPRX_FILE);
+	sceIoRemove(HENKAKU_SUPRX_FILE);
 	GET_FILE("taihen.skprx");
+	GET_FILE("henkaku.skprx");
+	GET_FILE("henkaku.suprx");
 
 	if (!exists(TAIHEN_CONFIG_FILE)) {
-		write_taihen_config();
+		mkdirs("ux0:tai");
+		write_taihen_config(TAIHEN_CONFIG_FILE, 0);
 	}
 
-	if (exists("ux0:tai/taihen.skprx")) {
+	if (!exists(TAIHEN_RECOVERY_CONFIG_FILE)) {
+		write_taihen_config(TAIHEN_RECOVERY_CONFIG_FILE, 1);
+	}
+
+	if (exists(TAIHEN_SKPRX_FILE) && exists(HENKAKU_SKPRX_FILE) && exists(HENKAKU_SUPRX_FILE)) {
 		return 0;
 	} else {
 		return -1;
@@ -446,41 +481,103 @@ static int find_NPXS10016_titleid_fsm(const char *data, int len, int state) {
 			case  6: state = (data[i++] == '0') ? 7 : 0; break;
 			case  7: state = (data[i++] == '0') ? 8 : 0; break;
 			case  8: state = (data[i++] == '1') ? 9 : 0; break;
-			case  9: state = (data[i++] == '6') ? 10 : 0; break;
-			case 10: state = (data[i++] == '\r' || data[i-1] == '\n') ? 11 : 0; break;
+			case  9: state = (data[i++] == '6') ? 99 : 0; break;
+			case 99: state = (data[i++] == '\r' || data[i-1] == '\n') ? 100 : 0; break;
 			default: i++; break;
 		}
 	}
 	return state;
 }
 
-static int find_NPXS10016_titleid(const char *file) {
+static int find_henkaku_plugin_fsm(const char *data, int len, int state) {
+	int i = 0;
+	while (i < len) {
+		switch (state) {
+			case  0: state = (data[i++] == 'u') ? 1 : 0; break;
+			case  1: state = (data[i++] == 'r') ? 2 : 0; break;
+			case  2: state = (data[i++] == '0') ? 3 : 0; break;
+			case  3: state = (data[i++] == ':') ? 4 : 0; break;
+			case  4: state = (data[i++] == 't') ? 5 : 0; break;
+			case  5: state = (data[i++] == 'a') ? 6 : 0; break;
+			case  6: state = (data[i++] == 'i') ? 7 : 0; break;
+			case  7: state = (data[i++] == '/') ? 8 : 0; break;
+			case  8: state = (data[i++] == 'h') ? 9 : 0; break;
+			case  9: state = (data[i++] == 'e') ? 10 : 0; break;
+			case 10: state = (data[i++] == 'n') ? 11 : 0; break;
+			case 11: state = (data[i++] == 'k') ? 12 : 0; break;
+			case 12: state = (data[i++] == 'a') ? 13 : 0; break;
+			case 13: state = (data[i++] == 'k') ? 14 : 0; break;
+			case 14: state = (data[i++] == 'u') ? 15 : 0; break;
+			case 15: state = (data[i++] == '.') ? 16 : 0; break;
+			case 16: state = (data[i++] == 's') ? 17 : 0; break;
+			case 17: state = (data[i++] == 'u' || data[i++] == 'k') ? 18 : 0; break;
+			case 18: state = (data[i++] == 'p') ? 19 : 0; break;
+			case 19: state = (data[i++] == 'r') ? 20 : 0; break;
+			case 20: state = (data[i++] == 'x') ? 99 : 0; break;
+			case 99: state = (data[i++] == '\r' || data[i-1] == '\n') ? 100 : 0; break;
+			default: i++; break;
+		}
+	}
+	return state;
+}
+
+static int search_file_with_fsms(const char *file, int count, const search_fsm_t fsm[count], int state[count]) {
 	char buf[256];
 	int len;
-	int state;
 	int fd;
+	int found;
 
 	fd = sceIoOpen(file, SCE_O_RDONLY, 0);
-	state = 0;
+	found = 0;
 	while ((len = sceIoRead(fd, buf, 256)) > 0) {
-		if ((state = find_NPXS10016_titleid_fsm(buf, len, state)) >= 10) {
+		for (int i = 0; i < count; i++) {
+			if ((state[i] = fsm[i](buf, len, state[i])) >= 99) {
+				found++;
+			}
+		}
+		if (found == count) {
 			break;
 		}
 	}
 	sceIoClose(fd);
 
-	return (state >= 10);
+	return found;
 }
 
 int update_taihen_config(void) {
 	int fd;
+	static const search_fsm_t fsm[2] = {find_NPXS10016_titleid_fsm, find_henkaku_plugin_fsm};
+	int state[2] = {0, 0};
 
-	if (!find_NPXS10016_titleid(TAIHEN_CONFIG_FILE)) {
+
+	if (search_file_with_fsms(TAIHEN_CONFIG_FILE, 2, fsm, state) > 0) {
 		DRAWF("Updating taiHEN config.txt\n");
 		fd = sceIoOpen(TAIHEN_CONFIG_FILE, SCE_O_WRONLY | SCE_O_APPEND, 0);
-		sceIoWrite(fd, "\n", 1);
-		sceIoWrite(fd, taihen_config_update, sizeof(taihen_config_update) - 1);
+		if (state[1] >= 99) {
+			sceIoWrite(fd, "\n", 1);
+			sceIoWrite(fd, taihen_config_updated_msg, sizeof(taihen_config_updated_msg) - 1);
+			sceIoWrite(fd, taihen_config, sizeof(taihen_config) - 1);
+		}
+		if (state[0] >= 99) {
+			sceIoWrite(fd, "\n", 1);
+			sceIoWrite(fd, taihen_config_update, sizeof(taihen_config_update) - 1);
+		}
 		sceIoClose(fd);
+	}
+
+	if (exists("ux0:app/MLCL00001/henkaku.suprx")) {
+		DRAWF("Removing old henkaku.suprx\n");
+		sceIoRemove("ux0:app/MLCL00001/henkaku.suprx");
+	}
+
+	if (exists("ux0:app/MLCL00001/henkaku.skprx")) {
+		DRAWF("Removing old henkaku.skprx\n");
+		sceIoRemove("ux0:app/MLCL00001/henkaku.skprx");
+	}
+
+	if (exists("ux0:tai/taihen.skprx")) {
+		DRAWF("Removing old taihen.skprx\n");
+		sceIoRemove("ux0:tai/taihen.skprx");
 	}
 
 	return 0;
@@ -489,13 +586,13 @@ int update_taihen_config(void) {
 int verify_taihen(void) {
 	uint32_t crc;
 	if (TAIHEN_CRC32 > 0) { // 0 skips checks
-		crc = crc32_file("ux0:tai/taihen.skprx");
+		crc = crc32_file(TAIHEN_SKPRX_FILE);
 		DRAWF("taihen.skprx CRC32: 0x%08X\n", crc);
 		if (crc != TAIHEN_CRC32) return -1;
-		crc = crc32_file("ux0:app/MLCL00001/henkaku.skprx");
+		crc = crc32_file(HENKAKU_SKPRX_FILE);
 		DRAWF("henkaku.skprx CRC32: 0x%08X\n", crc);
 		if (crc != HENKAKU_CRC32) return -1;
-		crc = crc32_file("ux0:app/MLCL00001/henkaku.suprx");
+		crc = crc32_file(HENKAKU_SUPRX_FILE);
 		DRAWF("henkaku.suprx CRC32: 0x%08X\n", crc);
 		if (crc != HENKAKU_USER_CRC32) return -1;
 	}
@@ -632,7 +729,11 @@ int module_start(SceSize argc, const void *args) {
 			sceIoRemove("ux0:app/MLCL00001/henkaku.suprx");
 			sceIoRemove("ux0:app/MLCL00001/henkaku.skprx");
 			sceIoRemove("ux0:tai/taihen.skprx");
-			write_taihen_config();
+			sceIoRemove(HENKAKU_SUPRX_FILE);
+			sceIoRemove(HENKAKU_SKPRX_FILE);
+			sceIoRemove(TAIHEN_SKPRX_FILE);
+			sceIoRemove(TAIHEN_CONFIG_FILE);
+			sceIoRemove(TAIHEN_RECOVERY_CONFIG_FILE);
 		}
 		cui_data.fg_color = 0xFFFFFFFF;
 	}
@@ -647,8 +748,12 @@ int module_start(SceSize argc, const void *args) {
 	const char *force_reinstall = "(if you want to force reinstall, reboot your Vita and press R1 when asked to)\n";
 	while (tries-- > 0 && !offline) {
 		// check if we actually need to install the package
-		if (TAIHEN_CRC32 == 0 || (crc[0] = crc32_file("ux0:tai/taihen.skprx")) != TAIHEN_CRC32) {
-			DRAWF("taihen.skprx CRC32:%x, latest:%x, getting latest version...\n", crc[0], TAIHEN_CRC32);
+		if (TAIHEN_CRC32 == 0 || (crc[0] = crc32_file(TAIHEN_SKPRX_FILE)) != TAIHEN_CRC32 || 
+			  (crc[1] = crc32_file(HENKAKU_SUPRX_FILE)) != HENKAKU_USER_CRC32 ||
+			  (crc[2] = crc32_file(HENKAKU_SKPRX_FILE)) != HENKAKU_CRC32) {
+			DRAWF("taihen.skprx CRC32:%x, latest:%x\n", crc[0], TAIHEN_CRC32);
+			if (crc[1]) DRAWF("henkaku.suprx CRC32:%x, latest:%x\n", crc[1], HENKAKU_USER_CRC32);
+			if (crc[2]) DRAWF("henkaku.skprx CRC32:%x, latest:%x\n", crc[2], HENKAKU_CRC32);
 			ret = install_taihen(PKG_URL_PREFIX);
 		} else {
 			DRAWF("taiHEN already installed and is the latest version\n");
@@ -662,34 +767,39 @@ int module_start(SceSize argc, const void *args) {
 			continue;
 		}
 		// check if we actually need to install the package
-		if (VITASHELL_CRC32 == 0 || (crc[0] = crc32_file("ux0:app/MLCL00001/eboot.bin")) != VITASHELL_CRC32 || 
-			  (crc[1] = crc32_file("ux0:app/MLCL00001/henkaku.suprx")) != HENKAKU_USER_CRC32 ||
-			  (crc[2] = crc32_file("ux0:app/MLCL00001/henkaku.skprx")) != HENKAKU_CRC32) {
-			DRAWF("molecularShell CRC32:%x, latest:%x\n", crc[0], VITASHELL_CRC32);
-			if (crc[1]) DRAWF("henkaku.suprx CRC32:%x, latest:%x\n", crc[1], HENKAKU_USER_CRC32);
-			if (crc[2]) DRAWF("henkaku.skprx CRC32:%x, latest:%x\n", crc[2], HENKAKU_CRC32);
-			DRAWF("Getting latest version...\n");
-			ret = install_pkg(PKG_URL_PREFIX);
+		if (dev_exists("ux0:")) {
+			if (VITASHELL_CRC32 == 0 || (crc[0] = crc32_file("ux0:app/MLCL00001/eboot.bin")) != VITASHELL_CRC32) {
+				DRAWF("molecularShell CRC32:%x, latest:%x\n", crc[0], VITASHELL_CRC32);
+				DRAWF("Getting latest version...\n");
+				ret = install_pkg(PKG_URL_PREFIX);
+			} else {
+				DRAWF("molecularShell already installed and is the latest version\n");
+				DRAWF(force_reinstall);
+				ret = 0;
+			}
+			if (ret < 0) {
+				cui_data.fg_color = 0xFF0000FF;
+				DRAWF("HENkaku failed to install pkg: error code 0x%x, retrying (%d tries left)...\n", ret, tries);
+				cui_data.fg_color = 0xFFFFFFFF;
+				continue;
+			}
 		} else {
-			DRAWF("molecularShell already installed and is the latest version\n");
-			DRAWF(force_reinstall);
-			ret = 0;
-		}
-		if (ret < 0) {
-			cui_data.fg_color = 0xFF0000FF;
-			DRAWF("HENkaku failed to install pkg: error code 0x%x, retrying (%d tries left)...\n", ret, tries);
-			cui_data.fg_color = 0xFFFFFFFF;
-			continue;
+			DRAWF("No memory card installed, skipping installation of molecularShell\n");
 		}
 		// update config if needed
-		update_taihen_config();
+		if (update_taihen_config() < 0) {
+			cui_data.fg_color = 0xFF0000FF;
+			DRAWF("ERROR: failed to update installation, trying to reinstall (%d tries left)...\n", tries);
+			cui_data.fg_color = 0xFFFFFFFF;
+		}
 		// verify installation
 		if (verify_taihen() < 0) {
 			cui_data.fg_color = 0xFF0000FF;
 			DRAWF("ERROR: taiHENkaku files are corrupted, trying to reinstall (%d tries left)...\n", tries);
 			cui_data.fg_color = 0xFFFFFFFF;
-			sceIoRemove("ux0:tai/taihen.skprx");
-			sceIoRemove("ux0:app/MLCL00001/henkaku.skprx");
+			sceIoRemove(TAIHEN_SKPRX_FILE);
+			sceIoRemove(HENKAKU_SKPRX_FILE);
+			sceIoRemove(HENKAKU_SUPRX_FILE);
 		} else {
 			break;
 		}
