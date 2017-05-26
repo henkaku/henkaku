@@ -261,6 +261,7 @@ static unsigned g_homebrew_decrypt = 0;
 static module_info_t *modulemgr_info = 0;
 static module_info_t *scenpdrm_info = 0;
 static module_info_t *appmgr_info = 0;
+static u32_t appmgr_code = 0;
 
 // save the block id of our own memory
 static int g_rw_block = 0;
@@ -329,6 +330,8 @@ unsigned hook_sbl_BC422443(unsigned a1, unsigned a2, unsigned a3) {
 	return hook_resume_sbl_BC422443(a1, a2, a3);
 }
 
+static const char ur0_temp_path[] = "ur0:temp";
+
 static int has_sigpatches = 0;
 static char old_sbl_F3411881[16] = {0};
 static char old_sbl_89CCDA2C[16] = {0};
@@ -336,6 +339,7 @@ static char old_sbl_BC422443[16] = {0};
 static char old_sblai_D78B04A2[16] = {0};
 static char old_sblai_F4B98F66[16] = {0};
 static char old_sysroot_421EFC96[16] = {0};
+static char old_ux0_data_path[9] = {0};
 
 void temp_pkgpatches(void) {
 	void *addr;
@@ -426,6 +430,13 @@ void temp_sigpatches(void) {
 	);
 	LOG("hooked sysroot_421EFC96");
 
+	addr = appmgr_code + 0x44a0c;
+	DACR_OFF(
+		memcpy(old_ux0_data_path, addr, sizeof(old_ux0_data_path));
+		memcpy(addr, ur0_temp_path, sizeof(ur0_temp_path));
+	);
+    LOG("hooked ux0:data path");
+
 	DACR_OFF(has_sigpatches = 1);
 
 	__asm__ volatile ("isb" ::: "memory");
@@ -467,6 +478,12 @@ void remove_sigpatches(void) {
 		SceCpuForDriver_9CB9F0CE_flush_dcache((uint32_t)addr & ~0x1F, 0x20);
 	);
 	LOG("unhooked sysroot_421EFC96");
+
+	addr = appmgr_code + 0x44a0c;
+	DACR_OFF(
+		memcpy(addr, old_ux0_data_path, sizeof(old_ux0_data_path));
+	);
+	LOG("unhooked ux0:data path");
 
 	DACR_OFF(has_sigpatches = 0);
 
@@ -552,7 +569,7 @@ void cleanup_memory(void) {
 }
 
 /* Install path and arguments */
-const char launch_path[] = "ux0:data/bootstrap.self";
+const char launch_path[] = "ur0:/temp/bootstrap.self";
 const char launch_args[] = "\0\0\0\0-nonsuspendable\0-livearea_off\0";
 
 int thread_main(int args, void *argp) {
@@ -667,6 +684,7 @@ void resolve_imports(unsigned sysmem_base) {
 		}
 		if (strcmp(info.name, "SceAppMgr") == 0) {
 			DACR_OFF(appmgr_info = find_modinfo((u32_t)info.segments[0].vaddr, "SceAppMgr"));
+			DACR_OFF(appmgr_code = info.segments[0].vaddr);
 		}
 		if (strcmp(info.name, "SceIofilemgr") == 0) {
 			iofilemgr_info = find_modinfo((u32_t)info.segments[0].vaddr, "SceIofilemgr");
