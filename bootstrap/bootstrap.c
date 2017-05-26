@@ -61,7 +61,7 @@ const char taihen_config[] =
 	HENKAKU_SUPRX_FILE "\n"
 	"*NPXS10015\n"
 	"# this is for modifying the version string\n"
-	HENKAKU_SKPRX_FILE "\n"
+	HENKAKU_SUPRX_FILE "\n"
 	"*NPXS10016\n"
 	"# this is for modifying the version string in settings widget\n"
 	HENKAKU_SUPRX_FILE "\n";
@@ -525,6 +525,9 @@ static int search_file_with_fsms(const char *file, int count, const search_fsm_t
 	int found;
 
 	fd = sceIoOpen(file, SCE_O_RDONLY, 0);
+	if (fd < 0) {
+		return -1;
+	}
 	found = 0;
 	while ((len = sceIoRead(fd, buf, 256)) > 0) {
 		for (int i = 0; i < count; i++) {
@@ -545,9 +548,9 @@ int update_taihen_config(void) {
 	int fd;
 	static const search_fsm_t fsm[1] = {find_henkaku_plugin_fsm};
 	int state[1] = {0};
+	int ret;
 
-
-	if (search_file_with_fsms(TAIHEN_CONFIG_FILE, 1, fsm, state) < 1) {
+	if ((ret = search_file_with_fsms(TAIHEN_CONFIG_FILE, 1, fsm, state)) >= 0 && ret < 1) {
 		DRAWF("Updating taiHEN config.txt\n");
 		fd = sceIoOpen(TAIHEN_CONFIG_FILE, SCE_O_WRONLY | SCE_O_APPEND, 0);
 		if (state[0] < 99) { // ur0 path not found
