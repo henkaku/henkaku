@@ -61,9 +61,7 @@ const char taihen_config[] =
 	HENKAKU_SUPRX_FILE "\n"
 	"*NPXS10015\n"
 	"# this is for modifying the version string\n"
-	HENKAKU_SKPRX_FILE "\n";
-
-const char taihen_config_update[] = 
+	HENKAKU_SKPRX_FILE "\n"
 	"*NPXS10016\n"
 	"# this is for modifying the version string in settings widget\n"
 	HENKAKU_SUPRX_FILE "\n";
@@ -412,7 +410,6 @@ int write_taihen_config(const char *path, int recovery) {
 	}
 	sceIoWrite(fd, taihen_config_header, sizeof(taihen_config_header) - 1);
 	sceIoWrite(fd, taihen_config, sizeof(taihen_config) - 1);
-	sceIoWrite(fd, taihen_config_update, sizeof(taihen_config_update) - 1);
 	sceIoClose(fd);
 
 	return 0;
@@ -546,21 +543,17 @@ static int search_file_with_fsms(const char *file, int count, const search_fsm_t
 
 int update_taihen_config(void) {
 	int fd;
-	static const search_fsm_t fsm[2] = {find_NPXS10016_titleid_fsm, find_henkaku_plugin_fsm};
-	int state[2] = {0, 0};
+	static const search_fsm_t fsm[1] = {find_henkaku_plugin_fsm};
+	int state[1] = {0};
 
 
-	if (search_file_with_fsms(TAIHEN_CONFIG_FILE, 2, fsm, state) > 0) {
+	if (search_file_with_fsms(TAIHEN_CONFIG_FILE, 1, fsm, state) < 1) {
 		DRAWF("Updating taiHEN config.txt\n");
 		fd = sceIoOpen(TAIHEN_CONFIG_FILE, SCE_O_WRONLY | SCE_O_APPEND, 0);
-		if (state[1] >= 99) {
+		if (state[0] < 99) { // ur0 path not found
 			sceIoWrite(fd, "\n", 1);
 			sceIoWrite(fd, taihen_config_updated_msg, sizeof(taihen_config_updated_msg) - 1);
 			sceIoWrite(fd, taihen_config, sizeof(taihen_config) - 1);
-		}
-		if (state[0] >= 99) {
-			sceIoWrite(fd, "\n", 1);
-			sceIoWrite(fd, taihen_config_update, sizeof(taihen_config_update) - 1);
 		}
 		sceIoClose(fd);
 	}
@@ -767,7 +760,7 @@ int module_start(SceSize argc, const void *args) {
 			continue;
 		}
 		// check if we actually need to install the package
-		if (dev_exists("ux0:")) {
+		if (dev_exists("ux0:data")) {
 			if (VITASHELL_CRC32 == 0 || (crc[0] = crc32_file("ux0:app/MLCL00001/eboot.bin")) != VITASHELL_CRC32) {
 				DRAWF("molecularShell CRC32:%x, latest:%x\n", crc[0], VITASHELL_CRC32);
 				DRAWF("Getting latest version...\n");
