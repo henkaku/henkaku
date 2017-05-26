@@ -22,6 +22,7 @@
 #include "molecule_logo.h"
 
 #include "../build/version.c"
+#include "../plugin/henkaku.h"
 
 #define INSTALL_ATTEMPTS 3
 #define TAIHEN_CONFIG_FILE "ux0:tai/config.txt"
@@ -719,13 +720,13 @@ int module_start(SceSize argc, const void *args) {
 		cui_data.fg_color = 0xFFFF00FF;
 		if (should_reinstall()) {
 			DRAWF("Forcing reinstall of taiHEN and molecularShell, configuration will be reset\n\n");
-			sceIoRemove("ux0:temp/app_work/MLCL00001/rec/config.bin");
 			sceIoRemove("ux0:temp/app_work/MLCL00001/rec/first_boot.bin");
 			sceIoRemove("ux0:app/MLCL00001/eboot.bin");
 			sceIoRemove("ux0:app/MLCL00001/henkaku.suprx");
 			sceIoRemove("ux0:app/MLCL00001/henkaku.skprx");
 			sceIoRemove("ux0:tai/taihen.skprx");
-			sceIoRemove("ur0:tai/henkaku_config.bin");
+			sceIoRemove(CONFIG_PATH);
+			sceIoRemove(OLD_CONFIG_PATH);
 			sceIoRemove(HENKAKU_SUPRX_FILE);
 			sceIoRemove(HENKAKU_SKPRX_FILE);
 			sceIoRemove(TAIHEN_SKPRX_FILE);
@@ -765,7 +766,7 @@ int module_start(SceSize argc, const void *args) {
 		}
 		// check if we actually need to install the package
 		if (dev_exists("ux0:data")) {
-			if (!exists("ur0:tai/henkaku_config.bin") || exists("ux0:app/MLCL00001/eboot.bin")) {
+			if (!exists(CONFIG_PATH) || exists("ux0:app/MLCL00001/eboot.bin")) {
 				if (VITASHELL_CRC32 == 0 || (crc[0] = crc32_file("ux0:app/MLCL00001/eboot.bin")) != VITASHELL_CRC32) {
 					DRAWF("molecularShell CRC32:%x, latest:%x\n", crc[0], VITASHELL_CRC32);
 					DRAWF("Getting latest version...\n");
