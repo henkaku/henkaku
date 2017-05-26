@@ -725,6 +725,7 @@ int module_start(SceSize argc, const void *args) {
 			sceIoRemove("ux0:app/MLCL00001/henkaku.suprx");
 			sceIoRemove("ux0:app/MLCL00001/henkaku.skprx");
 			sceIoRemove("ux0:tai/taihen.skprx");
+			sceIoRemove("ur0:tai/henkaku_config.bin");
 			sceIoRemove(HENKAKU_SUPRX_FILE);
 			sceIoRemove(HENKAKU_SKPRX_FILE);
 			sceIoRemove(TAIHEN_SKPRX_FILE);

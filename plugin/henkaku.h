@@ -34,7 +34,8 @@ typedef struct {
 } __attribute__((packed)) henkaku_config_t;
 
 #define HENKAKU_CONFIG_MAGIC (0x4C434C4D)
-#define CONFIG_PATH "ux0:temp/app_work/MLCL00001/rec/config.bin"
+#define CONFIG_PATH "ur0:tai/henkaku_config.bin"
+#define OLD_CONFIG_PATH "ux0:temp/app_work/MLCL00001/rec/config.bin"
 #define SPOOF_VERSION (0x3650000)
 
 #endif // HENKAKU_HEADER

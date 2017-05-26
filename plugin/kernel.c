@@ -127,6 +127,9 @@ static int load_config_kernel(void) {
   SceUID fd;
   int rd;
   fd = ksceIoOpen(CONFIG_PATH, SCE_O_RDONLY, 0);
+  if (fd < 0) {
+    fd = ksceIoOpen(OLD_CONFIG_PATH, SCE_O_RDONLY, 0);
+  }
   if (fd >= 0) {
     rd = ksceIoRead(fd, &config, sizeof(config));
     ksceIoClose(fd);

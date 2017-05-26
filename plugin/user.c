@@ -67,10 +67,6 @@ static int SceVshBridge_333875AB_SceShell_patched(void) {
 static void save_config_user(void) {
   SceUID fd;
   int rd;
-  sceIoMkdir("ux0:temp", 6);
-  sceIoMkdir("ux0:temp/app_work", 6);
-  sceIoMkdir("ux0:temp/app_work/MLCL00001", 6);
-  sceIoMkdir("ux0:temp/app_work/MLCL00001/rec", 6);
   fd = sceIoOpen(CONFIG_PATH, SCE_O_TRUNC | SCE_O_CREAT | SCE_O_WRONLY, 6);
   if (fd >= 0) {
     rd = sceIoWrite(fd, &config, sizeof(config));
@@ -86,13 +82,23 @@ static void save_config_user(void) {
 static int load_config_user(void) {
   SceUID fd;
   int rd;
+  int migrate = 0;
   fd = sceIoOpen(CONFIG_PATH, SCE_O_RDONLY, 0);
+  if (fd < 0) {
+    fd = sceIoOpen(OLD_CONFIG_PATH, SCE_O_RDONLY, 0);
+    migrate = 1;
+  }
   if (fd >= 0) {
     rd = sceIoRead(fd, &config, sizeof(config));
     sceIoClose(fd);
     if (rd == sizeof(config)) {
       if (config.magic == HENKAKU_CONFIG_MAGIC) {
         if (config.version >= 8) {
+          if (migrate) {
+            LOG("migrating settings to new path");
+            save_config_user();
+            sceIoRemove(OLD_CONFIG_PATH);
+          }
           return 0;
         } else {
           LOG("config version too old");
