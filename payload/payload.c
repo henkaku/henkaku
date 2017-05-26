@@ -569,14 +569,15 @@ void cleanup_memory(void) {
 }
 
 /* Install path and arguments */
-const char launch_path[] = "ur0:/temp/bootstrap.self";
+const char launch_path_ur[] = "ur0:/temp/bootstrap.self";
+const char launch_path_ux[] = "ux0:/data/bootstrap.self";
 const char launch_args[] = "\0\0\0\0-nonsuspendable\0-livearea_off\0";
 
 int thread_main(int args, void *argp) {
 	char real_args[sizeof(launch_args)];
 	int opt[52/4];
 	int ctx[16/4];
-	const char *start;
+	const char *launch_path;
 	int fd;
 	int ret;
 
@@ -592,8 +593,14 @@ int thread_main(int args, void *argp) {
 #endif
 
 	LOG("Loading bootstrap to system");
+	launch_path = launch_path_ux;
 	ret = fd = ksceIoOpen(launch_path, 0x603, 0x6);
-	LOG("ksceIoOpen: %x", fd);
+	LOG("ux ksceIoOpen: %x", fd);
+	if (fd < 0) {
+		launch_path = launch_path_ur;
+		fd = ksceIoOpen(launch_path, 0x603, 0x6);
+		LOG("ur ksceIoOpen: %x", fd);
+	}
 	if (fd >= 0) {
 		ret = ksceIoWrite(fd, build_bootstrap_bootstrap_self, build_bootstrap_bootstrap_self_len);
 		LOG("ksceIoWrite: %x", ret);

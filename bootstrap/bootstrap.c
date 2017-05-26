@@ -765,20 +765,25 @@ int module_start(SceSize argc, const void *args) {
 		}
 		// check if we actually need to install the package
 		if (dev_exists("ux0:data")) {
-			if (VITASHELL_CRC32 == 0 || (crc[0] = crc32_file("ux0:app/MLCL00001/eboot.bin")) != VITASHELL_CRC32) {
-				DRAWF("molecularShell CRC32:%x, latest:%x\n", crc[0], VITASHELL_CRC32);
-				DRAWF("Getting latest version...\n");
-				ret = install_pkg(PKG_URL_PREFIX);
+			if (!exists("ur0:tai/henkaku_config.bin") || exists("ux0:app/MLCL00001/eboot.bin")) {
+				if (VITASHELL_CRC32 == 0 || (crc[0] = crc32_file("ux0:app/MLCL00001/eboot.bin")) != VITASHELL_CRC32) {
+					DRAWF("molecularShell CRC32:%x, latest:%x\n", crc[0], VITASHELL_CRC32);
+					DRAWF("Getting latest version...\n");
+					ret = install_pkg(PKG_URL_PREFIX);
+				} else {
+					DRAWF("molecularShell already installed and is the latest version\n");
+					DRAWF(force_reinstall);
+					ret = 0;
+				}
+				if (ret < 0) {
+					cui_data.fg_color = 0xFF0000FF;
+					DRAWF("HENkaku failed to install pkg: error code 0x%x, retrying (%d tries left)...\n", ret, tries);
+					cui_data.fg_color = 0xFFFFFFFF;
+					continue;
+				}
 			} else {
-				DRAWF("molecularShell already installed and is the latest version\n");
+				DRAWF("molecularShell has been manually removed, skipping reinstallation\n");
 				DRAWF(force_reinstall);
-				ret = 0;
-			}
-			if (ret < 0) {
-				cui_data.fg_color = 0xFF0000FF;
-				DRAWF("HENkaku failed to install pkg: error code 0x%x, retrying (%d tries left)...\n", ret, tries);
-				cui_data.fg_color = 0xFFFFFFFF;
-				continue;
 			}
 		} else {
 			DRAWF("No memory card installed, skipping installation of molecularShell\n");
