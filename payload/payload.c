@@ -552,7 +552,7 @@ void cleanup_memory(void) {
 }
 
 /* Install path and arguments */
-const char launch_path[] = "ur0:henkaku-bootstrap.self";
+const char launch_path[] = "ux0:data/bootstrap.self";
 const char launch_args[] = "\0\0\0\0-nonsuspendable\0-livearea_off\0";
 
 int thread_main(int args, void *argp) {
