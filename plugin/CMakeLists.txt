@@ -62,6 +62,7 @@ target_link_libraries(user
   SceLibKernel_stub
   SceIofilemgr_stub
   SceRegistryMgr_stub
+  ScePower_stub
 )
 
 target_link_libraries(kernel

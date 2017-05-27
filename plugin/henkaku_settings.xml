@@ -44,10 +44,15 @@
     </list>
 
     <!-- Reload taiHEN config.txt -->
-    <button id="check_mc"
+    <button id="id_reload_taihen_config"
             title="msg_reload_taihen_config"
-            icon="tex_spanner" 
+            icon="tex_spanner"
             success_dialog_message="msg_reload_taihen_config_success"/>
+
+    <!-- Reboot device -->
+    <button id="id_reboot_device"
+            title="msg_reboot_device"
+            icon="tex_spanner"/>
 
   </setting_list>
 </system_settings>
