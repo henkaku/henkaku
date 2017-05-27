@@ -16,6 +16,7 @@ typedef struct {
   char *msg_button_cancel;
   char *msg_reload_taihen_config;
   char *msg_reload_taihen_config_success;
+  char *msg_reboot_device;
 } language_container_t;
 
 // by Nzaki0716 & SnyFbSx
@@ -31,6 +32,7 @@ language_container_t language_japanese = {
   "キャンセル",
   "Reload taiHEN config.txt",
   "taiHEN config.txt has been successfully reloaded.",
+  "Reboot device",
 };
 
 // by molecule
@@ -46,6 +48,7 @@ language_container_t language_english_us = {
   "Cancel",
   "Reload taiHEN config.txt",
   "taiHEN config.txt has been successfully reloaded.",
+  "Reboot device",
 };
 
 // by jokira & devnoname120 & CelesteBlue-dev & chronoss09
@@ -61,6 +64,7 @@ language_container_t language_french = {
   "Annuler",
   "Reload taiHEN config.txt",
   "taiHEN config.txt has been successfully reloaded.",
+  "Reboot device",
 };
 
 // by EricWeichhart & iamn0tdev
@@ -76,6 +80,7 @@ language_container_t language_spanish = {
   "Cancelar",
   "Reload taiHEN config.txt",
   "taiHEN config.txt has been successfully reloaded.",
+  "Reboot device",
 };
 
 // by Ziusun
@@ -91,6 +96,7 @@ language_container_t language_german = {
   "Abbrechen",
   "Reload taiHEN config.txt",
   "taiHEN config.txt has been successfully reloaded.",
+  "Reboot device",
 };
 
 // by blackjack4it
@@ -106,6 +112,7 @@ language_container_t language_italian = {
   "Annulla",
   "Reload taiHEN config.txt",
   "taiHEN config.txt has been successfully reloaded.",
+  "Reboot device",
 };
 
 // by ConsoleHax
@@ -121,6 +128,7 @@ language_container_t language_dutch = {
   "Annuleren",
   "Reload taiHEN config.txt",
   "taiHEN config.txt has been successfully reloaded.",
+  "Reboot device",
 };
 
 // by gnmmarechal
@@ -136,6 +144,7 @@ language_container_t language_portuguese_pt = {
   "Cancelar",
   "Reload taiHEN config.txt",
   "taiHEN config.txt has been successfully reloaded.",
+  "Reboot device",
 };
 
 // by Tenek
@@ -151,6 +160,7 @@ language_container_t language_russian = {
   "Отмена",
   "Reload taiHEN config.txt",
   "taiHEN config.txt has been successfully reloaded.",
+  "Reboot device",
 };
 
 // by TriggerHavoc
@@ -166,6 +176,7 @@ language_container_t language_korean = {
   "취소",
   "Reload taiHEN config.txt",
   "taiHEN config.txt has been successfully reloaded.",
+  "Reboot device",
 };
 
 // by iTZQing
@@ -181,6 +192,7 @@ language_container_t language_chinese_t = {
   "取消",
   "Reload taiHEN config.txt",
   "taiHEN config.txt has been successfully reloaded.",
+  "Reboot device",
 };
 
 // by iTZQing
@@ -196,6 +208,7 @@ language_container_t language_chinese_s = {
   "取消",
   "Reload taiHEN config.txt",
   "taiHEN config.txt has been successfully reloaded.",
+  "Reboot device",
 };
 
 // by v5000a
@@ -211,6 +224,7 @@ language_container_t language_finnish = {
   "Peruuta",
   "Reload taiHEN config.txt",
   "taiHEN config.txt has been successfully reloaded.",
+  "Reboot device",
 };
 
 // by MrOrbital
@@ -226,6 +240,7 @@ language_container_t language_swedish = {
   "Avbryt",
   "Reload taiHEN config.txt",
   "taiHEN config.txt has been successfully reloaded.",
+  "Reboot device",
 };
 
 // by coestergaard
@@ -241,6 +256,7 @@ language_container_t language_danish = {
   "Afbryd",
   "Reload taiHEN config.txt",
   "taiHEN config.txt has been successfully reloaded.",
+  "Reboot device",
 };
 
 // by baniel105
@@ -256,6 +272,7 @@ language_container_t language_norwegian = {
   "Avbryt",
   "Reload taiHEN config.txt",
   "taiHEN config.txt has been successfully reloaded.",
+  "Reboot device",
 };
 
 // by Grzybojad & szczuru
@@ -271,6 +288,7 @@ language_container_t language_polish = {
   "Anuluj",
   "Reload taiHEN config.txt",
   "taiHEN config.txt has been successfully reloaded.",
+  "Reboot device",
 };
 
 // by GrayJack & haouingvalt
@@ -286,6 +304,7 @@ language_container_t language_portuguese_br = {
   "Cancelar",
   "Reload taiHEN config.txt",
   "taiHEN config.txt has been successfully reloaded.",
+  "Reboot device",
 };
 
 // by molecule
@@ -301,6 +320,7 @@ language_container_t language_english_gb = {
   "Cancel",
   "Reload taiHEN config.txt",
   "taiHEN config.txt has been successfully reloaded.",
+  "Reboot device",
 };
 
 // by Chronicl3
@@ -316,6 +336,7 @@ language_container_t language_turkish = {
   "İptal",
   "Reload taiHEN config.txt",
   "taiHEN config.txt has been successfully reloaded.",
+  "Reboot device",
 };
 
 #endif // LANGUAGE_HEADER
