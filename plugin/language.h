@@ -14,6 +14,8 @@ typedef struct {
   char *msg_button_behavior;
   char *msg_button_enter;
   char *msg_button_cancel;
+  char *msg_reload_taihen_config;
+  char *msg_reload_taihen_config_success;
 } language_container_t;
 
 // by Nzaki0716 & SnyFbSx
@@ -26,7 +28,9 @@ language_container_t language_japanese = {
   "偽装バージョンの確認",
   "○ボタンの動作設定",
   "決定",
-  "キャンセル"
+  "キャンセル",
+  "Reload taiHEN config.txt",
+  "taiHEN config.txt has been successfully reloaded.",
 };
 
 // by molecule
@@ -39,7 +43,9 @@ language_container_t language_english_us = {
   "Spoofed Version",
   "○ Button Behavior",
   "Enter",
-  "Cancel"
+  "Cancel",
+  "Reload taiHEN config.txt",
+  "taiHEN config.txt has been successfully reloaded.",
 };
 
 // by jokira & devnoname120 & CelesteBlue-dev & chronoss09
@@ -52,7 +58,9 @@ language_container_t language_french = {
   "Version spoofée",
   "Action du bouton ○",
   "Valider",
-  "Annuler"
+  "Annuler",
+  "Reload taiHEN config.txt",
+  "taiHEN config.txt has been successfully reloaded.",
 };
 
 // by EricWeichhart & iamn0tdev
@@ -65,7 +73,9 @@ language_container_t language_spanish = {
   "Versión para Spoofing",
   "Comportamiento del botón ○",
   "Aceptar",
-  "Cancelar"
+  "Cancelar",
+  "Reload taiHEN config.txt",
+  "taiHEN config.txt has been successfully reloaded.",
 };
 
 // by Ziusun
@@ -78,7 +88,9 @@ language_container_t language_german = {
   "Aktuelle Firmware",
   "Funktion der ○-Taste",
   "Bestätigen",
-  "Abbrechen"
+  "Abbrechen",
+  "Reload taiHEN config.txt",
+  "taiHEN config.txt has been successfully reloaded.",
 };
 
 // by blackjack4it
@@ -91,7 +103,9 @@ language_container_t language_italian = {
   "Versione corrente (Spoof)",
   "Comportamento del tasto ○",
   "OK",
-  "Annulla"
+  "Annulla",
+  "Reload taiHEN config.txt",
+  "taiHEN config.txt has been successfully reloaded.",
 };
 
 // by ConsoleHax
@@ -104,7 +118,9 @@ language_container_t language_dutch = {
   "Spoofed Versie",
   "Gedrag van de ○-knop",
   "Enter",
-  "Annuleren"
+  "Annuleren",
+  "Reload taiHEN config.txt",
+  "taiHEN config.txt has been successfully reloaded.",
 };
 
 // by gnmmarechal
@@ -117,7 +133,9 @@ language_container_t language_portuguese_pt = {
   "Versão do spoof",
   "Ação do botão ○",
   "Entrar",
-  "Cancelar"
+  "Cancelar",
+  "Reload taiHEN config.txt",
+  "taiHEN config.txt has been successfully reloaded.",
 };
 
 // by Tenek
@@ -130,7 +148,9 @@ language_container_t language_russian = {
   "Поддельная версия",
   "Поведение кнопки ○",
   "Ввод",
-  "Отмена"
+  "Отмена",
+  "Reload taiHEN config.txt",
+  "taiHEN config.txt has been successfully reloaded.",
 };
 
 // by TriggerHavoc
@@ -143,7 +163,9 @@ language_container_t language_korean = {
   "스푸핑 버전",
   "○ 버튼 설정",
   "확인",
-  "취소"
+  "취소",
+  "Reload taiHEN config.txt",
+  "taiHEN config.txt has been successfully reloaded.",
 };
 
 // by iTZQing
@@ -156,7 +178,9 @@ language_container_t language_chinese_t = {
   "偽裝版本",
   "○ 按鍵配置",
   "確定",
-  "取消"
+  "取消",
+  "Reload taiHEN config.txt",
+  "taiHEN config.txt has been successfully reloaded.",
 };
 
 // by iTZQing
@@ -169,7 +193,9 @@ language_container_t language_chinese_s = {
   "伪装版本",
   "○ 按键配置",
   "确定",
-  "取消"
+  "取消",
+  "Reload taiHEN config.txt",
+  "taiHEN config.txt has been successfully reloaded.",
 };
 
 // by v5000a
@@ -182,7 +208,9 @@ language_container_t language_finnish = {
   "Spooffattu versio",
   "○-näppäimen toiminto",
   "Valitse",
-  "Peruuta"
+  "Peruuta",
+  "Reload taiHEN config.txt",
+  "taiHEN config.txt has been successfully reloaded.",
 };
 
 // by MrOrbital
@@ -195,7 +223,9 @@ language_container_t language_swedish = {
   "Fejkad version",
   "Funktion på ○-knapp",
   "Välj",
-  "Avbryt"
+  "Avbryt",
+  "Reload taiHEN config.txt",
+  "taiHEN config.txt has been successfully reloaded.",
 };
 
 // by coestergaard
@@ -208,7 +238,9 @@ language_container_t language_danish = {
   "Spoofed version",
   "○ knap funktion",
   "Vælg",
-  "Afbryd"
+  "Afbryd",
+  "Reload taiHEN config.txt",
+  "taiHEN config.txt has been successfully reloaded.",
 };
 
 // by baniel105
@@ -221,7 +253,9 @@ language_container_t language_norwegian = {
   "Forfalsket versjon",
   "Funksjon på ○-knapp",
   "Velg",
-  "Avbryt"
+  "Avbryt",
+  "Reload taiHEN config.txt",
+  "taiHEN config.txt has been successfully reloaded.",
 };
 
 // by Grzybojad & szczuru
@@ -234,7 +268,9 @@ language_container_t language_polish = {
   "Fałszowana wersja",
   "Akcja przycisku ○",
   "OK",
-  "Anuluj"
+  "Anuluj",
+  "Reload taiHEN config.txt",
+  "taiHEN config.txt has been successfully reloaded.",
 };
 
 // by GrayJack & haouingvalt
@@ -247,7 +283,9 @@ language_container_t language_portuguese_br = {
   "Versão a mimetizar",
   "Ação do botão ○",
   "Entrar",
-  "Cancelar"
+  "Cancelar",
+  "Reload taiHEN config.txt",
+  "taiHEN config.txt has been successfully reloaded.",
 };
 
 // by molecule
@@ -260,7 +298,9 @@ language_container_t language_english_gb = {
   "Spoofed Version",
   "○ Button Behaviour",
   "Enter",
-  "Cancel"
+  "Cancel",
+  "Reload taiHEN config.txt",
+  "taiHEN config.txt has been successfully reloaded.",
 };
 
 // by Chronicl3
@@ -273,7 +313,9 @@ language_container_t language_turkish = {
   "Spoofed Versiyon",
   "○ Düğmesi Davranışı",
   "Gir",
-  "İptal"
+  "İptal",
+  "Reload taiHEN config.txt",
+  "taiHEN config.txt has been successfully reloaded.",
 };
 
 #endif // LANGUAGE_HEADER
