@@ -43,5 +43,11 @@
                  value="1"/>
     </list>
 
+    <!-- Reload taiHEN config.txt -->
+    <button id="check_mc"
+            title="msg_reload_taihen_config"
+            icon="tex_spanner" 
+            success_dialog_message="msg_reload_taihen_config_success"/>
+
   </setting_list>
 </system_settings>
