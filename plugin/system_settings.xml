@@ -5,12 +5,6 @@
   <setting_list id="system_settings" 
                 title="msg_settings">
 
-    <!-- HENkaku Settings -->
-    <link id="henkaku_settings"
-          file="idu_settings.xml"
-          title="msg_henkaku_settings"
-          icon="tex_spanner"/>
-
     <!-- Sandbox Settings -->
     <link id="sandbox_settings"
           file="sandbox_settings.xml"
@@ -34,8 +28,8 @@
                    hint="msg_airplanemode_info" />
 
     <!-- システムアップデート: たぶんアップデートアプリを起動する -->
-    <link id="system_update"
-            title="msg_system_update"
+    <link id="henkaku_settings"
+            title="msg_henkaku_settings"
             icon="tex_system_update"
             file="system_update.xml"
             />
