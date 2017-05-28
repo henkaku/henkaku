@@ -239,7 +239,7 @@ language_container_t language_swedish = {
   "Välj",
   "Avbryt",
   "Ladda om taiHEN config.txt",
-  "taiHEN config.txt har laddats om",
+  "taiHEN config.txt har laddats om.",
   "Starta om enhet",
 };
 
@@ -259,7 +259,7 @@ language_container_t language_danish = {
   "Reboot device",
 };
 
-// by baniel105
+// by baniel105 & irchagaming
 language_container_t language_norwegian = {
   "HENkaku Instillinger",
   "Aktiver forfalsket PSN-innlogging",
@@ -270,9 +270,9 @@ language_container_t language_norwegian = {
   "Funksjon på ○-knapp",
   "Velg",
   "Avbryt",
-  "Reload taiHEN config.txt",
-  "taiHEN config.txt has been successfully reloaded.",
-  "Reboot device",
+  "Last på nytt taiHEN config.txt",
+  "taiHEN config.txt har blitt lastet.",
+  "Start enheten på nytt",
 };
 
 // by Grzybojad & szczuru & ItsYogSothoth
