@@ -252,7 +252,7 @@ static int scePafLoadXmlLayout_SceSettings_patched(int a1, void *xml_buf, int xm
   if ((82+22) < xml_size && sceClibStrncmp(xml_buf+82, "system_settings_plugin", 22) == 0) {
     xml_buf = (void *)&_binary_system_settings_xml_start;
     xml_size = (int)&_binary_system_settings_xml_size;
-  } else if ((79+20) < xml_size && sceClibStrncmp(xml_buf+79, "system_update_plugin", 20) == 0) {
+  } else if ((79+19) < xml_size && sceClibStrncmp(xml_buf+79, "idu_settings_plugin", 19) == 0) {
     xml_buf = (void *)&_binary_henkaku_settings_xml_start;
     xml_size = (int)&_binary_henkaku_settings_xml_size;
   }
