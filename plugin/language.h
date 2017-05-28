@@ -243,7 +243,7 @@ language_container_t language_swedish = {
   "Starta om enhet",
 };
 
-// by coestergaard
+// by coestergaard & andrsnDK
 language_container_t language_danish = {
   "HENkaku indstillinger",
   "Aktiver PSN spoofing",
@@ -254,9 +254,9 @@ language_container_t language_danish = {
   "○ knap funktion",
   "Vælg",
   "Afbryd",
-  "Reload taiHEN config.txt",
-  "taiHEN config.txt has been successfully reloaded.",
-  "Reboot device",
+  "Genindlæs taiHEN config.txt",
+  "taiHEN config.txt er blevet geninlæst med succes.",
+  "Genstart enhed",
 };
 
 // by baniel105 & irchagaming
@@ -287,7 +287,7 @@ language_container_t language_polish = {
   "OK",
   "Anuluj",
   "Załaduj ponownie config.txt taiHEN",
-  "config.txt taiHEN został pomyślnie załadowany ponownie".
+  "config.txt taiHEN został pomyślnie załadowany ponownie.",
   "Uruchom ponownie konsolę",
 };
 
