@@ -288,31 +288,24 @@ static int scePafGetText_SceSystemSettingsCore_patched(int a1, char *msg, int a3
     default:                                  language_container = &language_english_us;    break;
   }
   if (sceClibStrncmp(msg, "msg_", 4) == 0) {
-    if (sceClibStrncmp(msg, "msg_henkaku_settings", 20) == 0) {
-      msg = language_container->msg_henkaku_settings;
-    } else if (sceClibStrncmp(msg, "msg_enable_psn_spoofing", 23) == 0) {
-      msg = language_container->msg_enable_psn_spoofing;
-    } else if (sceClibStrncmp(msg, "msg_enable_unsafe_homebrew", 26) == 0) {
-      msg = language_container->msg_enable_unsafe_homebrew;
-    } else if (sceClibStrncmp(msg, "msg_unsafe_homebrew_description", 31) == 0) {
-      msg = language_container->msg_unsafe_homebrew_description;
-    } else if (sceClibStrncmp(msg, "msg_enable_version_spoofing", 27) == 0) {
-      msg = language_container->msg_enable_version_spoofing;
-    } else if (sceClibStrncmp(msg, "msg_spoofed_version", 19) == 0) {
-      msg = language_container->msg_spoofed_version;
-    } else if (sceClibStrncmp(msg, "msg_button_behavior", 19) == 0) {
-      msg = language_container->msg_button_behavior;
-    } else if (sceClibStrncmp(msg, "msg_button_enter", 16) == 0) {
-      msg = language_container->msg_button_enter;
-    } else if (sceClibStrncmp(msg, "msg_button_cancel", 17) == 0) {
-      msg = language_container->msg_button_cancel;
-    } else if (sceClibStrncmp(msg, "msg_reload_taihen_config_success", 32) == 0) {
-      msg = language_container->msg_reload_taihen_config_success;
-    } else if (sceClibStrncmp(msg, "msg_reload_taihen_config", 24) == 0) {
-      msg = language_container->msg_reload_taihen_config;
-    } else if (sceClibStrncmp(msg, "msg_reboot_device", 17) == 0) {
-      msg = language_container->msg_reboot_device;
-    }
+    #define LANGUAGE_ENTRY(name) \
+      else if (sceClibStrncmp(msg, #name, sizeof(#name)) == 0) { \
+        msg = language_container->name; \
+      }
+    if (0) {}
+    LANGUAGE_ENTRY(msg_henkaku_settings)
+    LANGUAGE_ENTRY(msg_enable_psn_spoofing)
+    LANGUAGE_ENTRY(msg_enable_unsafe_homebrew)
+    LANGUAGE_ENTRY(msg_unsafe_homebrew_description)
+    LANGUAGE_ENTRY(msg_enable_version_spoofing)
+    LANGUAGE_ENTRY(msg_spoofed_version)
+    LANGUAGE_ENTRY(msg_button_behavior)
+    LANGUAGE_ENTRY(msg_button_enter)
+    LANGUAGE_ENTRY(msg_button_cancel)
+    LANGUAGE_ENTRY(msg_reload_taihen_config)
+    LANGUAGE_ENTRY(msg_reload_taihen_config_success)
+    LANGUAGE_ENTRY(msg_reboot_device)
+    #undef LANGUAGE_ENTRY
   }
   return TAI_CONTINUE(int, g_scePafGetText_SceSystemSettingsCore_hook, a1, msg, a3);
 }
