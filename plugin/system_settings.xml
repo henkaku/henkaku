@@ -27,11 +27,11 @@
                    icon="tex_flight_mode"
                    hint="msg_airplanemode_info" />
 
-    <!-- システムアップデート: たぶんアップデートアプリを起動する -->
+    <!-- HENkaku Settings -->
     <link id="henkaku_settings"
             title="msg_henkaku_settings"
             icon="tex_system_update"
-            file="system_update.xml"
+            file="idu_settings.xml"
             />
     
     <!-- ネットワーク設定 -->
