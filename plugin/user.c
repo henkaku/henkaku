@@ -236,7 +236,7 @@ static int sceRegMgrGetKeysInfo_SceSystemSettingsCore_patched(const char *catego
 }
 
 static tai_hook_ref_t g_handle_idu_settings_hook;
-static int handle_idu_settings_patched(const char *id) {
+static int handle_idu_settings_patched(const char *id, int a2, void *a3) {
   if (sceClibStrncmp(id, "id_reload_taihen_config", 23) == 0) {
     taiReloadConfig();
     return 0;
@@ -244,7 +244,7 @@ static int handle_idu_settings_patched(const char *id) {
     scePowerRequestColdReset();
     return 0;
   }
-  return TAI_CONTINUE(int, g_handle_idu_settings_hook, id);
+  return TAI_CONTINUE(int, g_handle_idu_settings_hook, id, a2, a3);
 }
 
 static tai_hook_ref_t g_scePafLoadXmlLayout_SceSettings_hook;
