@@ -50,7 +50,7 @@ const char taihen_config_updated_msg[] =
 	"# the old entries above.\n";
 
 const char taihen_config_header[] = 
-	"# For users plugins, you must refresh taiHEN from molecularShell for\n"
+	"# For users plugins, you must refresh taiHEN from HENkaku Settings for\n"
 	"# changes to take place.\n"
 	"# For kernel plugins, you must reboot for changes to take place.\n";
 
