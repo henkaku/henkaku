@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<system_settings version="1.0" plugin="idu_settings_plugin">
+<system_settings version="1.0" plugin="system_update_plugin">
 
-  <setting_list id="idu_settings" title="msg_henkaku_settings" icon="tex_spanner">
+  <setting_list id="henkaku_settings" title="msg_henkaku_settings" icon="tex_spanner">
 
     <!-- Enable PSN Spoofing -->
     <toggle_switch id="id_enable_psn_spoofing"
