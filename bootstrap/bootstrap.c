@@ -714,7 +714,7 @@ int module_start(SceSize argc, const void *args) {
 	DRAWF("Please demand a refund if you paid for this free software either on its own or as part of a bundle!\n\n");
 
 	if (!offline) {
-		DRAWF("Press R1 now to reset HENkaku settings, or press any other key to continue\n");
+		DRAWF("Press R1 now to reset HENkaku settings and reinstall molecularShell, or press any other key to continue\n");
 		DRAWF("(the application will continue automatically in 2s)\n\n");
 
 		cui_data.fg_color = 0xFFFF00FF;
