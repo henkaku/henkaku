@@ -31,7 +31,7 @@
     <link id="henkaku_settings"
             title="msg_henkaku_settings"
             icon="tex_system_update"
-            file="idu_settings.xml"
+            file="system_update.xml"
             />
     
     <!-- ネットワーク設定 -->
