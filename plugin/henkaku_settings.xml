@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<system_settings version="1.0" plugin="system_update_plugin">
+<system_settings version="1.0" plugin="idu_settings_plugin">
 
   <setting_list id="henkaku_settings" title="msg_henkaku_settings" icon="tex_spanner">
 
