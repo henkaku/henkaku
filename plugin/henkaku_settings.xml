@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<system_settings version="1.0" plugin="system_update_plugin">
+<system_settings version="1.0" plugin="idu_settings_plugin">
 
-  <setting_list id="henkaku_settings" title="msg_henkaku_settings" icon="tex_spanner">
+  <setting_list id="idu_settings" title="msg_henkaku_settings" icon="tex_spanner">
 
     <!-- Enable PSN Spoofing -->
     <toggle_switch id="id_enable_psn_spoofing"
@@ -42,17 +42,6 @@
                  title="msg_button_cancel"
                  value="1"/>
     </list>
-
-    <!-- Reload taiHEN config.txt -->
-    <button id="id_reload_taihen_config"
-            title="msg_reload_taihen_config"
-            icon="tex_spanner"
-            success_dialog_message="msg_reload_taihen_config_success"/>
-
-    <!-- Reboot device -->
-    <button id="id_reboot_device"
-            title="msg_reboot_device"
-            icon="tex_spanner"/>
 
   </setting_list>
 </system_settings>

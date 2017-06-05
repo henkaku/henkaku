@@ -14,12 +14,9 @@ typedef struct {
   char *msg_button_behavior;
   char *msg_button_enter;
   char *msg_button_cancel;
-  char *msg_reload_taihen_config;
-  char *msg_reload_taihen_config_success;
-  char *msg_reboot_device;
 } language_container_t;
 
-// by Nzaki0716 & SnyFbSx & kirisame0017
+// by Nzaki0716 & SnyFbSx
 language_container_t language_japanese = {  
   "HENkakuの設定",
   "PSNの偽装を有効化",
@@ -29,10 +26,7 @@ language_container_t language_japanese = {
   "偽装バージョンの確認",
   "○ボタンの動作設定",
   "決定",
-  "キャンセル",
-  "taiHEN config.txtのリロード。",
-  "taiHEN config.txtのリロードが完了しました。",
-  "端末の再起動",
+  "キャンセル"
 };
 
 // by molecule
@@ -45,10 +39,7 @@ language_container_t language_english_us = {
   "Spoofed Version",
   "○ Button Behavior",
   "Enter",
-  "Cancel",
-  "Reload taiHEN config.txt",
-  "taiHEN config.txt has been successfully reloaded.",
-  "Reboot device",
+  "Cancel"
 };
 
 // by jokira & devnoname120 & CelesteBlue-dev & chronoss09
@@ -61,10 +52,7 @@ language_container_t language_french = {
   "Version spoofée",
   "Action du bouton ○",
   "Valider",
-  "Annuler",
-  "Recharger le fichier config.txt de taiHEN",
-  "Le fichier config.txt de taiHEN a bien été rechargé.",
-  "Redémarrer la console",
+  "Annuler"
 };
 
 // by EricWeichhart & iamn0tdev
@@ -77,10 +65,7 @@ language_container_t language_spanish = {
   "Versión para Spoofing",
   "Comportamiento del botón ○",
   "Aceptar",
-  "Cancelar",
-  "Recargar taiHEN config.txt",
-  "taiHEN config.txt ha sido recargado correctamente.",
-  "Reiniciar dispositivo",
+  "Cancelar"
 };
 
 // by Ziusun
@@ -93,13 +78,10 @@ language_container_t language_german = {
   "Aktuelle Firmware",
   "Funktion der ○-Taste",
   "Bestätigen",
-  "Abbrechen",
-  "Die config.txt von taiHEN aktualisieren",
-  "Die config.txt von taiHEN wurde erfolgreich aktualisiert.",
-  "Gerät neustarten",
+  "Abbrechen"
 };
 
-// by blackjack4it & Checcolino
+// by blackjack4it
 language_container_t language_italian = {
   "Impostazioni Henkaku",
   "Abilita lo Spoof PSN",
@@ -109,13 +91,10 @@ language_container_t language_italian = {
   "Versione corrente (Spoof)",
   "Comportamento del tasto ○",
   "OK",
-  "Annulla",
-  "Ricarica taiHEN config.txt",
-  "TaiHEN config.txt ricaricato correttamente.",
-  "Riavvia dispositivo",
+  "Annulla"
 };
 
-// by ConsoleHax & 2dook
+// by ConsoleHax
 language_container_t language_dutch = {
   "HENkaku Instellingen",
   "Activeer PSN spoofing",
@@ -125,13 +104,10 @@ language_container_t language_dutch = {
   "Spoofed Versie",
   "Gedrag van de ○-knop",
   "Enter",
-  "Annuleren",
-  "Herlaad taiHEN config.txt",
-  "taiHEN config.txt is succesvol herladen.",
-  "Herstart apparaat",
+  "Annuleren"
 };
 
-// by gnmmarechal & menelkir
+// by gnmmarechal
 language_container_t language_portuguese_pt = {
   "Definições do HENkaku",
   "Ativar spoof da PSN",
@@ -141,13 +117,10 @@ language_container_t language_portuguese_pt = {
   "Versão do spoof",
   "Ação do botão ○",
   "Entrar",
-  "Cancelar",
-  "Recarrege o ficheiro config.txt do taiHEN",
-  "O ficheiro taiHEN config.txt foi recarregado com sucesso.",
-  "Reiniciar o dispositivo",
+  "Cancelar"
 };
 
-// by Tenek & MuskratDesman
+// by Tenek
 language_container_t language_russian = {
   "Настройки HENkaku",
   "Включить спуфинг PSN",
@@ -157,10 +130,7 @@ language_container_t language_russian = {
   "Поддельная версия",
   "Поведение кнопки ○",
   "Ввод",
-  "Отмена",
-  "Перезагрузить taiHEN config.txt",
-  "taiHEN config.txt был успешно перезагружен.",
-  "Перезапустить устройство",
+  "Отмена"
 };
 
 // by TriggerHavoc
@@ -173,13 +143,10 @@ language_container_t language_korean = {
   "스푸핑 버전",
   "○ 버튼 설정",
   "확인",
-  "취소",
-  "taiHEN config.txt를 다시 로드하기",
-  "taiHEN config.txt를 성공적으로 로드했습니다.",
-  "기기 재부팅",
+  "취소"
 };
 
-// by iTZQing & FlexingTiger
+// by iTZQing
 language_container_t language_chinese_t = {
   "HENkaku設置",
   "啟用PSN偽裝",
@@ -189,13 +156,10 @@ language_container_t language_chinese_t = {
   "偽裝版本",
   "○ 按鍵配置",
   "確定",
-  "取消",
-  "重新載入 taiHEN config.txt",
-  "重新載入 taiHEN config.txt 成功",
-  "重啟設備",
+  "取消"
 };
 
-// by iTZQing & FlexingTiger
+// by iTZQing
 language_container_t language_chinese_s = {
   "HENkaku设置",
   "启用PSN伪装",
@@ -205,10 +169,7 @@ language_container_t language_chinese_s = {
   "伪装版本",
   "○ 按键配置",
   "确定",
-  "取消",
-  "重新载入 taiHEN config.txt",
-  "重新载入 taiHEN config.txt 成功",
-  "重启设备",
+  "取消"
 };
 
 // by v5000a
@@ -221,13 +182,10 @@ language_container_t language_finnish = {
   "Spooffattu versio",
   "○-näppäimen toiminto",
   "Valitse",
-  "Peruuta",
-  "Lataa taiHEN config.txt uudelleen",
-  "taiHEN config.txt uudelleenladattiin onnistuneesti.",
-  "Käynnistä laite uudelleen",
+  "Peruuta"
 };
 
-// by MrOrbital & GizmoTheGreen
+// by MrOrbital
 language_container_t language_swedish = {
   "HENkaku Inställningar",
   "Aktivera fejkad PSN-inloggning",
@@ -237,13 +195,10 @@ language_container_t language_swedish = {
   "Fejkad version",
   "Funktion på ○-knapp",
   "Välj",
-  "Avbryt",
-  "Ladda om taiHEN config.txt",
-  "taiHEN config.txt har laddats om.",
-  "Starta om enhet",
+  "Avbryt"
 };
 
-// by coestergaard & andrsnDK
+// by coestergaard
 language_container_t language_danish = {
   "HENkaku indstillinger",
   "Aktiver PSN spoofing",
@@ -253,13 +208,10 @@ language_container_t language_danish = {
   "Spoofed version",
   "○ knap funktion",
   "Vælg",
-  "Afbryd",
-  "Genindlæs taiHEN config.txt",
-  "taiHEN config.txt er blevet geninlæst med succes.",
-  "Genstart enhed",
+  "Afbryd"
 };
 
-// by baniel105 & irchagaming
+// by baniel105
 language_container_t language_norwegian = {
   "HENkaku Instillinger",
   "Aktiver forfalsket PSN-innlogging",
@@ -269,13 +221,10 @@ language_container_t language_norwegian = {
   "Forfalsket versjon",
   "Funksjon på ○-knapp",
   "Velg",
-  "Avbryt",
-  "Last på nytt taiHEN config.txt",
-  "taiHEN config.txt har blitt lastet.",
-  "Start enheten på nytt",
+  "Avbryt"
 };
 
-// by Grzybojad & szczuru & ItsYogSothoth
+// by Grzybojad & szczuru
 language_container_t language_polish = {
   "Ustawienia HENkaku",
   "Włącz fałszowanie PSN/SEN (spoofing)",
@@ -285,13 +234,10 @@ language_container_t language_polish = {
   "Fałszowana wersja",
   "Akcja przycisku ○",
   "OK",
-  "Anuluj",
-  "Załaduj ponownie config.txt taiHEN",
-  "config.txt taiHEN został pomyślnie załadowany ponownie.",
-  "Uruchom ponownie konsolę",
+  "Anuluj"
 };
 
-// by GrayJack & haouingvalt & menelkir
+// by GrayJack & haouingvalt
 language_container_t language_portuguese_br = {
   "Configurações do HENkaku",
   "Habilitar mimetização da PSN ",
@@ -301,10 +247,7 @@ language_container_t language_portuguese_br = {
   "Versão a mimetizar",
   "Ação do botão ○",
   "Entrar",
-  "Cancelar",
-  "Recarrege o arquivo config.txt do taiHEN",
-  "taiHEN config.txt foi recarregado com sucesso.",
-  "Reiniciar o dispositivo",
+  "Cancelar"
 };
 
 // by molecule
@@ -317,10 +260,7 @@ language_container_t language_english_gb = {
   "Spoofed Version",
   "○ Button Behaviour",
   "Enter",
-  "Cancel",
-  "Reload taiHEN config.txt",
-  "taiHEN config.txt has been successfully reloaded.",
-  "Reboot device",
+  "Cancel"
 };
 
 // by Chronicl3
@@ -333,10 +273,7 @@ language_container_t language_turkish = {
   "Spoofed Versiyon",
   "○ Düğmesi Davranışı",
   "Gir",
-  "İptal",
-  "taiHEN config.txt'yi yeniden yükle",
-  "taiHEN config.txt başarılı bir şekilde yeniden yüklendi.",
-  "Cihazı yeniden başlat",
+  "İptal"
 };
 
 #endif // LANGUAGE_HEADER
