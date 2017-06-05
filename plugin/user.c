@@ -235,8 +235,8 @@ static int sceRegMgrGetKeysInfo_SceSystemSettingsCore_patched(const char *catego
   return TAI_CONTINUE(int, g_sceRegMgrGetKeysInfo_SceSystemSettingsCore_hook, category, info, unk);
 }
 
-static int (* g_handle_idu_settings_hook)(const char *id, int a2, void *a3);
-static int handle_idu_settings_patched(const char *id, int a2, void *a3) {
+static int (* g_OnButtonEventIduSettings_hook)(const char *id, int a2, void *a3);
+static int OnButtonEventIduSettings_patched(const char *id, int a2, void *a3) {
   if (sceClibStrncmp(id, "id_reload_taihen_config", 23) == 0) {
     taiReloadConfig();
     return 0;
@@ -244,17 +244,17 @@ static int handle_idu_settings_patched(const char *id, int a2, void *a3) {
     scePowerRequestColdReset();
     return 0;
   }
-  return g_handle_idu_settings_hook(id, a2, a3);
+  return g_OnButtonEventIduSettings_hook(id, a2, a3);
 }
 
 static tai_hook_ref_t g_scePafToplevelInitPluginFunctions_SceSettings_hook;
-static int scePafToplevelInitPluginFunctions_SceSettings_patched(void *a1, int a2, void *a3) {
-  int res = TAI_CONTINUE(int, g_scePafToplevelInitPluginFunctions_SceSettings_hook, a1, a2, a3);
+static int scePafToplevelInitPluginFunctions_SceSettings_patched(void *a1, int a2, uint32_t *funcs) {
+  int res = TAI_CONTINUE(int, g_scePafToplevelInitPluginFunctions_SceSettings_hook, a1, a2, funcs);
   char *plugin = (char *)((uint32_t *)a1)[1];
-  if (sceClibStrncmp(plugin, "system_update_plugin", 20) == 0) {
-    if (((uint32_t *)a3)[6] != (uint32_t)handle_idu_settings_patched) {
-      g_handle_idu_settings_hook = (void *)((uint32_t *)a3)[6];
-      ((uint32_t *)a3)[6] = (uint32_t)handle_idu_settings_patched;
+  if (sceClibStrncmp(plugin, "idu_settings_plugin", 19) == 0) {
+    if (funcs[6] != (uint32_t)OnButtonEventIduSettings_patched) {
+      g_OnButtonEventIduSettings_hook = (void *)funcs[6];
+      funcs[6] = (uint32_t)OnButtonEventIduSettings_patched;
     }
   }
   return res;
@@ -265,7 +265,7 @@ static int scePafMiscLoadXmlLayout_SceSettings_patched(int a1, void *xml_buf, in
   if ((82+22) < xml_size && sceClibStrncmp(xml_buf+82, "system_settings_plugin", 22) == 0) {
     xml_buf = (void *)&_binary_system_settings_xml_start;
     xml_size = (int)&_binary_system_settings_xml_size;
-  } else if ((79+20) < xml_size && sceClibStrncmp(xml_buf+79, "system_update_plugin", 20) == 0) {
+  } else if ((79+19) < xml_size && sceClibStrncmp(xml_buf+79, "idu_settings_plugin", 19) == 0) {
     xml_buf = (void *)&_binary_henkaku_settings_xml_start;
     xml_size = (int)&_binary_henkaku_settings_xml_size;
   }
