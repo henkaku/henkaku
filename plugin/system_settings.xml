@@ -30,7 +30,7 @@
     <!-- HENkaku Settings -->
     <link id="henkaku_settings"
             title="msg_henkaku_settings"
-            icon="tex_system_update"
+            icon="tex_spanner"
             file="idu_settings.xml"
             />
     
