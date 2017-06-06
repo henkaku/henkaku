@@ -519,6 +519,19 @@ static int find_henkaku_plugin_fsm(const char *data, int len, int state) {
 	return state;
 }
 
+static int find_null_char_fsm(const char *data, int len, int state) {
+	for (int i = 0; i < len; i++) {
+		if (state == 100) {
+			state = 100;
+		} else if (data[i] == '\0') {
+			state = 100;
+		} else {
+			state = 0;
+		}
+	}
+	return state;
+}
+
 static int search_file_with_fsms(const char *file, int count, const search_fsm_t fsm[count], int state[count]) {
 	char buf[256];
 	int len;
@@ -547,19 +560,22 @@ static int search_file_with_fsms(const char *file, int count, const search_fsm_t
 
 int update_taihen_config(void) {
 	int fd;
-	static const search_fsm_t fsm[1] = {find_henkaku_plugin_fsm};
-	int state[1] = {0};
+	static const search_fsm_t fsm[2] = {find_null_char_fsm, find_henkaku_plugin_fsm};
+	int state[2] = {0};
 	int ret;
 
-	if ((ret = search_file_with_fsms(TAIHEN_CONFIG_FILE, 1, fsm, state)) >= 0 && ret < 1) {
-		DRAWF("Updating taiHEN config.txt\n");
-		fd = sceIoOpen(TAIHEN_CONFIG_FILE, SCE_O_WRONLY | SCE_O_APPEND, 0);
-		if (state[0] < 99) { // ur0 path not found
+	if ((ret = search_file_with_fsms(TAIHEN_CONFIG_FILE, 2, fsm, state)) >= 0) {
+		if (state[0] >= 99) { // found null char
+			DRAWF("ux0:tai/config.txt is corrupted, rewriting it\n");
+			write_taihen_config(TAIHEN_CONFIG_FILE, 0);
+		} else if (state[1] < 99) { // ur0 path not found
+			DRAWF("Updating taiHEN config.txt\n");
+			fd = sceIoOpen(TAIHEN_CONFIG_FILE, SCE_O_WRONLY | SCE_O_APPEND, 0);
 			sceIoWrite(fd, "\n", 1);
 			sceIoWrite(fd, taihen_config_updated_msg, sizeof(taihen_config_updated_msg) - 1);
 			sceIoWrite(fd, taihen_config, sizeof(taihen_config) - 1);
+			sceIoClose(fd);
 		}
-		sceIoClose(fd);
 	}
 
 	if (exists("ux0:app/MLCL00001/henkaku.suprx")) {
