@@ -18,6 +18,9 @@ typedef struct {
   char *msg_reload_taihen_config_success;
   char *msg_reboot_device;
   char *msg_downloader;
+  char *msg_unlink_memory_card;
+  char *msg_unlink_memory_card_success;
+  char *msg_unlink_memory_card_error;
 } language_container_t;
 
 // by Nzaki0716 & SnyFbSx & kirisame0017
@@ -35,6 +38,9 @@ language_container_t language_japanese = {
   "taiHEN config.txtのリロードが完了しました。",
   "端末の再起動",
   "Content Downloader",
+  "Unlink Memory Card",
+  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
+  "Failed to mount ux0. Is a memory card inserted?",
 };
 
 // by molecule
@@ -52,6 +58,9 @@ language_container_t language_english_us = {
   "taiHEN config.txt has been successfully reloaded.",
   "Reboot device",
   "Content Downloader",
+  "Unlink Memory Card",
+  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
+  "Failed to mount ux0. Is a memory card inserted?",
 };
 
 // by jokira & devnoname120 & CelesteBlue-dev & chronoss09
@@ -69,6 +78,9 @@ language_container_t language_french = {
   "Le fichier config.txt de taiHEN a bien été rechargé.",
   "Redémarrer la console",
   "Content Downloader",
+  "Unlink Memory Card",
+  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
+  "Failed to mount ux0. Is a memory card inserted?",
 };
 
 // by EricWeichhart & iamn0tdev
@@ -86,6 +98,9 @@ language_container_t language_spanish = {
   "taiHEN config.txt ha sido recargado correctamente.",
   "Reiniciar dispositivo",
   "Content Downloader",
+  "Unlink Memory Card",
+  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
+  "Failed to mount ux0. Is a memory card inserted?",
 };
 
 // by Ziusun
@@ -103,6 +118,9 @@ language_container_t language_german = {
   "Die config.txt von taiHEN wurde erfolgreich aktualisiert.",
   "Gerät neustarten",
   "Content Downloader",
+  "Unlink Memory Card",
+  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
+  "Failed to mount ux0. Is a memory card inserted?",
 };
 
 // by blackjack4it & Checcolino
@@ -120,6 +138,9 @@ language_container_t language_italian = {
   "TaiHEN config.txt ricaricato correttamente.",
   "Riavvia dispositivo",
   "Content Downloader",
+  "Unlink Memory Card",
+  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
+  "Failed to mount ux0. Is a memory card inserted?",
 };
 
 // by ConsoleHax & 2dook
@@ -137,6 +158,9 @@ language_container_t language_dutch = {
   "taiHEN config.txt is succesvol herladen.",
   "Herstart apparaat",
   "Content Downloader",
+  "Unlink Memory Card",
+  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
+  "Failed to mount ux0. Is a memory card inserted?",
 };
 
 // by gnmmarechal & menelkir
@@ -154,6 +178,9 @@ language_container_t language_portuguese_pt = {
   "O ficheiro taiHEN config.txt foi recarregado com sucesso.",
   "Reiniciar o dispositivo",
   "Content Downloader",
+  "Unlink Memory Card",
+  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
+  "Failed to mount ux0. Is a memory card inserted?",
 };
 
 // by Tenek & MuskratDesman
@@ -171,6 +198,9 @@ language_container_t language_russian = {
   "taiHEN config.txt был успешно перезагружен.",
   "Перезапустить устройство",
   "Content Downloader",
+  "Unlink Memory Card",
+  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
+  "Failed to mount ux0. Is a memory card inserted?",
 };
 
 // by TriggerHavoc
@@ -188,6 +218,9 @@ language_container_t language_korean = {
   "taiHEN config.txt를 성공적으로 로드했습니다.",
   "기기 재부팅",
   "Content Downloader",
+  "Unlink Memory Card",
+  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
+  "Failed to mount ux0. Is a memory card inserted?",
 };
 
 // by iTZQing & FlexingTiger
@@ -205,6 +238,9 @@ language_container_t language_chinese_t = {
   "重新載入 taiHEN config.txt 成功",
   "重啟設備",
   "Content Downloader",
+  "Unlink Memory Card",
+  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
+  "Failed to mount ux0. Is a memory card inserted?",
 };
 
 // by iTZQing & FlexingTiger
@@ -222,6 +258,9 @@ language_container_t language_chinese_s = {
   "重新载入 taiHEN config.txt 成功",
   "重启设备",
   "Content Downloader",
+  "Unlink Memory Card",
+  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
+  "Failed to mount ux0. Is a memory card inserted?",
 };
 
 // by v5000a
@@ -239,6 +278,9 @@ language_container_t language_finnish = {
   "taiHEN config.txt uudelleenladattiin onnistuneesti.",
   "Käynnistä laite uudelleen",
   "Content Downloader",
+  "Unlink Memory Card",
+  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
+  "Failed to mount ux0. Is a memory card inserted?",
 };
 
 // by MrOrbital & GizmoTheGreen
@@ -256,6 +298,9 @@ language_container_t language_swedish = {
   "taiHEN config.txt har laddats om.",
   "Starta om enhet",
   "Content Downloader",
+  "Unlink Memory Card",
+  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
+  "Failed to mount ux0. Is a memory card inserted?",
 };
 
 // by coestergaard & andrsnDK
@@ -273,6 +318,9 @@ language_container_t language_danish = {
   "taiHEN config.txt er blevet geninlæst med succes.",
   "Genstart enhed",
   "Content Downloader",
+  "Unlink Memory Card",
+  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
+  "Failed to mount ux0. Is a memory card inserted?",
 };
 
 // by baniel105 & irchagaming
@@ -290,6 +338,9 @@ language_container_t language_norwegian = {
   "taiHEN config.txt har blitt lastet.",
   "Start enheten på nytt",
   "Content Downloader",
+  "Unlink Memory Card",
+  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
+  "Failed to mount ux0. Is a memory card inserted?",
 };
 
 // by Grzybojad & szczuru & ItsYogSothoth
@@ -307,6 +358,9 @@ language_container_t language_polish = {
   "config.txt taiHEN został pomyślnie załadowany ponownie.",
   "Uruchom ponownie konsolę",
   "Content Downloader",
+  "Unlink Memory Card",
+  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
+  "Failed to mount ux0. Is a memory card inserted?",
 };
 
 // by GrayJack & haouingvalt & menelkir
@@ -324,6 +378,9 @@ language_container_t language_portuguese_br = {
   "taiHEN config.txt foi recarregado com sucesso.",
   "Reiniciar o dispositivo",
   "Content Downloader",
+  "Unlink Memory Card",
+  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
+  "Failed to mount ux0. Is a memory card inserted?",
 };
 
 // by molecule
@@ -341,6 +398,9 @@ language_container_t language_english_gb = {
   "taiHEN config.txt has been successfully reloaded.",
   "Reboot device",
   "Content Downloader",
+  "Unlink Memory Card",
+  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
+  "Failed to mount ux0. Is a memory card inserted?",
 };
 
 // by Chronicl3
@@ -358,6 +418,9 @@ language_container_t language_turkish = {
   "taiHEN config.txt başarılı bir şekilde yeniden yüklendi.",
   "Cihazı yeniden başlat",
   "Content Downloader",
+  "Unlink Memory Card",
+  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
+  "Failed to mount ux0. Is a memory card inserted?",
 };
 
 #endif // LANGUAGE_HEADER

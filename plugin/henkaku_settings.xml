@@ -49,6 +49,13 @@
       <user_custom id="download_dummy"/>
     </setting_list>
 
+    <!-- Unlink Memory Card -->
+    <button id="id_unlink_memory_card"
+            title="msg_unlink_memory_card"
+            icon="tex_spanner"
+            success_dialog_message="msg_unlink_memory_card_success"
+            error_dialog_message= "msg_unlink_memory_card_error"/>
+
     <!-- Reload taiHEN config.txt -->
     <button id="id_reload_taihen_config"
             title="msg_reload_taihen_config"

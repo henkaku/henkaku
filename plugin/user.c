@@ -12,6 +12,8 @@
 
 #define DISPLAY_VERSION (0x3600000)
 
+int _vshIoMount(int id, const char *path, int permissions, void *opt);
+
 extern unsigned char _binary_system_settings_xml_start;
 extern unsigned char _binary_system_settings_xml_size;
 extern unsigned char _binary_henkaku_settings_xml_start;
@@ -237,11 +239,22 @@ static int sceRegMgrGetKeysInfo_SceSystemSettingsCore_patched(const char *catego
 
 static int (* g_OnButtonEventIduSettings_hook)(const char *id, int a2, void *a3);
 static int OnButtonEventIduSettings_patched(const char *id, int a2, void *a3) {
+  int ret;
+  uint32_t buf[6];
   if (sceClibStrncmp(id, "id_reload_taihen_config", 23) == 0) {
     taiReloadConfig();
     return 0;
   } else if (sceClibStrncmp(id, "id_reboot_device", 16) == 0) {
     scePowerRequestColdReset();
+    return 0;
+  } else if (sceClibStrncmp(id, "id_unlink_memory_card", 21) == 0) {
+    sceClibMemset(buf, 0, sizeof(buf));
+    if ((ret = _vshIoMount(0x800, NULL, 2, buf)) < 0) {
+      if (ret != 0x80010011) { // SCE_ERROR_ERRNO_EEXIST (already mounted)
+        return ret;
+      }
+    }
+    sceIoRemove("ux0:id.dat");
     return 0;
   }
   return g_OnButtonEventIduSettings_hook(id, a2, a3);
@@ -319,6 +332,9 @@ static int scePafGetText_SceSystemSettingsCore_patched(int a1, char *msg, int a3
     LANGUAGE_ENTRY(msg_reload_taihen_config_success)
     LANGUAGE_ENTRY(msg_reboot_device)
     LANGUAGE_ENTRY(msg_downloader)
+    LANGUAGE_ENTRY(msg_unlink_memory_card)
+    LANGUAGE_ENTRY(msg_unlink_memory_card_success)
+    LANGUAGE_ENTRY(msg_unlink_memory_card_error)
     #undef LANGUAGE_ENTRY
   }
   return TAI_CONTINUE(int, g_scePafGetText_SceSystemSettingsCore_hook, a1, msg, a3);
