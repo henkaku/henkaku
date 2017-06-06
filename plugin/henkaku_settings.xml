@@ -43,6 +43,12 @@
                  value="1"/>
     </list>
 
+    <!-- Content Downloader -->
+    <setting_list id="download" title="msg_downloader" icon="tex_spanner"
+      navi_left="download_footer_cancel" navi_center="download_footer_select_all" navi_right="download_footer_exec">
+      <user_custom id="download_dummy"/>
+    </setting_list>
+
     <!-- Reload taiHEN config.txt -->
     <button id="id_reload_taihen_config"
             title="msg_reload_taihen_config"

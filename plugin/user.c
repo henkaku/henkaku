@@ -318,6 +318,7 @@ static int scePafGetText_SceSystemSettingsCore_patched(int a1, char *msg, int a3
     LANGUAGE_ENTRY(msg_reload_taihen_config)
     LANGUAGE_ENTRY(msg_reload_taihen_config_success)
     LANGUAGE_ENTRY(msg_reboot_device)
+    LANGUAGE_ENTRY(msg_downloader)
     #undef LANGUAGE_ENTRY
   }
   return TAI_CONTINUE(int, g_scePafGetText_SceSystemSettingsCore_hook, a1, msg, a3);

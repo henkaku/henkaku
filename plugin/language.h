@@ -17,6 +17,7 @@ typedef struct {
   char *msg_reload_taihen_config;
   char *msg_reload_taihen_config_success;
   char *msg_reboot_device;
+  char *msg_downloader;
 } language_container_t;
 
 // by Nzaki0716 & SnyFbSx & kirisame0017
@@ -33,6 +34,7 @@ language_container_t language_japanese = {
   "taiHEN config.txtのリロード。",
   "taiHEN config.txtのリロードが完了しました。",
   "端末の再起動",
+  "Content Downloader",
 };
 
 // by molecule
@@ -49,6 +51,7 @@ language_container_t language_english_us = {
   "Reload taiHEN config.txt",
   "taiHEN config.txt has been successfully reloaded.",
   "Reboot device",
+  "Content Downloader",
 };
 
 // by jokira & devnoname120 & CelesteBlue-dev & chronoss09
@@ -65,6 +68,7 @@ language_container_t language_french = {
   "Recharger le fichier config.txt de taiHEN",
   "Le fichier config.txt de taiHEN a bien été rechargé.",
   "Redémarrer la console",
+  "Content Downloader",
 };
 
 // by EricWeichhart & iamn0tdev
@@ -81,6 +85,7 @@ language_container_t language_spanish = {
   "Recargar taiHEN config.txt",
   "taiHEN config.txt ha sido recargado correctamente.",
   "Reiniciar dispositivo",
+  "Content Downloader",
 };
 
 // by Ziusun
@@ -97,6 +102,7 @@ language_container_t language_german = {
   "Die config.txt von taiHEN aktualisieren",
   "Die config.txt von taiHEN wurde erfolgreich aktualisiert.",
   "Gerät neustarten",
+  "Content Downloader",
 };
 
 // by blackjack4it & Checcolino
@@ -113,6 +119,7 @@ language_container_t language_italian = {
   "Ricarica taiHEN config.txt",
   "TaiHEN config.txt ricaricato correttamente.",
   "Riavvia dispositivo",
+  "Content Downloader",
 };
 
 // by ConsoleHax & 2dook
@@ -129,6 +136,7 @@ language_container_t language_dutch = {
   "Herlaad taiHEN config.txt",
   "taiHEN config.txt is succesvol herladen.",
   "Herstart apparaat",
+  "Content Downloader",
 };
 
 // by gnmmarechal & menelkir
@@ -145,6 +153,7 @@ language_container_t language_portuguese_pt = {
   "Recarrege o ficheiro config.txt do taiHEN",
   "O ficheiro taiHEN config.txt foi recarregado com sucesso.",
   "Reiniciar o dispositivo",
+  "Content Downloader",
 };
 
 // by Tenek & MuskratDesman
@@ -161,6 +170,7 @@ language_container_t language_russian = {
   "Перезагрузить taiHEN config.txt",
   "taiHEN config.txt был успешно перезагружен.",
   "Перезапустить устройство",
+  "Content Downloader",
 };
 
 // by TriggerHavoc
@@ -177,6 +187,7 @@ language_container_t language_korean = {
   "taiHEN config.txt를 다시 로드하기",
   "taiHEN config.txt를 성공적으로 로드했습니다.",
   "기기 재부팅",
+  "Content Downloader",
 };
 
 // by iTZQing & FlexingTiger
@@ -193,6 +204,7 @@ language_container_t language_chinese_t = {
   "重新載入 taiHEN config.txt",
   "重新載入 taiHEN config.txt 成功",
   "重啟設備",
+  "Content Downloader",
 };
 
 // by iTZQing & FlexingTiger
@@ -209,6 +221,7 @@ language_container_t language_chinese_s = {
   "重新载入 taiHEN config.txt",
   "重新载入 taiHEN config.txt 成功",
   "重启设备",
+  "Content Downloader",
 };
 
 // by v5000a
@@ -225,6 +238,7 @@ language_container_t language_finnish = {
   "Lataa taiHEN config.txt uudelleen",
   "taiHEN config.txt uudelleenladattiin onnistuneesti.",
   "Käynnistä laite uudelleen",
+  "Content Downloader",
 };
 
 // by MrOrbital & GizmoTheGreen
@@ -241,6 +255,7 @@ language_container_t language_swedish = {
   "Ladda om taiHEN config.txt",
   "taiHEN config.txt har laddats om.",
   "Starta om enhet",
+  "Content Downloader",
 };
 
 // by coestergaard & andrsnDK
@@ -257,6 +272,7 @@ language_container_t language_danish = {
   "Genindlæs taiHEN config.txt",
   "taiHEN config.txt er blevet geninlæst med succes.",
   "Genstart enhed",
+  "Content Downloader",
 };
 
 // by baniel105 & irchagaming
@@ -273,6 +289,7 @@ language_container_t language_norwegian = {
   "Last på nytt taiHEN config.txt",
   "taiHEN config.txt har blitt lastet.",
   "Start enheten på nytt",
+  "Content Downloader",
 };
 
 // by Grzybojad & szczuru & ItsYogSothoth
@@ -289,6 +306,7 @@ language_container_t language_polish = {
   "Załaduj ponownie config.txt taiHEN",
   "config.txt taiHEN został pomyślnie załadowany ponownie.",
   "Uruchom ponownie konsolę",
+  "Content Downloader",
 };
 
 // by GrayJack & haouingvalt & menelkir
@@ -305,6 +323,7 @@ language_container_t language_portuguese_br = {
   "Recarrege o arquivo config.txt do taiHEN",
   "taiHEN config.txt foi recarregado com sucesso.",
   "Reiniciar o dispositivo",
+  "Content Downloader",
 };
 
 // by molecule
@@ -321,6 +340,7 @@ language_container_t language_english_gb = {
   "Reload taiHEN config.txt",
   "taiHEN config.txt has been successfully reloaded.",
   "Reboot device",
+  "Content Downloader",
 };
 
 // by Chronicl3
@@ -337,6 +357,7 @@ language_container_t language_turkish = {
   "taiHEN config.txt'yi yeniden yükle",
   "taiHEN config.txt başarılı bir şekilde yeniden yüklendi.",
   "Cihazı yeniden başlat",
+  "Content Downloader",
 };
 
 #endif // LANGUAGE_HEADER
