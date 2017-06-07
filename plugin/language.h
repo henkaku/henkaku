@@ -158,9 +158,9 @@ language_container_t language_dutch = {
   "taiHEN config.txt is succesvol herladen.",
   "Herstart apparaat",
   "Inhoud downloader",
-  "Memory Card loskoppelen",
-  "ux0:id.dat is verwijderd. Deze Memory Card kan nu op elke Vita gebruikt worden.",
-  "Aankoppelen van ux0 is mislukt. Is er wel een Memory Stick aanwezig?",
+  "Geheugenkaart loskoppelen",
+  "ux0:id.dat is verwijderd. Deze geheugenkaart kan nu op elke Vita gebruikt worden.",
+  "Aankoppelen van ux0 is mislukt. Is er wel een geheugenkaart aanwezig?",
 };
 
 // by gnmmarechal & menelkir & bosshunter
