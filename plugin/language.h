@@ -34,13 +34,13 @@ language_container_t language_japanese = {
   "○ボタンの動作設定",
   "決定",
   "キャンセル",
-  "taiHEN config.txtのリロード。",
+  "taiHEN config.txtのリロード",
   "taiHEN config.txtのリロードが完了しました。",
   "端末の再起動",
-  "Content Downloader",
-  "Unlink Memory Card",
-  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
-  "Failed to mount ux0. Is a memory card inserted?",
+  "コンテンツ ダウンローダー",
+  "メモリーカードとのリンクを解除する",
+  "ux0:id.datが削除されました。メモリーカードはこのVita以外でも使用できるようになりました。",
+  "ux0のマウントに失敗しました。メモリーカードは挿入されていますか？",
 };
 
 // by molecule
@@ -63,7 +63,7 @@ language_container_t language_english_us = {
   "Failed to mount ux0. Is a memory card inserted?",
 };
 
-// by jokira & devnoname120 & CelesteBlue-dev & chronoss09
+// by jokira & devnoname120 & CelesteBlue-dev & chronoss09 & francl35
 language_container_t language_french = {
   "Paramètres de HENkaku",
   "Activer le spoof du PSN",
@@ -77,13 +77,13 @@ language_container_t language_french = {
   "Recharger le fichier config.txt de taiHEN",
   "Le fichier config.txt de taiHEN a bien été rechargé.",
   "Redémarrer la console",
-  "Content Downloader",
-  "Unlink Memory Card",
-  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
-  "Failed to mount ux0. Is a memory card inserted?",
+  "Téléchargement de contenu",
+  "Délier la carte mémoire",
+  "ux0:id.dat a été supprimé. Cette carte mémoire peut être utilisée sur n'importe quelle Vita.",
+  "Le montage de ux0 a échoué. Y a-t-il une carte mémoire insérée?",
 };
 
-// by EricWeichhart & iamn0tdev
+// by EricWeichhart & iamn0tdev & WZ-JK
 language_container_t language_spanish = {
   "Ajustes de HENkaku",
   "Activar Spoofing para PSN",
@@ -97,10 +97,10 @@ language_container_t language_spanish = {
   "Recargar taiHEN config.txt",
   "taiHEN config.txt ha sido recargado correctamente.",
   "Reiniciar dispositivo",
-  "Content Downloader",
-  "Unlink Memory Card",
-  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
-  "Failed to mount ux0. Is a memory card inserted?",
+  "Descargador de Contenido",
+  "Desvincular la Tarjeta de Memoria",
+  "El ux0:id.dat ha sido eliminado. Esta tarjeta de memoria ahora se puede utilizar en cualquier Vita.",
+  "Ha habido un fallo al montar el ux0. ¿Se ha insertado una tarjeta de memoria?",
 };
 
 // by Ziusun
@@ -117,13 +117,13 @@ language_container_t language_german = {
   "Die config.txt von taiHEN aktualisieren",
   "Die config.txt von taiHEN wurde erfolgreich aktualisiert.",
   "Gerät neustarten",
-  "Content Downloader",
-  "Unlink Memory Card",
-  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
-  "Failed to mount ux0. Is a memory card inserted?",
+  "Inhaltsdownloader",
+  "Speicherkarte entkoppeln",
+  "Der Dateieintrag ux0:id.dat wurde gelöscht. Diese Speicherkarte kann jetzt mit jeder Playstation Vita verwendet werden.",
+  "Die Partition ux0: konnte nicht gemountet werden. Ist eine Speicherkarte eingesteckt?",
 };
 
-// by blackjack4it & Checcolino
+// by blackjack4it & Checcolino & Rufis01
 language_container_t language_italian = {
   "Impostazioni Henkaku",
   "Abilita lo Spoof PSN",
@@ -137,13 +137,13 @@ language_container_t language_italian = {
   "Ricarica taiHEN config.txt",
   "TaiHEN config.txt ricaricato correttamente.",
   "Riavvia dispositivo",
-  "Content Downloader",
-  "Unlink Memory Card",
-  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
-  "Failed to mount ux0. Is a memory card inserted?",
+  "Scarica contenuto",
+  "Disassocia Memory Card",
+  "ux0:id.dat è stato cancellato. Adesso questa Memory Card può essere usata su qualsiasi PS Vita.",
+  "Impossibile montare ux0. La Memory Card è inserita?",
 };
 
-// by ConsoleHax & 2dook
+// by ConsoleHax & 2dook & jja2000
 language_container_t language_dutch = {
   "HENkaku Instellingen",
   "Activeer PSN spoofing",
@@ -157,13 +157,13 @@ language_container_t language_dutch = {
   "Herlaad taiHEN config.txt",
   "taiHEN config.txt is succesvol herladen.",
   "Herstart apparaat",
-  "Content Downloader",
-  "Unlink Memory Card",
-  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
-  "Failed to mount ux0. Is a memory card inserted?",
+  "Inhoud downloader",
+  "Memory Card loskoppelen",
+  "ux0:id.dat is verwijderd. Deze Memory Card kan nu op elke Vita gebruikt worden.",
+  "Aankoppelen van ux0 is mislukt. Is er wel een Memory Stick aanwezig?",
 };
 
-// by gnmmarechal & menelkir
+// by gnmmarechal & menelkir & bosshunter
 language_container_t language_portuguese_pt = {
   "Definições do HENkaku",
   "Ativar spoof da PSN",
@@ -177,13 +177,13 @@ language_container_t language_portuguese_pt = {
   "Recarrege o ficheiro config.txt do taiHEN",
   "O ficheiro taiHEN config.txt foi recarregado com sucesso.",
   "Reiniciar o dispositivo",
-  "Content Downloader",
-  "Unlink Memory Card",
-  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
-  "Failed to mount ux0. Is a memory card inserted?",
+  "Descarregar Conteúdo",
+  "Desassociar Cartão de Memória",
+  "ux0:id.dat foi eliminado. Este cartão de memória pode agora ser usado em qualquer Vita.",
+  "Falha ao montar ux0. O cartão de memória está inserido?",
 };
 
-// by Tenek & MuskratDesman
+// by Tenek & MuskratDesman & dec0dOS
 language_container_t language_russian = {
   "Настройки HENkaku",
   "Включить спуфинг PSN",
@@ -197,10 +197,10 @@ language_container_t language_russian = {
   "Перезагрузить taiHEN config.txt",
   "taiHEN config.txt был успешно перезагружен.",
   "Перезапустить устройство",
-  "Content Downloader",
-  "Unlink Memory Card",
-  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
-  "Failed to mount ux0. Is a memory card inserted?",
+  "Загрузчик контента",
+  "Отвязать карту памяти",
+  "ux0:id.dat был удален. Эта карта памяти теперь может быть использована на любой PSVita.",
+  "Ошибка при монтировании ux0. Проверьте, вставлена ли карта памяти",
 };
 
 // by TriggerHavoc
@@ -217,13 +217,13 @@ language_container_t language_korean = {
   "taiHEN config.txt를 다시 로드하기",
   "taiHEN config.txt를 성공적으로 로드했습니다.",
   "기기 재부팅",
-  "Content Downloader",
-  "Unlink Memory Card",
-  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
-  "Failed to mount ux0. Is a memory card inserted?",
+  "컨텐츠 다운로더",
+  "메모리 카드 언링크",
+  "ux0:id.dat 파일이 삭제되었습니다. 이제 이 메모리 카드는 모든 비타에서 사용하실 수 있습니다.",
+  "ux0에 마운트 할 수 없습니다. 메모리 카드가 올바르게 삽입되어 있습니까?",
 };
 
-// by iTZQing & FlexingTiger
+// by iTZQing & FlexingTiger & magpte
 language_container_t language_chinese_t = {
   "HENkaku設置",
   "啟用PSN偽裝",
@@ -237,13 +237,13 @@ language_container_t language_chinese_t = {
   "重新載入 taiHEN config.txt",
   "重新載入 taiHEN config.txt 成功",
   "重啟設備",
-  "Content Downloader",
-  "Unlink Memory Card",
-  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
-  "Failed to mount ux0. Is a memory card inserted?",
+  "下載內容管理器",
+  "記憶卡關聯解除",
+  "ux0的id.dat已經刪除，這張記憶卡現在可以應用到任意PSV上",
+  "載入ux0失敗，請檢查記憶卡是否已經插入",
 };
 
-// by iTZQing & FlexingTiger
+// by iTZQing & FlexingTiger & magpte
 language_container_t language_chinese_s = {
   "HENkaku设置",
   "启用PSN伪装",
@@ -257,13 +257,13 @@ language_container_t language_chinese_s = {
   "重新载入 taiHEN config.txt",
   "重新载入 taiHEN config.txt 成功",
   "重启设备",
-  "Content Downloader",
-  "Unlink Memory Card",
-  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
-  "Failed to mount ux0. Is a memory card inserted?",
+  "下载内容管理器",
+  "存储卡关联解除",
+  "ux0的id.dat已经删除，这张存储卡现在可以用在任意PSV上",
+  "载入ux0失败，请检查存储卡是否已经插入",
 };
 
-// by v5000a
+// by v5000a & poppamies
 language_container_t language_finnish = {
   "HENkakun Asetukset",
   "Ota PSN spooffaaminen käyttöön",
@@ -277,13 +277,13 @@ language_container_t language_finnish = {
   "Lataa taiHEN config.txt uudelleen",
   "taiHEN config.txt uudelleenladattiin onnistuneesti.",
   "Käynnistä laite uudelleen",
-  "Content Downloader",
-  "Unlink Memory Card",
-  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
-  "Failed to mount ux0. Is a memory card inserted?",
+  "Sisällönlataaja",
+  "Irrota muistikortti",
+  "ux0:id.dat on poistettu. Voit nyt käyttää tätä muistikorttia millä tahansa Vitalla.",
+  "ux0:n liittäminen epäonnistui. Onko muistikortti laitteessa?",
 };
 
-// by MrOrbital & GizmoTheGreen
+// by MrOrbital & GizmoTheGreen & Wassburgare
 language_container_t language_swedish = {
   "HENkaku Inställningar",
   "Aktivera fejkad PSN-inloggning",
@@ -297,10 +297,10 @@ language_container_t language_swedish = {
   "Ladda om taiHEN config.txt",
   "taiHEN config.txt har laddats om.",
   "Starta om enhet",
-  "Content Downloader",
-  "Unlink Memory Card",
-  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
-  "Failed to mount ux0. Is a memory card inserted?",
+  "Innehållsnedladdare",
+  "Avlänka minneskort",
+  "ux0:id.dat har tagits bort. Det här minneskortet kan nu användas i valfri Vita.",
+  "Misslyckades med att montera ux0. Har du satt i ett minneskort?",
 };
 
 // by coestergaard & andrsnDK
@@ -318,12 +318,12 @@ language_container_t language_danish = {
   "taiHEN config.txt er blevet geninlæst med succes.",
   "Genstart enhed",
   "Content Downloader",
-  "Unlink Memory Card",
-  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
-  "Failed to mount ux0. Is a memory card inserted?",
+  "Fjern link til hukommelseskort",
+  "ux0:id.dat er blevet slettet. Dette hukommelseskort kan nu bruges på enhver Vita.",
+  "Kunne ikke gemme ux0. Er der indsat et hukommelseskort?",
 };
 
-// by baniel105 & irchagaming
+// by baniel105 & irchagaming & Promises
 language_container_t language_norwegian = {
   "HENkaku Instillinger",
   "Aktiver forfalsket PSN-innlogging",
@@ -337,13 +337,13 @@ language_container_t language_norwegian = {
   "Last på nytt taiHEN config.txt",
   "taiHEN config.txt har blitt lastet.",
   "Start enheten på nytt",
-  "Content Downloader",
-  "Unlink Memory Card",
-  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
-  "Failed to mount ux0. Is a memory card inserted?",
+  "Innholds Nedlaster",
+  "Lås opp Minnekort",
+  "ux0:id.dat er slettet. Dette minnekortet kan brukest på hvilken som helst Vita.",
+  "Klarte ikkje montere av ux0. Har du satt i eit minnekort?",
 };
 
-// by Grzybojad & szczuru & ItsYogSothoth
+// by Grzybojad & szczuru & ItsYogSothoth & szczuru
 language_container_t language_polish = {
   "Ustawienia HENkaku",
   "Włącz fałszowanie PSN/SEN (spoofing)",
@@ -357,10 +357,10 @@ language_container_t language_polish = {
   "Załaduj ponownie config.txt taiHEN",
   "config.txt taiHEN został pomyślnie załadowany ponownie.",
   "Uruchom ponownie konsolę",
-  "Content Downloader",
-  "Unlink Memory Card",
-  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
-  "Failed to mount ux0. Is a memory card inserted?",
+  "Pobieranie zawartości",
+  "Odłącz kartę pamięci",
+  "Plik ux0:id.dat został usunięty z karty pamięci. Można jej teraz używać z każdym systemem PS Vita",
+  "Błąd podczas montowania partycji ux0, czy karta pamięci jest włożona?",
 };
 
 // by GrayJack & haouingvalt & menelkir
@@ -377,10 +377,10 @@ language_container_t language_portuguese_br = {
   "Recarrege o arquivo config.txt do taiHEN",
   "taiHEN config.txt foi recarregado com sucesso.",
   "Reiniciar o dispositivo",
-  "Content Downloader",
-  "Unlink Memory Card",
-  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
-  "Failed to mount ux0. Is a memory card inserted?",
+  "Baixar Conteúdo",
+  "Desassociar o Cartão de Memória",
+  "ux0:id.dat foi deletado. Agora este cartão de memória pode ser usado em qualquer Vita.",
+  "Falha ao montar ux0. O cartão de memória está inserido?",
 };
 
 // by molecule
@@ -417,10 +417,10 @@ language_container_t language_turkish = {
   "taiHEN config.txt'yi yeniden yükle",
   "taiHEN config.txt başarılı bir şekilde yeniden yüklendi.",
   "Cihazı yeniden başlat",
-  "Content Downloader",
-  "Unlink Memory Card",
-  "ux0:id.dat has been deleted. This memory card can now be used on any Vita.",
-  "Failed to mount ux0. Is a memory card inserted?",
+  "İçerik İndiricisi",
+  "Hafıza Kartı Bağlantısını Kaldır",
+  "ux0:id.dat silindi.Bu hafıza kartı şuan herhangi bir vita da kullanılabilir",
+  "ux0 dizin okuma başarısız oldu.Hafıza kartınız takılı mı?",
 };
 
 #endif // LANGUAGE_HEADER
