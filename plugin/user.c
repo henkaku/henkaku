@@ -242,11 +242,9 @@ static int OnButtonEventIduSettings_patched(const char *id, int a2, void *a3) {
   int ret;
   uint32_t buf[6];
   if (sceClibStrncmp(id, "id_reload_taihen_config", 23) == 0) {
-    taiReloadConfig();
-    return 0;
+    return taiReloadConfig();
   } else if (sceClibStrncmp(id, "id_reboot_device", 16) == 0) {
-    scePowerRequestColdReset();
-    return 0;
+    return scePowerRequestColdReset();
   } else if (sceClibStrncmp(id, "id_unlink_memory_card", 21) == 0) {
     sceClibMemset(buf, 0, sizeof(buf));
     if ((ret = _vshIoMount(0x800, NULL, 2, buf)) < 0) {
@@ -254,7 +252,11 @@ static int OnButtonEventIduSettings_patched(const char *id, int a2, void *a3) {
         return ret;
       }
     }
-    sceIoRemove("ux0:id.dat");
+    if ((ret = sceIoRemove("ux0:id.dat")) < 0) {
+      if (ret != 0x80010002) { // SCE_ERROR_ERRNO_ENOENT (no entry)
+        return ret;
+      }
+    }
     return 0;
   }
   return g_OnButtonEventIduSettings_hook(id, a2, a3);
@@ -285,8 +287,8 @@ static int scePafMiscLoadXmlLayout_SceSettings_patched(int a1, void *xml_buf, in
   return TAI_CONTINUE(int, g_scePafMiscLoadXmlLayout_SceSettings_hook, a1, xml_buf, xml_size, a4);
 }
 
-static tai_hook_ref_t g_scePafGetText_SceSystemSettingsCore_hook;
-static int scePafGetText_SceSystemSettingsCore_patched(int a1, char *msg, int a3) {
+static tai_hook_ref_t g_scePafToplevelGetText_SceSystemSettingsCore_hook;
+static wchar_t *scePafToplevelGetText_SceSystemSettingsCore_patched(void *arg, char **msg) {
   language_container_t *language_container;
   int language = -1;
   sceRegMgrGetKeyInt("/CONFIG/SYSTEM", "language", &language);
@@ -313,10 +315,10 @@ static int scePafGetText_SceSystemSettingsCore_patched(int a1, char *msg, int a3
     case SCE_SYSTEM_PARAM_LANG_TURKISH:       language_container = &language_turkish;       break;
     default:                                  language_container = &language_english_us;    break;
   }
-  if (sceClibStrncmp(msg, "msg_", 4) == 0) {
+  if (msg && sceClibStrncmp(*msg, "msg_", 4) == 0) {
     #define LANGUAGE_ENTRY(name) \
-      else if (sceClibStrncmp(msg, #name, sizeof(#name)) == 0) { \
-        msg = language_container->name; \
+      else if (sceClibStrncmp(*msg, #name, sizeof(#name)) == 0) { \
+        return language_container->name; \
       }
     if (0) {}
     LANGUAGE_ENTRY(msg_henkaku_settings)
@@ -331,13 +333,13 @@ static int scePafGetText_SceSystemSettingsCore_patched(int a1, char *msg, int a3
     LANGUAGE_ENTRY(msg_reload_taihen_config)
     LANGUAGE_ENTRY(msg_reload_taihen_config_success)
     LANGUAGE_ENTRY(msg_reboot_device)
-    LANGUAGE_ENTRY(msg_downloader)
+    LANGUAGE_ENTRY(msg_content_downloader)
     LANGUAGE_ENTRY(msg_unlink_memory_card)
     LANGUAGE_ENTRY(msg_unlink_memory_card_success)
     LANGUAGE_ENTRY(msg_unlink_memory_card_error)
     #undef LANGUAGE_ENTRY
   }
-  return TAI_CONTINUE(int, g_scePafGetText_SceSystemSettingsCore_hook, a1, msg, a3);
+  return TAI_CONTINUE(wchar_t *, g_scePafToplevelGetText_SceSystemSettingsCore_hook, arg, msg);
 }
 
 static SceUID g_system_settings_core_modid = -1;
@@ -381,11 +383,11 @@ static SceUID sceKernelLoadStartModule_SceSettings_patched(char *path, SceSize a
                                         0xC436F916, // SceRegMgr
                                         0x58421DD1, 
                                         sceRegMgrGetKeysInfo_SceSystemSettingsCore_patched);
-    g_hooks[14] = taiHookFunctionImport(&g_scePafGetText_SceSystemSettingsCore_hook, 
+    g_hooks[14] = taiHookFunctionImport(&g_scePafToplevelGetText_SceSystemSettingsCore_hook, 
                                         "SceSystemSettingsCore", 
-                                        0x3D643CE8, // ScePafMisc
-                                        0xC11CB5E4, 
-                                        scePafGetText_SceSystemSettingsCore_patched);
+                                        0x4D9A9DD0, // ScePafToplevel
+                                        0x19CEFDA7, 
+                                        scePafToplevelGetText_SceSystemSettingsCore_patched);
   }
   return ret;
 }
@@ -401,7 +403,7 @@ static int sceKernelStopUnloadModule_SceSettings_patched(SceUID modid, SceSize a
     if (g_hooks[11] >= 0) taiHookRelease(g_hooks[11], g_sceRegMgrGetKeyStr_SceSystemSettingsCore_hook);
     if (g_hooks[12] >= 0) taiHookRelease(g_hooks[12], g_sceRegMgrSetKeyStr_SceSystemSettingsCore_hook);
     if (g_hooks[13] >= 0) taiHookRelease(g_hooks[13], g_sceRegMgrGetKeysInfo_SceSystemSettingsCore_hook);
-    if (g_hooks[14] >= 0) taiHookRelease(g_hooks[14], g_scePafGetText_SceSystemSettingsCore_hook);
+    if (g_hooks[14] >= 0) taiHookRelease(g_hooks[14], g_scePafToplevelGetText_SceSystemSettingsCore_hook);
   }
   return TAI_CONTINUE(int, g_sceKernelStopUnloadModule_SceSettings_hook, modid, args, argp, flags, option, status);
 }

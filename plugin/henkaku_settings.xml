@@ -12,7 +12,7 @@
     <!-- Enable Unsafe Homebrew -->
     <toggle_switch id="id_enable_unsafe_homebrew"
                    title="msg_enable_unsafe_homebrew"
-                   description="msg_unsafe_homebrew_description"
+                   hint="msg_unsafe_homebrew_description"
                    icon="tex_spanner"
                    key="/CONFIG/HENKAKU/enable_unsafe_homebrew"/>
 
@@ -44,8 +44,12 @@
     </list>
 
     <!-- Content Downloader -->
-    <setting_list id="download" title="msg_downloader" icon="tex_spanner"
-      navi_left="download_footer_cancel" navi_center="download_footer_select_all" navi_right="download_footer_exec">
+    <setting_list id="download"
+                  title="msg_content_downloader"
+                  icon="tex_spanner"
+                  navi_left="download_footer_cancel"
+                  navi_center="download_footer_select_all"
+                  navi_right="download_footer_exec">
       <user_custom id="download_dummy"/>
     </setting_list>
 
@@ -54,7 +58,7 @@
             title="msg_unlink_memory_card"
             icon="tex_spanner"
             success_dialog_message="msg_unlink_memory_card_success"
-            error_dialog_message= "msg_unlink_memory_card_error"/>
+            error_dialog_message="msg_unlink_memory_card_error"/>
 
     <!-- Reload taiHEN config.txt -->
     <button id="id_reload_taihen_config"
