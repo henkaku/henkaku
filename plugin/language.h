@@ -317,10 +317,10 @@ language_container_t language_danish = {
   L"Genindlæs taiHEN config.txt",
   L"taiHEN config.txt er blevet geninlæst med succes.",
   L"Genstart enhed",
-  L"Content Downloader",
+  L"Indholdshenter",
   L"Fjern link til hukommelseskort",
-  L"ux0:id.dat er blevet slettet. Dette hukommelseskort kan nu bruges på enhver Vita.",
-  L"Kunne ikke gemme ux0. Er der indsat et hukommelseskort?",
+  L"ux0:id.dat er blevet slettet. Dette hukommelseskort kan nu bruges på en vilkårlig Vita.",
+  L"Kunne ikke montere ux0. Er der indsat et hukommelseskort?",
 };
 
 // by baniel105 & irchagaming & Promises
