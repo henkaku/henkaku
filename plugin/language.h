@@ -315,7 +315,7 @@ language_container_t language_danish = {
   L"Vælg",
   L"Afbryd",
   L"Genindlæs taiHEN config.txt",
-  L"taiHEN config.txt er blevet geninlæst med succes.",
+  L"taiHEN config.txt er blevet genindlæst.",
   L"Genstart enhed",
   L"Indholdshenter",
   L"Fjern link til hukommelseskort",
