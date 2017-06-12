@@ -285,13 +285,13 @@ language_container_t language_finnish = {
 
 // by MrOrbital & GizmoTheGreen & Wassburgare
 language_container_t language_swedish = {
-  L"HENkaku Inställningar",
+  L"HENkaku-inställningar",
   L"Aktivera fejkad PSN-inloggning",
-  L"Tillåt osäker Homebrew",
-  L"Osäkra Homebrews kan skada din enhet permanent ifall de används på fel sätt, är felkonfigurerade, eller innehåller skadlig kod.\nVar försiktig vid installation.",
+  L"Tillåt osäkra homebrews",
+  L"Osäkra homebrews kan skada din enhet permanent om de används felaktigt, är felkonfigurerade, eller innehåller skadlig kod.\nVar försiktig vid installation av sådana.",
   L"Aktivera fejkad version",
   L"Fejkad version",
-  L"Funktion på ○-knapp",
+  L"○-knappens beteende",
   L"Välj",
   L"Avbryt",
   L"Ladda om taiHEN config.txt",
