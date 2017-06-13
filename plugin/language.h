@@ -288,7 +288,7 @@ language_container_t language_swedish = {
   L"HENkaku-inställningar",
   L"Aktivera fejkad PSN-inloggning",
   L"Tillåt osäkra homebrews",
-  L"Osäkra homebrews kan skada din enhet permanent om de används felaktigt, är felkonfigurerade, eller innehåller skadlig kod.\nVar försiktig vid installation av sådana.",
+  L"Osäkra homebrews kan skada din enhet permanent om de används felaktigt, är felkonfigurerade eller innehåller skadlig kod.\nVar försiktig vid installation av sådana.",
   L"Aktivera fejkad version",
   L"Fejkad version",
   L"○-knappens beteende",
