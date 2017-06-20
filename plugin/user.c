@@ -461,6 +461,27 @@ int module_start(SceSize argc, const void *args) {
                                              passphrase_decrypt_patched);
           break;
         }
+        case 0xEAB89D5C: { // PTEL 3.60 SceShell thanks to CelesteBlue for offsets
+          g_hooks[3] = taiHookFunctionOffset(&g_update_check_hook, 
+                                             info.modid, 
+                                             0,         // segidx
+                                             0x35A830,  // offset
+                                             1,         // thumb
+                                             update_check_patched);
+          g_hooks[4] = taiHookFunctionOffset(&g_game_update_check_hook, 
+                                             info.modid, 
+                                             0,         // segidx
+                                             0x372832,  // offset
+                                             1,         // thumb
+                                             game_update_check_patched);
+          g_hooks[5] = taiHookFunctionOffset(&g_passphrase_decrypt_hook, 
+                                             info.modid, 
+                                             0,         // segidx
+                                             0x31BC78,  // offset
+                                             1,         // thumb
+                                             passphrase_decrypt_patched);
+          break;
+        }
         case 0x6CB01295: { // PDEL 3.60 SceShell thanks to anonymous for offsets
           g_hooks[3] = taiHookFunctionOffset(&g_update_check_hook, 
                                              info.modid, 
