@@ -645,7 +645,7 @@ static int load_paf() {
 	ptr[0] = 0;
 	ptr[1] = (unsigned)&ptr[0];
 	unsigned scepaf_argp[] = {0x400000, 0xEA60, 0x40000, 0, 0};
-	return sceSysmoduleLoadModuleInternalWithArg(SCE_SYSMODULE_PAF, sizeof(scepaf_argp), scepaf_argp, ptr);
+	return sceSysmoduleLoadModuleInternalWithArg(SCE_SYSMODULE_INTERNAL_PAF, sizeof(scepaf_argp), scepaf_argp, ptr);
 }
 
 static void init_modules() {
@@ -654,16 +654,16 @@ static void init_modules() {
 	void *base;
 
 	ret = load_paf();
-	LOG("SCE_SYSMODULE_PROMOTER_UTIL(SCE_SYSMODULE_PAF): %x\n", ret);
+	LOG("sceSysmoduleLoadModuleInternalWithArg(SCE_SYSMODULE_INTERNAL_PAF): %x\n", ret);
 
-	ret = sceSysmoduleLoadModuleInternal(SCE_SYSMODULE_PROMOTER_UTIL);
-	LOG("SCE_SYSMODULE_PROMOTER_UTIL(SCE_SYSMODULE_PROMOTER_UTIL): %x\n", ret);
+	ret = sceSysmoduleLoadModuleInternal(SCE_SYSMODULE_INTERNAL_PROMOTER_UTIL);
+	LOG("sceSysmoduleLoadModuleInternal(SCE_SYSMODULE_INTERNAL_PROMOTER_UTIL): %x\n", ret);
 
 	ret = sceSysmoduleLoadModuleInternal(SCE_SYSMODULE_NET);
-	LOG("SCE_SYSMODULE_PROMOTER_UTIL(SCE_SYSMODULE_NET): %x\n", ret);
+	LOG("sceSysmoduleLoadModuleInternal(SCE_SYSMODULE_NET): %x\n", ret);
 
 	ret = sceSysmoduleLoadModuleInternal(SCE_SYSMODULE_HTTP);
-	LOG("SCE_SYSMODULE_PROMOTER_UTIL(SCE_SYSMODULE_HTTP): %x\n", ret);
+	LOG("sceSysmoduleLoadModuleInternal(SCE_SYSMODULE_HTTP): %x\n", ret);
 
 	ret = sceHttpInit(1*1024*1024);
 	LOG("sceHttpInit(): %x\n", ret);
