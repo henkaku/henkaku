@@ -225,22 +225,22 @@ language_container_t language_korean = {
 
 // by iTZQing & FlexingTiger & magpte
 language_container_t language_chinese_t = {
-  L"HENkaku設置",
-  L"啟用PSN偽裝",
-  L"啟用不安全自制軟件",
-  L"如果不安全自制軟件被誤用、配置出現錯誤或軟件本身是惡意程序，可能會永久性損壞你的設備。\n請謹慎安裝！",
+  L"HENkaku 設定",
+  L"啟用 PSN 偽裝",
+  L"啟用不安全的自製程式",
+  L"如果誤用不安全的自製程式、設定出現錯誤或軟體本身是惡意程式，可能會永久性損壞你的裝置。\n請謹慎安裝！",
   L"啟用版本偽裝",
   L"偽裝版本",
-  L"○鍵配置",
+  L"○ 鍵設定",
   L"確定",
   L"取消",
-  L"重載taiHEN config.txt",
-  L"重載taiHEN config.txt成功",
-  L"重啟設備",
+  L"重新載入 taiHEN config.txt",
+  L"重新載入 taiHEN config.txt 成功",
+  L"重新啟動裝置",
   L"下載內容管理器",
   L"解除記憶卡關聯",
-  L"已刪除ux0:id.dat，現在這張記憶卡可應用到任意PSV上",
-  L"掛載ux0失敗，請檢查記憶卡是否插入",
+  L"已刪除 ux0:id.dat，現在這張記憶卡可在任意 PSV 上使用",
+  L"裝載 ux0 失敗，請檢查是否已插入記憶卡",
 };
 
 // by iTZQing & FlexingTiger & magpte
