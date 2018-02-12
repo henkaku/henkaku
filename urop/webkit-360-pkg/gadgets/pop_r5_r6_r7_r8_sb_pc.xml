@@ -1,8 +1,0 @@
-<?xml version="1.0"?>
-
-<gadget>
-	<address>0x000eb4d5</address>
-	<aslr>SceWebKit</aslr>
-</gadget>
-
-<!-- 0x000eb4d4 : pop.w {r5, r6, r7, r8, sb, pc} -->
