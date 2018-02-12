@@ -1,8 +1,0 @@
-<?xml version="1.0"?>
-
-<gadget>
-	<address>0x00001111</address>
-	<aslr>SceLibKernel</aslr>
-</gadget>
-
-<!-- 0x00001110 : mov sp, ip ; pop {pc}  -->

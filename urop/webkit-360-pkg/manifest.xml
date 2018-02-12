@@ -1,6 +1,0 @@
-<?xml version="1.0"?>
-<version>1.0</version>
-<arch_bitlen>32</arch_bitlen>
-<stack_alignment>0x8</stack_alignment>
-<caller_gadget>pop_pc</caller_gadget>
-<aslr>true</aslr>

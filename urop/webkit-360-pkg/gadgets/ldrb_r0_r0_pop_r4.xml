@@ -1,8 +1,0 @@
-<?xml version="1.0"?>
-
-<gadget>
-	<address>0x0012b5c7</address>
-	<aslr>SceWebKit</aslr>
-</gadget>
-
-<!-- 0x00612350 : 0x0012b5c6 : ldrb r0, [r0] ; pop {r4, pc} -->

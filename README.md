@@ -2,10 +2,8 @@
 
 Only Linux is supported. You will need:
 
-* roptool
 * Python 3
-* Ruby (specifically, the `erb` command-line tool)
-* Vita SDK: Download from [here](https://lolhax.org/bamboo/allPlans.action) either for Ubuntu 12.04/16.04/Windows
+* [Vita SDK](http://vitasdk.org/)
 * Uglify JS (Ubuntu 16.04 package node-uglify) tested version 2.4.15
 * Other standard tools that you should already have installed, such as openssl, dd, cat, touch
 
