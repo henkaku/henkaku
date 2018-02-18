@@ -31,6 +31,7 @@
 #define HENKAKU_SUPRX_FILE "ur0:tai/henkaku.suprx"
 #define HENKAKU_SKPRX_FILE "ur0:tai/henkaku.skprx"
 
+#undef LOG
 #if RELEASE
 #define LOG(...)
 #else
@@ -464,27 +465,6 @@ static uint32_t crc32_file(const char *path) {
 	}
 	sceIoClose(fd);
 	return crc;
-}
-
-static int find_NPXS10016_titleid_fsm(const char *data, int len, int state) {
-	int i = 0;
-	while (i < len) {
-		switch (state) {
-			case  0: state = (data[i++] == '*') ? 1 : 0; break;
-			case  1: state = (data[i++] == 'N') ? 2 : 0; break;
-			case  2: state = (data[i++] == 'P') ? 3 : 0; break;
-			case  3: state = (data[i++] == 'X') ? 4 : 0; break;
-			case  4: state = (data[i++] == 'S') ? 5 : 0; break;
-			case  5: state = (data[i++] == '1') ? 6 : 0; break;
-			case  6: state = (data[i++] == '0') ? 7 : 0; break;
-			case  7: state = (data[i++] == '0') ? 8 : 0; break;
-			case  8: state = (data[i++] == '1') ? 9 : 0; break;
-			case  9: state = (data[i++] == '6') ? 99 : 0; break;
-			case 99: state = (data[i++] == '\r' || data[i-1] == '\n') ? 100 : 0; break;
-			default: i++; break;
-		}
-	}
-	return state;
 }
 
 static int find_henkaku_plugin_fsm(const char *data, int len, int state) {
