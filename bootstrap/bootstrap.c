@@ -259,6 +259,8 @@ int download_file(const char *src, const char *dst) {
 		total_read += read;
 		draw_rect(cui_data.X + 1, cui_data.Y + 1, (PROGRESS_BAR_WIDTH - 2) * total_read / length, PROGRESS_BAR_HEIGHT - 2);
 	}
+	// ensure it's filled when file is downloaded
+	draw_rect(cui_data.X + 1, cui_data.Y + 1, (PROGRESS_BAR_WIDTH - 2), PROGRESS_BAR_HEIGHT - 2);
 	DRAWF("\n\n");
 
 end2:
