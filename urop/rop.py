@@ -101,22 +101,12 @@ class Rop:
 
             setattr(self.data, key, ptr)
 
-    def _write_data_section(self):
-        """
-        Writes contents of data section into the data section (i.e. starting at data_base)
-        This is the first thing that should be done
-        Writes 1 word (4 bytes) at a time, is allowed to do clever optimizations.
-        """
-
-        remainder = len(self._data_binary) % 4
-        if remainder != 0:
-            self._data_binary += b"\x00" * (4 - remainder)
-
+    def do_write_data(self, data_binary):
         # This is kinda hacky, write32 will append to self.rop, so make it empty for now
         old_rop = self.rop
         self.rop = []
-        for word in range(0, len(self._data_binary) // 4):
-            data = self._data_binary[word*4:(word+1)*4]
+        for word in range(0, len(data_binary) // 4):
+            data = data_binary[word*4:(word+1)*4]
 
             num = u32(data)
             if num == 0 and self.assume_null_init:
@@ -128,6 +118,18 @@ class Rop:
         # our rop is position-independent (is it?) so should be good
         self.rop += old_rop
 
+    def _write_data_section(self):
+        """
+        Writes contents of data section into the data section (i.e. starting at data_base)
+        This is the first thing that should be done
+        Writes 1 word (4 bytes) at a time, is allowed to do clever optimizations.
+        """
+
+        remainder = len(self._data_binary) % 4
+        if remainder != 0:
+            self._data_binary += b"\x00" * (4 - remainder)
+
+        self.do_write_data(self._data_binary)
 
     def compile(self):
         """

