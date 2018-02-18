@@ -80,7 +80,7 @@ class Functions360:
     sceKernelDelayThread = SceLibHttp_base + 0x18544
 
     socket = SceNet_base + 0x27E1
-    sceNetDumpCreate = SceNet_base + 0x28F9
+    sceNetDumpCreate_svc = SceNet_base + 0x9FE0
     sceNetDumpDestroy = SceNet_base + 0x2909
 
     sceNetSyscallIoctl = SceNet_base + 0x9F90
