@@ -13,7 +13,7 @@ max_code_size = stack_size // 2
 memblock_size = 1024 * 1024
 stack_alloc = 0x1000
 
-def make_rop(henkaku_bin_url, henkaku_bin_len):
+def make_rop(henkaku_bin_url, henkaku_bin_len, henkaku_bin_words):
     r = Rop360()
     c = r.caller
     d = r.data
@@ -78,7 +78,7 @@ def make_rop(henkaku_bin_url, henkaku_bin_len):
 
     # relocate the second stage rop!
     # Every word is 4 bytes, plus there's relocs at the bottom 1 byte each
-    r.relocate_rop(d.memblock_base, henkaku_bin_len // 5, d.bases)
+    r.relocate_rop(d.memblock_base, henkaku_bin_words, d.bases)
 
     c.memcpy(Load(d.stack_base), Load(d.memblock_base), henkaku_bin_len)
 
@@ -102,19 +102,18 @@ relocs = [{}];
 """
 
 def main():
-    if len(argv) != 4:
-        print("Usage: loader.py henkaku-bin-url henkaku-bin-file output-js-file")
+    if len(argv) != 5:
+        print("Usage: loader.py henkaku-bin-url henkaku-bin-file henkaku-bin-words output-js-file")
         return 1
 
     henkaku_bin_url = argv[1]
     with open(argv[2], "rb") as fin:
         henkaku_bin_data = fin.read()
         henkaku_bin_len = len(henkaku_bin_data)
-    if henkaku_bin_len % 5 != 0:
-        raise RuntimeError("dude what's wrong with your henkaku.bin")
-    output_file = argv[3]
+    henkaku_bin_words = int(argv[3])
+    output_file = argv[4]
 
-    rop = make_rop(henkaku_bin_url, henkaku_bin_len)
+    rop = make_rop(henkaku_bin_url, henkaku_bin_len, henkaku_bin_words)
 
     with open(output_file, "w") as fout:
         fout.write(tpl.format(",".join(str(x) for x in rop.compiled_rop), ",".join(str(x) for x in rop.compiled_relocs)))
