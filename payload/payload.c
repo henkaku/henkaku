@@ -240,7 +240,7 @@ static int (*hook_resume_sbl_BC422443)() = 0;
 static int (*ksceKernelGetModuleList)() = 0;
 static int (*ksceKernelGetModuleInfo)() = 0;
 static void (*SceCpuForDriver_19f17bd0_flush_icache)(uint32_t addr, uint32_t size) = 0;
-static int (*SceCpuForDriver_9CB9F0CE_flush_dcache)(uint32_t addr, int len) = 0;
+static int (*SceCpuForDriver_9CB9F0CE_flush_dcache)(uint32_t addr, uint32_t len) = 0;
 static int (*ksceIoOpen)(const char *, int, int) = 0;
 static int (*ksceIoWrite)(int, char *, int) = 0;
 static int (*ksceIoClose)(int) = 0;
@@ -430,7 +430,7 @@ void temp_sigpatches(void) {
 	);
 	LOG("hooked sysroot_421EFC96");
 
-	addr = appmgr_code + 0x44a0c;
+	addr = (void*)(appmgr_code + 0x44a0c);
 	DACR_OFF(
 		memcpy(old_ux0_data_path, addr, sizeof(old_ux0_data_path));
 		memcpy(addr, ur0_temp_path, sizeof(ur0_temp_path));
@@ -479,7 +479,7 @@ void remove_sigpatches(void) {
 	);
 	LOG("unhooked sysroot_421EFC96");
 
-	addr = appmgr_code + 0x44a0c;
+	addr = (void*)(appmgr_code + 0x44a0c);
 	DACR_OFF(
 		memcpy(addr, old_ux0_data_path, sizeof(old_ux0_data_path));
 	);
@@ -691,7 +691,7 @@ void resolve_imports(unsigned sysmem_base) {
 		}
 		if (strcmp(info.name, "SceAppMgr") == 0) {
 			DACR_OFF(appmgr_info = find_modinfo((u32_t)info.segments[0].vaddr, "SceAppMgr"));
-			DACR_OFF(appmgr_code = info.segments[0].vaddr);
+			DACR_OFF(appmgr_code = (u32_t)info.segments[0].vaddr);
 		}
 		if (strcmp(info.name, "SceIofilemgr") == 0) {
 			iofilemgr_info = find_modinfo((u32_t)info.segments[0].vaddr, "SceIofilemgr");
@@ -745,6 +745,7 @@ void resolve_imports(unsigned sysmem_base) {
 	// END 3.60
 }
 
+void start() __attribute__ ((weak, alias ("payload")));
 void _start() __attribute__ ((weak, alias ("payload")));
 void __attribute__ ((section (".text.start"))) payload(uint32_t sysmem_addr, void *stage1, int rx_block, int rw_block, int rx_size) {
 	// find sysmem base, etc
@@ -790,7 +791,7 @@ void __attribute__ ((section (".text.start"))) payload(uint32_t sysmem_addr, voi
 	void *base;
 	ret = ksceKernelGetMemBlockBase(rx_block, &base);
 	LOG("ksceKernelGetMemBlockBase: %x, %x", ret, base);
-	SceCpuForDriver_9CB9F0CE_flush_dcache(base, (rx_size + 0x1f) & ~0x1f);
+	SceCpuForDriver_9CB9F0CE_flush_dcache((uint32_t)base, (rx_size + 0x1f) & ~0x1f);
 
 	int tid;
 	LOG("starting kernel thread");
