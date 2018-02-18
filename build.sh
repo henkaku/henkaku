@@ -106,14 +106,13 @@ echo "3) Kernel ROP"
 echo "4) User ROP"
 echo "symbol stage2_url_base = \"$HENKAKU_BIN_URL\";" > build/config.rop
 
-./urop/exploit.py build/loader.enc build/payload.bin output/web/henkaku.bin
-./urop/loader.py "$HENKAKU_BIN_URL" output/web/henkaku.bin output/web/payload.js
+HENKAKU_BIN_WORDS=$(./urop/exploit.py build/loader.enc build/payload.bin output/web/henkaku.bin)
+./urop/loader.py "$HENKAKU_BIN_URL" output/web/henkaku.bin $HENKAKU_BIN_WORDS output/web/payload.js
 
 echo "5) Webkit"
 # Hosted version
 $PREPROCESS webkit/exploit.js -DSTATIC=0 -o build/exploit.web.js
 uglifyjs build/exploit.web.js -m "toplevel" > build/exploit.js
-cp build/exploit.web.js build/exploit.js
 touch output/web/exploit.html
 printf "<noscript>Go to browser settings and check \"Enable JavaScript\", then reload this page.</noscript><script src='payload.js'></script><script>" >> output/web/exploit.html
 cat build/exploit.js >> output/web/exploit.html
