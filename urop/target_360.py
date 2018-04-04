@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 from rop import Rop, Ret, Load
 from relocatable import SceWebKit_base, SceLibKernel_base, SceLibc_base, SceLibHttp_base, SceNet_base, data_base
 from util import p32, u32
@@ -202,12 +204,12 @@ class Rop360(Rop):
             0xdead,
         ]
     
-    _call_funcs = {
-        "vvvvvvv": call_v7,
-        "rvvvvvv": call_rv6,
-        "lvvvvvv": call_lv6,
-        "llv": call_llv,
-    }
+    _call_funcs = OrderedDict([
+        ("vvvvvvv", call_v7),
+        ("rvvvvvv", call_rv6),
+        ("lvvvvvv", call_lv6),
+        ("llv", call_llv),
+    ])
 
     def call_r0(self):
         self.rop += [
